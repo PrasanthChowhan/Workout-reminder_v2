@@ -200,6 +200,42 @@ body {
   flex-grow: 1;
 }
 
+/* Metadata badges for exercises */
+.stretch-meta-badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.stretch-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.05em;
+}
+
+.stretch-badge.difficulty {
+  color: var(--color-brand-orange);
+  background-color: rgba(255, 122, 69, 0.1);
+  border: 1px solid rgba(255, 122, 69, 0.2);
+}
+
+.stretch-badge.sets {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.stretch-badge.reps {
+  color: #52c41a; /* Terminal Green */
+  background-color: rgba(82, 196, 26, 0.1);
+  border: 1px solid rgba(82, 196, 26, 0.2);
+}
+
 .stretch-title {
   font-size: 1.5rem; /* text-2xl */
   font-weight: 700;
@@ -538,18 +574,14 @@ body {
   z-index: 2;
 }
 
-/* Settings Modal Overlay */
+/* Settings Full-Page Overlay */
 .settings-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(18, 20, 20, 0.85); /* deep surface color with opacity */
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background-color: var(--color-bg);
   z-index: 100;
   animation: fadeIn 0.2s ease-out;
 }
@@ -560,26 +592,33 @@ body {
 }
 
 .settings-modal {
-  background-color: var(--color-card-bg);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 2.5rem;
-  padding: 2.5rem;
-  width: 100%;
-  max-width: 600px;
-  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: var(--color-bg);
+  border: none;
+  border-radius: 0;
+  padding: 2.5rem 3rem;
+  width: 100vw;
+  height: 100vh;
+  box-shadow: none;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 2rem 3rem;
+  box-sizing: border-box;
+  animation: slideUpFull 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
+@keyframes slideUpFull {
+  from { transform: translateY(30px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
 .settings-header {
+  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 1rem;
 }
 
 .settings-title {
@@ -608,11 +647,15 @@ body {
 
 /* Tabs Navigation styling */
 .settings-tabs {
+  grid-column: 1;
+  grid-row: 2;
   display: flex;
-  gap: 0.25rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 0.5rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding-right: 1.5rem;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .settings-tab-btn {
@@ -624,10 +667,12 @@ body {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.5rem 0.85rem;
+  padding: 0.75rem 1.25rem;
   cursor: pointer;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
 }
 
 .settings-tab-btn:hover {
@@ -641,14 +686,20 @@ body {
 }
 
 .settings-form {
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .settings-tab-content {
-  max-height: 380px;
+  flex-grow: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding-right: 0.5rem;
+  padding-right: 1rem;
+  max-height: none;
 }
 
 .settings-tab-content::-webkit-scrollbar {
@@ -681,6 +732,51 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+}
+
+/* Custom Checkbox / Toggle Switch */
+.checkbox-field {
+  padding: 0.5rem 0;
+}
+
+.settings-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.settings-checkbox:checked {
+  background-color: var(--color-brand-orange);
+  border-color: var(--color-brand-orange);
+}
+
+.settings-checkbox::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-off-white);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-checkbox:checked::before {
+  transform: translateX(20px);
+  background-color: #000;
+}
+
+.settings-checkbox:focus {
+  outline: none;
+  box-shadow: 0 0 8px rgba(255, 122, 69, 0.4);
 }
 
 .settings-label {
@@ -850,12 +946,13 @@ body {
 }
 
 .settings-footer {
-  margin-top: 1.5rem;
+  margin-top: auto;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 1.25rem;
+  z-index: 10;
 }
 
 .settings-cancel-btn {
@@ -1337,4 +1434,35 @@ body {
 .deactivate-track-btn:hover {
   background-color: rgba(255, 77, 79, 0.08);
   border-color: #ff4d4f;
+}
+
+/* Responsiveness for settings full screen */
+@media (max-width: 768px) {
+  .settings-modal {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  .settings-tabs {
+    grid-column: 1;
+    grid-row: 2;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-right: 0;
+    padding-bottom: 0.75rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .settings-tab-btn {
+    text-align: center;
+    width: auto;
+    padding: 0.5rem 0.85rem;
+  }
+  .settings-form {
+    grid-column: 1;
+    grid-row: 3;
+  }
 }

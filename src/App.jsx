@@ -17,12 +17,13 @@ export default function App() {
   
   // Settings view states
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState("timers");
+  const [activeTab, setActiveTab] = useState("general");
   const [settingsForm, setSettingsForm] = useState({
     micro_break_interval_mins: 20,
     active_break_interval_mins: 50,
     micro_break_duration_secs: 20,
     active_break_duration_secs: 300,
+    run_at_start: false,
   });
 
   // Editable lists states (for categories)
@@ -65,6 +66,7 @@ export default function App() {
         active_break_interval_mins: config.settings.active_break_interval_mins,
         micro_break_duration_secs: config.settings.micro_break_duration_secs,
         active_break_duration_secs: config.settings.active_break_duration_secs,
+        run_at_start: config.settings.run_at_start || false,
       });
       setEditableCards(config.active_recall_cards || []);
       setEditablePrompts(config.reflection_prompts || []);
@@ -78,7 +80,7 @@ export default function App() {
         level_started_at: null
       });
       setOnboardingTrackId(null);
-      setActiveTab("timers");
+      setActiveTab("general");
       setShowSettings(true);
     } else {
       invoke("get_app_config").then((loadedConfig) => {
@@ -88,6 +90,7 @@ export default function App() {
           active_break_interval_mins: loadedConfig.settings.active_break_interval_mins,
           micro_break_duration_secs: loadedConfig.settings.micro_break_duration_secs,
           active_break_duration_secs: loadedConfig.settings.active_break_duration_secs,
+          run_at_start: loadedConfig.settings.run_at_start || false,
         });
         setEditableCards(loadedConfig.active_recall_cards || []);
         setEditablePrompts(loadedConfig.reflection_prompts || []);
@@ -101,7 +104,7 @@ export default function App() {
           level_started_at: null
         });
         setOnboardingTrackId(null);
-        setActiveTab("timers");
+        setActiveTab("general");
         setShowSettings(true);
       });
     }
@@ -266,10 +269,14 @@ export default function App() {
 
   const handleAddStretch = () => {
     if (!newStretch.name.trim() || !newStretch.description.trim()) return;
+    const duration = Number(newStretch.duration_secs) || 30;
     const stretch = {
       name: newStretch.name.trim(),
       description: newStretch.description.trim(),
-      duration_secs: Number(newStretch.duration_secs) || 30
+      duration_secs: duration,
+      difficulty_level: "All Levels",
+      sets: 2,
+      reps: `Hold ${duration}s`
     };
     setEditableStretches([...editableStretches, stretch]);
     setNewStretch({ name: "", description: "", duration_secs: 30 });
@@ -290,6 +297,7 @@ export default function App() {
         active_break_interval_mins: Number(settingsForm.active_break_interval_mins),
         micro_break_duration_secs: Number(settingsForm.micro_break_duration_secs),
         active_break_duration_secs: Number(settingsForm.active_break_duration_secs),
+        run_at_start: settingsForm.run_at_start,
       },
       active_recall_cards: editableCards,
       reflection_prompts: editablePrompts,
@@ -314,6 +322,7 @@ export default function App() {
         active_break_interval_mins: appConfig.settings.active_break_interval_mins,
         micro_break_duration_secs: appConfig.settings.micro_break_duration_secs,
         active_break_duration_secs: appConfig.settings.active_break_duration_secs,
+        run_at_start: appConfig.settings.run_at_start || false,
       });
     }
     setEditableCards([]);
@@ -376,6 +385,17 @@ export default function App() {
             </div>
           </div>
           <div className="stretch-text-content">
+            <div className="stretch-meta-badges">
+              <span className="stretch-badge difficulty">
+                {sessionStretch?.difficulty_level || "All Levels"}
+              </span>
+              <span className="stretch-badge sets">
+                {sessionStretch ? `${sessionStretch.sets} Sets` : "2 Sets"}
+              </span>
+              <span className="stretch-badge reps">
+                {sessionStretch?.reps ? sessionStretch.reps : `${sessionStretch?.duration_secs || 30}s Hold`}
+              </span>
+            </div>
             <h2 className="stretch-title">
               {sessionStretch ? sessionStretch.name : "Physical Reset"}
             </h2>
@@ -519,6 +539,13 @@ export default function App() {
             <div className="settings-tabs">
               <button 
                 type="button" 
+                className={`settings-tab-btn ${activeTab === "general" ? "active" : ""}`}
+                onClick={() => setActiveTab("general")}
+              >
+                General
+              </button>
+              <button 
+                type="button" 
                 className={`settings-tab-btn ${activeTab === "timers" ? "active" : ""}`}
                 onClick={() => setActiveTab("timers")}
               >
@@ -556,6 +583,26 @@ export default function App() {
 
             <form onSubmit={handleSaveSettings} className="settings-form">
               <div className="settings-tab-content">
+                {activeTab === "general" && (
+                  <div className="tab-pane">
+                    <div className="settings-group">
+                      <h3 className="settings-group-title">System Settings</h3>
+                      <div className="settings-field checkbox-field">
+                        <label className="settings-label">Run at Startup</label>
+                        <input
+                          type="checkbox"
+                          className="settings-checkbox"
+                          checked={settingsForm.run_at_start}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, run_at_start: e.target.checked })}
+                        />
+                      </div>
+                      <p className="settings-item-desc" style={{ marginTop: "0.5rem" }}>
+                        Automatically launch Workout & Break Reminder when you log into Windows.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === "tracks" && (
                   <div className="tab-pane">
                     {onboardingTrackId ? (

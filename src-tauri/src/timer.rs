@@ -18,6 +18,20 @@ pub struct Stretch {
     pub name: String,
     pub description: String,
     pub duration_secs: u64,
+    #[serde(default = "default_difficulty")]
+    pub difficulty_level: String,
+    #[serde(default = "default_sets")]
+    pub sets: u64,
+    #[serde(default)]
+    pub reps: Option<String>,
+}
+
+fn default_difficulty() -> String {
+    "All Levels".to_string()
+}
+
+fn default_sets() -> u64 {
+    1
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,6 +77,7 @@ pub struct Settings {
     pub active_break_interval_mins: u64,
     pub micro_break_duration_secs: u64,
     pub active_break_duration_secs: u64,
+    pub run_at_start: bool,
 }
 
 impl Default for AppConfig {
@@ -73,6 +88,7 @@ impl Default for AppConfig {
                 active_break_interval_mins: 50,
                 micro_break_duration_secs: 20,
                 active_break_duration_secs: 300, // 5 minutes
+                run_at_start: false,
             },
             active_recall_cards: vec![
                 ActiveRecallCard {
@@ -115,16 +131,25 @@ impl Default for AppConfig {
                     name: "Physical Reset".to_string(),
                     description: "Stand up, roll shoulders backward 10 times, and stretch arms high overhead to realign posture and improve blood flow.".to_string(),
                     duration_secs: 30,
+                    difficulty_level: "Beginner".to_string(),
+                    sets: 2,
+                    reps: Some("10 reps".to_string()),
                 },
                 Stretch {
                     name: "Neck & Spine Reset".to_string(),
                     description: "Sit tall. Turn chin slowly to right shoulder for 5s, then left shoulder for 5s. Roll neck gently.".to_string(),
                     duration_secs: 30,
+                    difficulty_level: "Beginner".to_string(),
+                    sets: 2,
+                    reps: Some("Hold 5s".to_string()),
                 },
                 Stretch {
                     name: "Wrist extension".to_string(),
                     description: "Extend right arm forward, fingers up. Pull fingers back gently with left hand. Hold 15s, then switch arms.".to_string(),
                     duration_secs: 30,
+                    difficulty_level: "Beginner".to_string(),
+                    sets: 2,
+                    reps: Some("Hold 15s".to_string()),
                 }
             ],
             tracks: vec![
@@ -230,5 +255,143 @@ pub fn save_config_file(app: &AppHandle, config: &AppConfig) -> Result<(), Strin
     let path = get_config_path(app)?;
     let serialized = serde_json::to_string_pretty(config).map_err(|e| e.to_string())?;
     fs::write(path, serialized).map_err(|e| e.to_string())?;
+    
+    // Configure run at start
+    let _ = set_run_at_start(app, config.settings.run_at_start);
+    
+    Ok(())
+}
+
+#[allow(unused_variables)]
+pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::env;
+        use std::process::Command;
+
+        let current_exe = env::current_exe()
+            .map_err(|e| format!("Failed to get current executable path: {}", e))?;
+        
+        let path_str = current_exe.to_string_lossy().into_owned();
+
+        if enabled {
+            let formatted_path = format!("\"{}\"", path_str);
+            let status = Command::new("reg")
+                .args(&[
+                    "add",
+                    "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                    "/v",
+                    "WorkoutReminder",
+                    "/t",
+                    "REG_SZ",
+                    "/d",
+                    &formatted_path,
+                    "/f",
+                ])
+                .status()
+                .map_err(|e| format!("Failed to execute reg command: {}", e))?;
+
+            if !status.success() {
+                return Err("reg command failed to add startup entry".to_string());
+            }
+        } else {
+            // Run reg delete; ignore error if entry already did not exist
+            let _ = Command::new("reg")
+                .args(&[
+                    "delete",
+                    "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                    "/v",
+                    "WorkoutReminder",
+                    "/f",
+                ])
+                .status();
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::env;
+        use std::fs as std_fs;
+
+        let current_exe = env::current_exe()
+            .map_err(|e| format!("Failed to get current executable path: {}", e))?;
+        
+        let path_str = current_exe.to_string_lossy().into_owned();
+        
+        let home = app.path().home_dir().map_err(|e| e.to_string())?;
+        let plist_dir = home.join("Library").join("LaunchAgents");
+        let plist_path = plist_dir.join("com.workoutreminder.app.plist");
+
+        if enabled {
+            if !plist_dir.exists() {
+                std_fs::create_dir_all(&plist_dir).map_err(|e| e.to_string())?;
+            }
+            
+            let plist_content = format!(
+                r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.workoutreminder.app</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{}</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>"#,
+                path_str
+            );
+            
+            std_fs::write(plist_path, plist_content).map_err(|e| e.to_string())?;
+        } else {
+            if plist_path.exists() {
+                std_fs::remove_file(plist_path).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::env;
+        use std::fs as std_fs;
+
+        let current_exe = env::current_exe()
+            .map_err(|e| format!("Failed to get current executable path: {}", e))?;
+        
+        let path_str = current_exe.to_string_lossy().into_owned();
+        
+        let config_dir = app.path().config_dir().map_err(|e| e.to_string())?;
+        let autostart_dir = config_dir.join("autostart");
+        let desktop_path = autostart_dir.join("workout-reminder.desktop");
+
+        if enabled {
+            if !autostart_dir.exists() {
+                std_fs::create_dir_all(&autostart_dir).map_err(|e| e.to_string())?;
+            }
+            
+            let desktop_content = format!(
+                r#"[Desktop Entry]
+Type=Application
+Name=Workout Reminder
+Exec={}
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Comment=Workout & Break Reminder
+"#,
+                path_str
+            );
+            
+            std_fs::write(desktop_path, desktop_content).map_err(|e| e.to_string())?;
+        } else {
+            if desktop_path.exists() {
+                std_fs::remove_file(desktop_path).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
     Ok(())
 }
