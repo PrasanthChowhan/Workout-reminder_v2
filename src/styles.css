@@ -105,6 +105,8 @@ body {
   color: var(--color-off-white);
   user-select: none;
   line-height: 1;
+  width: 5.5ch;
+  text-align: left;
 }
 
 .active-break-settings-btn {
