@@ -3396,6 +3396,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin-dev-issues",
  "tauri-plugin-global-shortcut",
  "tauri-plugin-opener",
  "tokio",
@@ -3477,6 +3478,13 @@ dependencies = [
  "serde_json",
  "tauri-utils",
  "walkdir",
+]
+
+[[package]]
+name = "tauri-plugin-dev-issues"
+version = "0.1.0"
+dependencies = [
+ "tauri",
 ]
 
 [[package]]
