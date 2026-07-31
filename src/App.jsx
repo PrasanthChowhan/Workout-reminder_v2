@@ -30,6 +30,16 @@ export default function App() {
   const [editablePrompts, setEditablePrompts] = useState([]);
   const [editableStretches, setEditableStretches] = useState([]);
 
+  // Physical Tracks local settings state
+  const [settingsProgress, setSettingsProgress] = useState({
+    active_track_id: null,
+    current_level_number: null,
+    onboarding_tier: null,
+    completed_sessions_count: 0
+  });
+  const [onboardingTrackId, setOnboardingTrackId] = useState(null);
+  const [onboardingTier, setOnboardingTier] = useState("beginner");
+
   // Drafts for adding new items
   const [newCard, setNewCard] = useState({ category: "", question: "", answer: "" });
   const [newPrompt, setNewPrompt] = useState("");
@@ -59,6 +69,15 @@ export default function App() {
       setEditableCards(config.active_recall_cards || []);
       setEditablePrompts(config.reflection_prompts || []);
       setEditableStretches(config.stretches || []);
+      setSettingsProgress(config.user_progress || {
+        active_track_id: null,
+        current_level_number: null,
+        onboarding_tier: null,
+        completed_sessions_count: 0,
+        last_completed_at: null,
+        level_started_at: null
+      });
+      setOnboardingTrackId(null);
       setActiveTab("timers");
       setShowSettings(true);
     } else {
@@ -73,6 +92,15 @@ export default function App() {
         setEditableCards(loadedConfig.active_recall_cards || []);
         setEditablePrompts(loadedConfig.reflection_prompts || []);
         setEditableStretches(loadedConfig.stretches || []);
+        setSettingsProgress(loadedConfig.user_progress || {
+          active_track_id: null,
+          current_level_number: null,
+          onboarding_tier: null,
+          completed_sessions_count: 0,
+          last_completed_at: null,
+          level_started_at: null
+        });
+        setOnboardingTrackId(null);
         setActiveTab("timers");
         setShowSettings(true);
       });
@@ -265,13 +293,15 @@ export default function App() {
       },
       active_recall_cards: editableCards,
       reflection_prompts: editablePrompts,
-      stretches: editableStretches
+      stretches: editableStretches,
+      user_progress: settingsProgress
     };
     
     try {
       await invoke("save_app_config", { newConfig });
       setAppConfig(newConfig);
       setShowSettings(false);
+      triggerBreak();
     } catch (err) {
       console.error("Failed to save configuration", err);
     }
@@ -289,6 +319,13 @@ export default function App() {
     setEditableCards([]);
     setEditablePrompts([]);
     setEditableStretches([]);
+    setSettingsProgress(appConfig?.user_progress || {
+      active_track_id: null,
+      current_level_number: null,
+      onboarding_tier: null,
+      completed_sessions_count: 0
+    });
+    setOnboardingTrackId(null);
     setShowSettings(false);
   };
 
@@ -489,6 +526,13 @@ export default function App() {
               </button>
               <button 
                 type="button" 
+                className={`settings-tab-btn ${activeTab === "tracks" ? "active" : ""}`}
+                onClick={() => setActiveTab("tracks")}
+              >
+                Physical Tracks
+              </button>
+              <button 
+                type="button" 
                 className={`settings-tab-btn ${activeTab === "cards" ? "active" : ""}`}
                 onClick={() => setActiveTab("cards")}
               >
@@ -512,6 +556,227 @@ export default function App() {
 
             <form onSubmit={handleSaveSettings} className="settings-form">
               <div className="settings-tab-content">
+                {activeTab === "tracks" && (
+                  <div className="tab-pane">
+                    {onboardingTrackId ? (
+                      /* Onboarding Flow Screen */
+                      <div className="onboarding-container">
+                        <h3 className="onboarding-title">
+                          Setup Track: {appConfig?.tracks?.find(t => t.id === onboardingTrackId)?.name || onboardingTrackId}
+                        </h3>
+                        <p className="onboarding-desc">
+                          Select your starting flexibility tier. This will configure your initial stretch level and safe hold duration.
+                        </p>
+                        <div className="onboarding-tiers">
+                          {[
+                            {
+                              id: "beginner",
+                              name: "Beginner",
+                              multiplier: "0.75x duration",
+                              description: "Starts at Level 1 (Wall Straddle). Fully supported passive stretches, lower duration to prevent strain."
+                            },
+                            {
+                              id: "intermediate",
+                              name: "Intermediate",
+                              multiplier: "1.00x duration",
+                              description: "Starts at Level 2 (Half Split). Introduces active unilateral movement. Standard hold duration."
+                            },
+                            {
+                              id: "advanced",
+                              name: "Advanced",
+                              multiplier: "1.25x duration",
+                              description: "Starts at Level 3 (Frog Stretch). Deep active/bilateral stretches. Extended hold duration."
+                            }
+                          ].map(tier => (
+                            <div
+                              key={tier.id}
+                              className={`onboarding-tier-card ${onboardingTier === tier.id ? "selected" : ""}`}
+                              onClick={() => setOnboardingTier(tier.id)}
+                            >
+                              <div className="onboarding-tier-header">
+                                <span className={`onboarding-tier-name ${tier.id}`}>{tier.name}</span>
+                                <span className="onboarding-tier-mult">{tier.multiplier}</span>
+                              </div>
+                              <p className="onboarding-tier-desc">{tier.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="onboarding-actions">
+                          <button
+                            type="button"
+                            className="track-action-btn"
+                            onClick={() => {
+                              // Onboard: set active track
+                              const startingLevel = onboardingTier === "beginner" ? 1 : onboardingTier === "intermediate" ? 2 : 3;
+                              setSettingsProgress({
+                                active_track_id: onboardingTrackId,
+                                onboarding_tier: onboardingTier,
+                                current_level_number: startingLevel,
+                                completed_sessions_count: 0,
+                                last_completed_at: null,
+                                level_started_at: new Date().toISOString()
+                              });
+                              setOnboardingTrackId(null);
+                            }}
+                          >
+                            Confirm & Start Track
+                          </button>
+                          <button
+                            type="button"
+                            className="onboarding-back-btn"
+                            onClick={() => setOnboardingTrackId(null)}
+                          >
+                            Back
+                          </button>
+                        </div>
+                      </div>
+                    ) : settingsProgress.active_track_id ? (
+                      /* Active Track Progress Screen */
+                      <div className="active-track-panel">
+                        {(() => {
+                          const activeTrack = appConfig?.tracks?.find(t => t.id === settingsProgress.active_track_id);
+                          if (!activeTrack) return null;
+                          const completedSessions = settingsProgress.completed_sessions_count || 0;
+                          const progressPercent = Math.min((completedSessions / 5) * 100, 100);
+                          
+                          return (
+                            <>
+                              <div className="active-track-header">
+                                <div className="active-track-name-row">
+                                  <h3 className="track-selection-title">{activeTrack.name}</h3>
+                                  <span className="active-track-label">Active Track</span>
+                                </div>
+                                <p className="track-selection-desc" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                  {activeTrack.description}
+                                </p>
+                                <div className="active-track-info-row">
+                                  <span>
+                                    Tier: <strong>{settingsProgress.onboarding_tier?.toUpperCase()}</strong>
+                                  </span>
+                                  <div>
+                                    <label style={{ marginRight: '0.5rem' }}>Change Tier:</label>
+                                    <select
+                                      className="active-track-tier-select"
+                                      value={settingsProgress.onboarding_tier || "beginner"}
+                                      onChange={(e) => {
+                                        setSettingsProgress({
+                                          ...settingsProgress,
+                                          onboarding_tier: e.target.value
+                                        });
+                                      }}
+                                    >
+                                      <option value="beginner">Beginner (0.75x)</option>
+                                      <option value="intermediate">Intermediate (1.0x)</option>
+                                      <option value="advanced">Advanced (1.25x)</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="active-track-info-row" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+                                  <span>Completed Sessions (Current Level): {completedSessions} / 5</span>
+                                </div>
+                                <div className="active-track-progress-bar-container">
+                                  <div className="active-track-progress-bar" style={{ width: `${progressPercent}%` }}></div>
+                                </div>
+                              </div>
+
+                              <div className="levels-list-container">
+                                <h4 className="levels-list-title">Track Levels</h4>
+                                {activeTrack.levels.map(level => {
+                                  const isActive = settingsProgress.current_level_number === level.level_number;
+                                  const isCompleted = settingsProgress.current_level_number > level.level_number;
+                                  const isLocked = settingsProgress.current_level_number < level.level_number;
+                                  
+                                  // Compute duration multiplier
+                                  const mult = settingsProgress.onboarding_tier === "beginner" ? 0.75 : settingsProgress.onboarding_tier === "advanced" ? 1.25 : 1.0;
+                                  const rawDur = level.target_duration_secs * mult;
+                                  const duration = Math.max(30, Math.min(90, Math.round(rawDur)));
+
+                                  return (
+                                    <div
+                                      key={level.level_number}
+                                      className={`level-item-card ${isActive ? "active" : ""}`}
+                                    >
+                                      <div className="level-item-header">
+                                        <div className="level-item-title-col">
+                                          <span className="level-item-number">L{level.level_number}</span>
+                                          <span className="level-item-title">{level.title}</span>
+                                        </div>
+                                        <span className={`level-item-badge ${isActive ? "active" : isCompleted ? "completed" : "locked"}`}>
+                                          {isActive ? "Active" : isCompleted ? "Completed" : "Locked"}
+                                        </span>
+                                      </div>
+                                      <p className="level-item-desc">{level.description}</p>
+                                      <div className="level-item-footer">
+                                        <span className="level-item-duration">Target hold: {duration}s</span>
+                                        {!isActive && (
+                                          <button
+                                            type="button"
+                                            className="level-select-btn"
+                                            onClick={() => {
+                                              setSettingsProgress({
+                                                ...settingsProgress,
+                                                current_level_number: level.level_number,
+                                                completed_sessions_count: 0
+                                              });
+                                            }}
+                                          >
+                                            Activate Level
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <button
+                                type="button"
+                                className="deactivate-track-btn"
+                                onClick={() => {
+                                  setSettingsProgress({
+                                    active_track_id: null,
+                                    current_level_number: null,
+                                    onboarding_tier: null,
+                                    completed_sessions_count: 0,
+                                    last_completed_at: null,
+                                    level_started_at: null
+                                  });
+                                }}
+                              >
+                                Deactivate Track
+                              </button>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      /* Track Selection Screen */
+                      <div className="tracks-container">
+                        <h3 className="settings-group-title" style={{ marginTop: 0 }}>Available Skill Tracks</h3>
+                        <p className="settings-item-desc" style={{ marginBottom: "1rem" }}>
+                          Choose a tailored physical progression track to follow during active breaks.
+                        </p>
+                        {appConfig?.tracks?.map(track => (
+                          <div key={track.id} className="track-selection-card">
+                            <h4 className="track-selection-title">{track.name}</h4>
+                            <p className="track-selection-desc">{track.description}</p>
+                            <button
+                              type="button"
+                              className="track-action-btn"
+                              onClick={() => {
+                                setOnboardingTrackId(track.id);
+                                setOnboardingTier("beginner");
+                              }}
+                            >
+                              Choose Track
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {activeTab === "timers" && (
                   <div className="tab-pane">
                     <div className="settings-group">

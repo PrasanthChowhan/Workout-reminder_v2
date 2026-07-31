@@ -49,7 +49,41 @@ fn get_session_data(
     match break_type.as_str() {
         "active" => {
             let card = config.active_recall_cards.choose(&mut rng).cloned();
-            let stretch = config.stretches.choose(&mut rng).cloned();
+            
+            // Check if there is an active track
+            let stretch = if let (Some(track_id), Some(level_num)) = (
+                &config.user_progress.active_track_id,
+                config.user_progress.current_level_number,
+            ) {
+                // Find active track
+                if let Some(track) = config.tracks.iter().find(|t| t.id == *track_id) {
+                    // Find active level
+                    if let Some(level) = track.levels.iter().find(|l| l.level_number == level_num) {
+                        // Calculate custom duration based on onboarding tier
+                        let multiplier = match config.user_progress.onboarding_tier.as_deref() {
+                            Some("beginner") => 0.75,
+                            Some("intermediate") => 1.0,
+                            Some("advanced") => 1.25,
+                            _ => 1.0,
+                        };
+                        let raw_duration = (level.target_duration_secs as f64) * multiplier;
+                        let custom_duration = (raw_duration.round() as u64).clamp(30, 90);
+
+                        Some(timer::Stretch {
+                            name: format!("{} (Level {})", level.title, level.level_number),
+                            description: level.description.clone(),
+                            duration_secs: custom_duration,
+                        })
+                    } else {
+                        config.stretches.choose(&mut rng).cloned()
+                    }
+                } else {
+                    config.stretches.choose(&mut rng).cloned()
+                }
+            } else {
+                config.stretches.choose(&mut rng).cloned()
+            };
+
             SessionDataPayload {
                 card,
                 prompt: None,
@@ -79,6 +113,18 @@ fn complete_break(
     state: tauri::State<'_, timer::AppState>,
 ) -> Result<(), String> {
     println!("Break completed! Action logged: {}", action);
+
+    // If action is "done", increment progress
+    if action == "done" {
+        let mut config = state.config.lock().unwrap();
+        if config.user_progress.active_track_id.is_some() {
+            config.user_progress.completed_sessions_count += 1;
+            config.user_progress.last_completed_at = Some(chrono::Utc::now().to_rfc3339());
+            if let Err(e) = timer::save_config_file(&app, &config) {
+                eprintln!("Failed to save config on break completion: {}", e);
+            }
+        }
+    }
 
     // Reset break state
     {
@@ -114,6 +160,43 @@ fn complete_break(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+fn set_active_track(
+    app: tauri::AppHandle,
+    track_id: Option<String>,
+    onboarding_tier: Option<String>,
+    starting_level: Option<u64>,
+    state: tauri::State<'_, timer::AppState>,
+) -> Result<timer::AppConfig, String> {
+    let mut config = state.config.lock().unwrap();
+    
+    config.user_progress.active_track_id = track_id;
+    config.user_progress.onboarding_tier = onboarding_tier;
+    config.user_progress.current_level_number = starting_level;
+    config.user_progress.completed_sessions_count = 0;
+    config.user_progress.last_completed_at = None;
+    config.user_progress.level_started_at = Some(chrono::Utc::now().to_rfc3339());
+    
+    timer::save_config_file(&app, &config)?;
+    Ok(config.clone())
+}
+
+#[tauri::command]
+fn update_track_level(
+    app: tauri::AppHandle,
+    level_number: u64,
+    state: tauri::State<'_, timer::AppState>,
+) -> Result<timer::AppConfig, String> {
+    let mut config = state.config.lock().unwrap();
+    
+    config.user_progress.current_level_number = Some(level_number);
+    config.user_progress.completed_sessions_count = 0;
+    config.user_progress.level_started_at = Some(chrono::Utc::now().to_rfc3339());
+    
+    timer::save_config_file(&app, &config)?;
+    Ok(config.clone())
 }
 
 #[tauri::command]
@@ -421,7 +504,9 @@ pub fn run() {
             complete_break,
             get_app_config,
             save_app_config,
-            trigger_refocus
+            trigger_refocus,
+            set_active_track,
+            update_track_level
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
