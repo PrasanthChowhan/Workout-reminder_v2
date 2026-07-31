@@ -37,3 +37,9 @@ stateDiagram-v2
     BackgroundTimer --> RefocusOverlay : Ctrl + Alt + R pressed
     RefocusOverlay --> BackgroundTimer : After 5 mins (or dismissed)
 ```
+
+## Architectural Decisions (ADRs)
+
+For detailed records of key architectural decisions, refer to:
+* [ADR 0001: Tabular Numbers for Timer Display](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/adr/0001-tabular-nums-for-timer-display.md) - Solves countdown visual layout shifting.
+* [ADR 0002: Async Window Manipulation from System Tray Events](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/adr/0002-async-window-manipulation-from-tray.md) - Prevents modal event loop deadlocks and application crashes on Windows.

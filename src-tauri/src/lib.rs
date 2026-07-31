@@ -258,50 +258,63 @@ pub fn run() {
                     .on_menu_event(move |app, event| {
                         match event.id().as_ref() {
                             "show" => {
-                                if let Some(window) = app.get_webview_window("main") {
-                                    let _ = window.show();
-                                    let _ = window.unminimize();
-                                    let _ = window.set_focus();
-                                }
+                                let app = app.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    if let Some(window) = app.get_webview_window("main") {
+                                        let _ = window.show();
+                                        let _ = window.unminimize();
+                                        let _ = window.set_focus();
+                                    }
+                                });
                             }
                             "toggle" => {
-                                let state = app.state::<timer::AppState>();
-                                let mut paused = state.timer_paused.lock().unwrap();
-                                *paused = !*paused;
-                                if *paused {
-                                    let _ = toggle_i_clone.set_text("Resume Timer");
-                                } else {
-                                    let _ = toggle_i_clone.set_text("Pause Timer");
-                                }
+                                let toggle_i_clone = toggle_i_clone.clone();
+                                let app = app.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    let state = app.state::<timer::AppState>();
+                                    let mut paused = state.timer_paused.lock().unwrap();
+                                    *paused = !*paused;
+                                    if *paused {
+                                        let _ = toggle_i_clone.set_text("Resume Timer");
+                                    } else {
+                                        let _ = toggle_i_clone.set_text("Pause Timer");
+                                    }
+                                });
                             }
                             "refocus" => {
-                                let state = app.state::<timer::AppState>();
-                                {
-                                    let mut current_state = state.current_break_state.lock().unwrap();
-                                    *current_state = Some("refocus".to_string());
-                                    let mut paused = state.timer_paused.lock().unwrap();
-                                    *paused = true;
-                                    if let Some(toggle_menu_item) = state.toggle_menu_item.lock().unwrap().as_ref() {
-                                        let _ = toggle_menu_item.set_text("Resume Timer");
+                                let app = app.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    let state = app.state::<timer::AppState>();
+                                    {
+                                        let mut current_state = state.current_break_state.lock().unwrap();
+                                        *current_state = Some("refocus".to_string());
+                                        let mut paused = state.timer_paused.lock().unwrap();
+                                        *paused = true;
+                                        if let Some(toggle_menu_item) = state.toggle_menu_item.lock().unwrap().as_ref() {
+                                            let _ = toggle_menu_item.set_text("Resume Timer");
+                                        }
                                     }
-                                }
-                                if let Some(window) = app.get_webview_window("main") {
-                                    let _ = window.set_decorations(false);
-                                    let _ = window.set_fullscreen(true);
-                                    let _ = window.set_always_on_top(true);
-                                    let _ = window.show();
-                                    let _ = window.unminimize();
-                                    let _ = window.set_focus();
-                                    let _ = window.emit("start-break", "refocus");
-                                }
+                                    if let Some(window) = app.get_webview_window("main") {
+                                        let _ = window.set_decorations(false);
+                                        let _ = window.set_fullscreen(true);
+                                        let _ = window.set_always_on_top(true);
+                                        let _ = window.show();
+                                        let _ = window.unminimize();
+                                        let _ = window.set_focus();
+                                        let _ = window.emit("start-break", "refocus");
+                                    }
+                                });
                             }
                             "settings" => {
-                                if let Some(window) = app.get_webview_window("main") {
-                                    let _ = window.show();
-                                    let _ = window.unminimize();
-                                    let _ = window.set_focus();
-                                    let _ = window.emit("open-settings", {});
-                                }
+                                let app = app.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    if let Some(window) = app.get_webview_window("main") {
+                                        let _ = window.show();
+                                        let _ = window.unminimize();
+                                        let _ = window.set_focus();
+                                        let _ = window.emit("open-settings", {});
+                                    }
+                                });
                             }
                             "quit" => {
                                 app.exit(0);
