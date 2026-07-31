@@ -69,10 +69,21 @@ fn get_session_data(
                         let raw_duration = (level.target_duration_secs as f64) * multiplier;
                         let custom_duration = (raw_duration.round() as u64).clamp(30, 90);
 
+                        let tier = config.user_progress.onboarding_tier.as_deref().unwrap_or("beginner");
+                        let difficulty = match tier {
+                            "beginner" => "Beginner",
+                            "intermediate" => "Intermediate",
+                            "advanced" => "Advanced",
+                            _ => "Beginner",
+                        }.to_string();
+
                         Some(timer::Stretch {
                             name: format!("{} (Level {})", level.title, level.level_number),
                             description: level.description.clone(),
                             duration_secs: custom_duration,
+                            difficulty_level: difficulty,
+                            sets: 3,
+                            reps: Some("Hold".to_string()),
                         })
                     } else {
                         config.stretches.choose(&mut rng).cloned()
