@@ -269,14 +269,19 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
         use std::env;
         use std::process::Command;
 
-        let current_exe = env::current_exe()
-            .map_err(|e| format!("Failed to get current executable path: {}", e))?;
+        let current_exe = match env::current_exe() {
+            Ok(exe) => exe,
+            Err(e) => {
+                eprintln!("Failed to get current executable path for autostart: {}", e);
+                return Ok(());
+            }
+        };
         
         let path_str = current_exe.to_string_lossy().into_owned();
 
         if enabled {
             let formatted_path = format!("\"{}\"", path_str);
-            let status = Command::new("reg")
+            match Command::new("reg")
                 .args(&[
                     "add",
                     "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
@@ -289,10 +294,15 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
                     "/f",
                 ])
                 .status()
-                .map_err(|e| format!("Failed to execute reg command: {}", e))?;
-
-            if !status.success() {
-                return Err("reg command failed to add startup entry".to_string());
+            {
+                Ok(status) => {
+                    if !status.success() {
+                        eprintln!("reg command failed to add startup entry");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to execute reg command to add startup entry: {}", e);
+                }
             }
         } else {
             // Run reg delete; ignore error if entry already did not exist
@@ -313,18 +323,32 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
         use std::env;
         use std::fs as std_fs;
 
-        let current_exe = env::current_exe()
-            .map_err(|e| format!("Failed to get current executable path: {}", e))?;
+        let current_exe = match env::current_exe() {
+            Ok(exe) => exe,
+            Err(e) => {
+                eprintln!("Failed to get current executable path for autostart: {}", e);
+                return Ok(());
+            }
+        };
         
         let path_str = current_exe.to_string_lossy().into_owned();
         
-        let home = app.path().home_dir().map_err(|e| e.to_string())?;
+        let home = match app.path().home_dir() {
+            Ok(dir) => dir,
+            Err(e) => {
+                eprintln!("Failed to get home directory for macOS autostart: {}", e);
+                return Ok(());
+            }
+        };
         let plist_dir = home.join("Library").join("LaunchAgents");
         let plist_path = plist_dir.join("com.workoutreminder.app.plist");
 
         if enabled {
             if !plist_dir.exists() {
-                std_fs::create_dir_all(&plist_dir).map_err(|e| e.to_string())?;
+                if let Err(e) = std_fs::create_dir_all(&plist_dir) {
+                    eprintln!("Failed to create LaunchAgents directory: {}", e);
+                    return Ok(());
+                }
             }
             
             let plist_content = format!(
@@ -345,10 +369,12 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
                 path_str
             );
             
-            std_fs::write(plist_path, plist_content).map_err(|e| e.to_string())?;
+            if let Err(e) = std_fs::write(plist_path, plist_content) {
+                eprintln!("Failed to write LaunchAgent plist: {}", e);
+            }
         } else {
             if plist_path.exists() {
-                std_fs::remove_file(plist_path).map_err(|e| e.to_string())?;
+                let _ = std_fs::remove_file(plist_path);
             }
         }
     }
@@ -358,18 +384,32 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
         use std::env;
         use std::fs as std_fs;
 
-        let current_exe = env::current_exe()
-            .map_err(|e| format!("Failed to get current executable path: {}", e))?;
+        let current_exe = match env::current_exe() {
+            Ok(exe) => exe,
+            Err(e) => {
+                eprintln!("Failed to get current executable path for autostart: {}", e);
+                return Ok(());
+            }
+        };
         
         let path_str = current_exe.to_string_lossy().into_owned();
         
-        let config_dir = app.path().config_dir().map_err(|e| e.to_string())?;
+        let config_dir = match app.path().config_dir() {
+            Ok(dir) => dir,
+            Err(e) => {
+                eprintln!("Failed to get config directory for Linux autostart: {}", e);
+                return Ok(());
+            }
+        };
         let autostart_dir = config_dir.join("autostart");
         let desktop_path = autostart_dir.join("workout-reminder.desktop");
 
         if enabled {
             if !autostart_dir.exists() {
-                std_fs::create_dir_all(&autostart_dir).map_err(|e| e.to_string())?;
+                if let Err(e) = std_fs::create_dir_all(&autostart_dir) {
+                    eprintln!("Failed to create autostart directory: {}", e);
+                    return Ok(());
+                }
             }
             
             let desktop_content = format!(
@@ -385,10 +425,12 @@ Comment=Workout & Break Reminder
                 path_str
             );
             
-            std_fs::write(desktop_path, desktop_content).map_err(|e| e.to_string())?;
+            if let Err(e) = std_fs::write(desktop_path, desktop_content) {
+                eprintln!("Failed to write desktop autostart launcher: {}", e);
+            }
         } else {
             if desktop_path.exists() {
-                std_fs::remove_file(desktop_path).map_err(|e| e.to_string())?;
+                let _ = std_fs::remove_file(desktop_path);
             }
         }
     }
