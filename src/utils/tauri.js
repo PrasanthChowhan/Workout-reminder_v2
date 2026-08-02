@@ -41,25 +41,6 @@ export async function invoke(cmd, args) {
       ],
       tracks: [
         {
-          id: "side_splits",
-          name: "Side Splits Progression",
-          description: "Work towards full side splits with targeted active and passive stretching.",
-          levels: [
-            {
-              level_number: 1,
-              title: "Wall Straddle",
-              description: "Lie on your back with legs up the wall and spread wide.",
-              target_duration_secs: 60,
-              video_url: "https://www.youtube.com",
-              image_url: null,
-              asset_url: null,
-              is_unilateral: false,
-              equipment: [],
-              rest_secs: 10
-            }
-          ]
-        },
-        {
           id: "split_training_program",
           name: "Split Training Program",
           description: "A neuro-biomechanical approach combining neural dynamics, eccentric loading, PNF (Contract-Relax), and passive static elongation.",
@@ -268,7 +249,7 @@ export function openUrl(url) {
   if (!url || url === "N/A") return Promise.resolve();
 
   if (isTauri) {
-    return invoke("plugin:opener|open", { path: url }).catch((err) => {
+    return invoke("open_external_url", { url }).catch((err) => {
       console.error(`Failed to open URL '${url}' via Tauri:`, err);
     });
   } else {

@@ -145,23 +145,6 @@ export default function PhysicalResetCard({ sessionStretch }) {
         <p className={styles['stretch-description']}>
           {mainDesc || "Quick desk-side mobility routine to realign posture and improve blood flow."}
         </p>
-        {sessionStretch?.video_url && sessionStretch.video_url !== "N/A" && (
-          <div className={styles['stretch-video-link-container']}>
-            <span className={styles['video-label']}>Watch:</span>
-            <a 
-              href={sessionStretch.video_url} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className={styles['video-link']}
-              onClick={(e) => {
-                e.preventDefault();
-                openUrl(sessionStretch.video_url);
-              }}
-            >
-              {sessionStretch.video_url}
-            </a>
-          </div>
-        )}
       </div>
       <div className={styles['stretch-card-footer']}>
         <div className={styles['stretch-actions']}>
