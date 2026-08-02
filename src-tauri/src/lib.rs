@@ -84,6 +84,11 @@ fn get_session_data(
                             difficulty_level: difficulty,
                             sets: 3,
                             reps: Some("Hold".to_string()),
+                            video_url: level.video_url.clone(),
+                            image_url: level.image_url.clone(),
+                            is_unilateral: level.is_unilateral,
+                            equipment: level.equipment.clone(),
+                            rest_secs: level.rest_secs,
                         })
                     } else {
                         config.stretches.choose(&mut rng).cloned()
@@ -208,6 +213,42 @@ fn update_track_level(
     
     timer::save_config_file(&app, &config)?;
     Ok(config.clone())
+}
+
+#[tauri::command]
+async fn create_dev_issue(app: tauri::AppHandle, text: String) -> Result<(), String> {
+    let mut current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let mut issues_dir = current_dir.join("issues");
+    
+    // traverse up to find 'issues' or the root '.git'
+    let mut found = false;
+    for _ in 0..5 {
+        if issues_dir.exists() || current_dir.join(".git").exists() {
+            issues_dir = current_dir.join("issues");
+            found = true;
+            break;
+        }
+        if let Some(parent) = current_dir.parent() {
+            current_dir = parent.to_path_buf();
+            issues_dir = current_dir.join("issues");
+        } else {
+            break;
+        }
+    }
+
+    if !found {
+        // Fallback: create issues in app_data_dir/issues
+        issues_dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("issues");
+    }
+
+    if !issues_dir.exists() {
+        std::fs::create_dir_all(&issues_dir).map_err(|e| e.to_string())?;
+    }
+
+    let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_err(|e| e.to_string())?.as_secs();
+    let file_path = issues_dir.join(format!("issue-{}.md", timestamp));
+    std::fs::write(&file_path, text).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -522,7 +563,8 @@ pub fn run() {
             save_app_config,
             trigger_refocus,
             set_active_track,
-            update_track_level
+            update_track_level,
+            create_dev_issue
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

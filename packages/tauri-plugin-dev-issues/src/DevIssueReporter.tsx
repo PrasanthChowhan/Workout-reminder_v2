@@ -46,8 +46,8 @@ export function DevIssueReporter() {
       let classStr = "";
       if (typeof target.className === "string") {
         classStr = target.className;
-      } else if (target.className && typeof target.className.baseVal === "string") {
-        classStr = target.className.baseVal;
+      } else if (target.className && typeof (target.className as any).baseVal === "string") {
+        classStr = (target.className as any).baseVal;
       }
       const classes = classStr.trim() ? `.${classStr.trim().split(/\s+/).join(".")}` : "";
       
@@ -84,7 +84,7 @@ export function DevIssueReporter() {
     if (!text.trim()) return;
     setIsSubmitting(true);
     try {
-      await invoke("plugin:dev-issues|create_dev_issue", { text });
+      await invoke("create_dev_issue", { text });
       setText("");
       setIsOpen(false);
     } catch (err) {
