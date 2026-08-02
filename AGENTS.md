@@ -16,6 +16,8 @@ Welcome to the Workout & Break Reminder repository. Below are the commands and c
 - **Rust Guidelines**:
   - Keep Tauri commands clean; delegate complex timer or state logic to helper modules.
   - Follow idiomatic Rust code styles, handling all errors gracefully (avoid `.unwrap()`).
+- **Data Schemas**:
+  - Check [docs/schemas/](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas) for existing JSON schemas (e.g. [`training-program.schema.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas/training-program.schema.json)) when editing or creating workout configs or split programs to ensure structural consistency.
 
 ## Agent skills
 

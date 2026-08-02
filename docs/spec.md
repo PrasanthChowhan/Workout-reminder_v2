@@ -61,21 +61,21 @@ Config is stored in the user's App Data directory as `workout-config.json`.
 ```json
 {
   "settings": {
-    "microBreakIntervalMins": 20,
-    "activeBreakIntervalMins": 50,
-    "microBreakDurationSecs": 20,
-    "activeBreakDurationSecs": 300
+    "micro_break_interval_mins": 20,
+    "active_break_interval_mins": 50,
+    "micro_break_duration_secs": 20,
+    "active_break_duration_secs": 300
   },
-  "activeRecallCards": [
+  "active_recall_cards": [
     {
-      "id": "1",
+      "id": "card_rust_lifetime",
       "question": "What is a Lifetime in Rust?",
       "answer": "A lifetime is a construct the compiler uses to ensure all borrows are valid and that data isn't dropped while it's still being used.",
       "category": "Rust",
       "source": "https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html"
     }
   ],
-  "reflectionPrompts": [
+  "reflection_prompts": [
     "What is the core problem you are solving right now? Is there a simpler way?",
     "Are you stuck down a rabbit hole? Zoom out and state your goal in one sentence.",
     "Is there a simpler data structure or logic block that solves this?"
@@ -84,8 +84,8 @@ Config is stored in the user's App Data directory as `workout-config.json`.
     {
       "name": "Physical Reset",
       "description": "Quick desk-side mobility routine to realign posture and improve blood flow.",
-      "durationSecs": 30,
-      "imageUrl": "assets/stretches/physical-reset.png"
+      "duration_secs": 30,
+      "image_url": "assets/stretches/physical-reset.png"
     }
   ]
 }

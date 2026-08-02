@@ -30,7 +30,7 @@ export async function invoke(cmd, args) {
         run_at_start: false,
       },
       active_recall_cards: [
-        { id: "1", category: "React", question: "What is React?", answer: "A JavaScript library for building user interfaces.", source: "https://react.dev" }
+        { id: "card_react_intro", category: "React", question: "What is React?", answer: "A JavaScript library for building user interfaces.", source: "https://react.dev" }
       ],
       reflection_prompts: [
         "What went well today?",

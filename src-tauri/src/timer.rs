@@ -138,7 +138,7 @@ impl Default for AppConfig {
             },
             active_recall_cards: vec![
                 ActiveRecallCard {
-                    id: "1".to_string(),
+                    id: "card_rust_lifetime".to_string(),
                     question: "What is a Lifetime in Rust?".to_string(),
                     answer: "A lifetime is a construct the compiler uses to ensure all borrows are valid and that data isn't dropped while it's still being used.".to_string(),
                     category: "Rust".to_string(),

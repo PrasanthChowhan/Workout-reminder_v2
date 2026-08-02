@@ -25,6 +25,12 @@ A lightweight native desktop application (**Tauri + Rust + HTML/CSS/JS**) that a
   - Implements the **Obsidian Kinetic** styling system (Ignition Orange accents, Obsidian charcoal background, Geist & JetBrains Mono typography).
   - Displays overlay overlays, active timers, recall prompts, and physical stretches.
 
+## Data Structures & Schemas
+
+To ensure configuration and training data structures remain consistent and validate correctly across runs:
+- **Training Program Schema**: Located at [`docs/schemas/training-program.schema.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas/training-program.schema.json). It defines and validates the layout of training programs (e.g., [`docs/full_split.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/full_split.json)).
+- **Workout Config Schema**: Located in [`docs/reference/physical-tracks-spec.md`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/reference/physical-tracks-spec.md#L28-L124), specifying the structure of the main `workout-config.json` file.
+
 ## State Machine
 
 ```mermaid

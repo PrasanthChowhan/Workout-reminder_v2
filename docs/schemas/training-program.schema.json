@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Training Program Schema",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "description",
+    "exercises"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the entire program."
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the program."
+    },
+    "description": {
+      "type": "string"
+    },
+    "exercises": {
+      "type": "array",
+      "description": "List of exercises in the program.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "execution_notes",
+          "category",
+          "muscle_groups",
+          "difficulty",
+          "equipment",
+          "duration_secs",
+          "sets",
+          "reps_min",
+          "reps_max",
+          "is_unilateral",
+          "rest_secs",
+          "video_url",
+          "image_url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the exercise (e.g., 'ex_sciatic_slider')."
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "execution_notes": {
+            "type": "string",
+            "description": "Human-readable instructions for reps or holds."
+          },
+          "category": {
+            "type": "string"
+          },
+          "muscle_groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "Beginner",
+              "Intermediate",
+              "Advanced",
+              "Expert"
+            ]
+          },
+          "equipment": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duration_secs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Time in seconds. Use 0 if the exercise is strictly rep-based."
+          },
+          "sets": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reps_min": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Minimum reps. Must be null for static holds."
+          },
+          "reps_max": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Maximum reps. Must be null for static holds."
+          },
+          "is_unilateral": {
+            "type": "boolean",
+            "description": "True if the exercise needs to be performed on both sides independently."
+          },
+          "rest_secs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "video_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "Valid URL to a video tutorial, or null if none exists."
+          },
+          "image_url": {
+            "type": "string",
+            "description": "Path or URL to the thumbnail image."
+          }
+        }
+      }
+    }
+  }
+}

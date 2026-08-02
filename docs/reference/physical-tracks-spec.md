@@ -135,7 +135,7 @@ Physical tracks and user progress are stored under the `tracks` and `user_progre
   },
   "active_recall_cards": [
     {
-      "id": "1",
+      "id": "card_rust_lifetime",
       "question": "What is a Lifetime in Rust?",
       "answer": "A lifetime is a construct the compiler uses to ensure all borrows are valid and that data isn't dropped while it's still being used.",
       "category": "Rust",
