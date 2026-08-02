@@ -1,8 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActiveRecallCard {
@@ -108,6 +105,15 @@ pub struct UserProgress {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Settings {
+    pub micro_break_interval_mins: u64,
+    pub active_break_interval_mins: u64,
+    pub micro_break_duration_secs: u64,
+    pub active_break_duration_secs: u64,
+    pub run_at_start: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub settings: Settings,
     pub active_recall_cards: Vec<ActiveRecallCard>,
@@ -115,15 +121,6 @@ pub struct AppConfig {
     pub stretches: Vec<Stretch>,
     pub tracks: Vec<PhysicalTrack>,
     pub user_progress: UserProgress,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Settings {
-    pub micro_break_interval_mins: u64,
-    pub active_break_interval_mins: u64,
-    pub micro_break_duration_secs: u64,
-    pub active_break_duration_secs: u64,
-    pub run_at_start: bool,
 }
 
 impl Default for AppConfig {
@@ -214,62 +211,6 @@ impl Default for AppConfig {
                 }
             ],
             tracks: vec![
-                PhysicalTrack {
-                    id: "side_splits".to_string(),
-                    name: "Side Splits".to_string(),
-                    description: "Progressive stretching track to achieve a full side (middle) split.".to_string(),
-                    levels: vec![
-                        Level {
-                            level_number: 1,
-                            title: "Wall Straddle".to_string(),
-                            description: "Lie flat on your back with your glutes pressed against the wall, legs pointing straight up. Slowly allow your legs to slide open sideways into a wide 'V' shape, letting gravity pull them down. Keep knees fully locked and toes flexed back toward shins. Relax upper body, keep lower back flat on the floor, and breathe deeply.".to_string(),
-                            target_duration_secs: 60,
-                            asset_url: Some("assets/stretches/wall-straddle.png".to_string()),
-                            video_url: None,
-                            image_url: Some("assets/stretches/wall-straddle.png".to_string()),
-                            is_unilateral: false,
-                            equipment: vec!["wall".to_string()],
-                            rest_secs: 15,
-                        },
-                        Level {
-                            level_number: 2,
-                            title: "Half Split".to_string(),
-                            description: "Start on all fours. Extend your right leg straight out to the side, keeping the inner edge of your foot flat on the floor. Keep your left knee directly under your left hip at a 90-degree angle. Lower hands or forearms to the floor. Keeping your back flat, gently rock your hips backward toward your left heel, then forward. Hold the end range. Repeat on the left side.".to_string(),
-                            target_duration_secs: 60,
-                            asset_url: Some("assets/stretches/half-split.png".to_string()),
-                            video_url: None,
-                            image_url: Some("assets/stretches/half-split.png".to_string()),
-                            is_unilateral: true,
-                            equipment: vec![],
-                            rest_secs: 15,
-                        },
-                        Level {
-                            level_number: 3,
-                            title: "Frog Stretch".to_string(),
-                            description: "Begin on hands and knees. Slide your knees out to the sides as wide as comfortable. Bend your knees at a 90-degree angle and flex your feet so your inner shins and ankles rest on the floor (toes pointing outward). Lower down to your forearms. Keep your spine neutral and core lightly engaged. Slowly press your hips back toward your heels until you feel a deep stretch in the groin.".to_string(),
-                            target_duration_secs: 45,
-                            asset_url: Some("assets/stretches/frog-stretch.png".to_string()),
-                            video_url: None,
-                            image_url: Some("assets/stretches/frog-stretch.png".to_string()),
-                            is_unilateral: false,
-                            equipment: vec![],
-                            rest_secs: 15,
-                        },
-                        Level {
-                            level_number: 4,
-                            title: "Side Split".to_string(),
-                            description: "From a standing wide-legged stance, place your hands on the floor for support. Slowly slide your feet out to the sides, keeping your legs straight and kneecaps pointing up or forward. Lower down onto your hands, blocks, or forearms. Keep hips aligned vertically with heels. Flex your quadriceps and glutes to active-stabilize the joints.".to_string(),
-                            target_duration_secs: 45,
-                            asset_url: Some("assets/stretches/side-split.png".to_string()),
-                            video_url: None,
-                            image_url: Some("assets/stretches/side-split.png".to_string()),
-                            is_unilateral: false,
-                            equipment: vec![],
-                            rest_secs: 15,
-                        },
-                    ],
-                    exercises: None,
-                },
                 PhysicalTrack {
                     id: "split_training_program".to_string(),
                     name: "Split Training Program".to_string(),
@@ -408,9 +349,9 @@ impl Default for AppConfig {
                 }
             ],
             user_progress: UserProgress {
-                active_track_id: None,
-                current_level_number: None,
-                onboarding_tier: None,
+                active_track_id: Some("split_training_program".to_string()),
+                current_level_number: Some(1),
+                onboarding_tier: Some("beginner".to_string()),
                 completed_sessions_count: 0,
                 last_completed_at: None,
                 level_started_at: None,
@@ -443,227 +384,17 @@ impl AppState {
     }
 }
 
-// Retrieves path to the config file in AppData
-pub fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let mut path = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    // Create directory if it doesn't exist
-    if !path.exists() {
-        fs::create_dir_all(&path).map_err(|e| e.to_string())?;
-    }
-    path.push("config.json");
-    Ok(path)
+#[derive(serde::Serialize)]
+pub struct TimerStatePayload {
+    pub micro_left: u64,
+    pub active_left: u64,
+    pub timer_paused: bool,
+    pub current_break_state: Option<String>,
 }
 
-// Loads config from file, or returns default if not found
-pub fn load_config(app: &AppHandle) -> AppConfig {
-    if let Ok(path) = get_config_path(app) {
-        if path.exists() {
-            if let Ok(data) = fs::read_to_string(path) {
-                if let Ok(mut config) = serde_json::from_str::<AppConfig>(&data) {
-                    // Update default tracks to ensure they have the latest exercises/video URLs
-                    let default_config = AppConfig::default();
-                    for default_track in default_config.tracks {
-                        if let Some(existing_track) = config.tracks.iter_mut().find(|t| t.id == default_track.id) {
-                            existing_track.exercises = default_track.exercises;
-                            existing_track.levels = default_track.levels;
-                            existing_track.name = default_track.name;
-                            existing_track.description = default_track.description;
-                        } else {
-                            config.tracks.push(default_track);
-                        }
-                    }
-                    return config;
-                }
-            }
-        }
-    }
-    AppConfig::default()
-}
-
-// Saves config to file
-pub fn save_config_file(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
-    let path = get_config_path(app)?;
-    let serialized = serde_json::to_string_pretty(config).map_err(|e| e.to_string())?;
-    fs::write(path, serialized).map_err(|e| e.to_string())?;
-    
-    // Configure run at start
-    let _ = set_run_at_start(app, config.settings.run_at_start);
-    
-    Ok(())
-}
-
-#[allow(unused_variables)]
-pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        use std::env;
-        use std::process::Command;
-
-        let current_exe = match env::current_exe() {
-            Ok(exe) => exe,
-            Err(e) => {
-                eprintln!("Failed to get current executable path for autostart: {}", e);
-                return Ok(());
-            }
-        };
-        
-        let path_str = current_exe.to_string_lossy().into_owned();
-
-        if enabled {
-            let formatted_path = format!("\"{}\"", path_str);
-            match Command::new("reg")
-                .args(&[
-                    "add",
-                    "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-                    "/v",
-                    "WorkoutReminder",
-                    "/t",
-                    "REG_SZ",
-                    "/d",
-                    &formatted_path,
-                    "/f",
-                ])
-                .status()
-            {
-                Ok(status) => {
-                    if !status.success() {
-                        eprintln!("reg command failed to add startup entry");
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to execute reg command to add startup entry: {}", e);
-                }
-            }
-        } else {
-            // Run reg delete; ignore error if entry already did not exist
-            let _ = Command::new("reg")
-                .args(&[
-                    "delete",
-                    "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-                    "/v",
-                    "WorkoutReminder",
-                    "/f",
-                ])
-                .status();
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        use std::env;
-        use std::fs as std_fs;
-
-        let current_exe = match env::current_exe() {
-            Ok(exe) => exe,
-            Err(e) => {
-                eprintln!("Failed to get current executable path for autostart: {}", e);
-                return Ok(());
-            }
-        };
-        
-        let path_str = current_exe.to_string_lossy().into_owned();
-        
-        let home = match app.path().home_dir() {
-            Ok(dir) => dir,
-            Err(e) => {
-                eprintln!("Failed to get home directory for macOS autostart: {}", e);
-                return Ok(());
-            }
-        };
-        let plist_dir = home.join("Library").join("LaunchAgents");
-        let plist_path = plist_dir.join("com.workoutreminder.app.plist");
-
-        if enabled {
-            if !plist_dir.exists() {
-                if let Err(e) = std_fs::create_dir_all(&plist_dir) {
-                    eprintln!("Failed to create LaunchAgents directory: {}", e);
-                    return Ok(());
-                }
-            }
-            
-            let plist_content = format!(
-                r#"<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.workoutreminder.app</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>{}</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-</dict>
-</plist>"#,
-                path_str
-            );
-            
-            if let Err(e) = std_fs::write(plist_path, plist_content) {
-                eprintln!("Failed to write LaunchAgent plist: {}", e);
-            }
-        } else {
-            if plist_path.exists() {
-                let _ = std_fs::remove_file(plist_path);
-            }
-        }
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        use std::env;
-        use std::fs as std_fs;
-
-        let current_exe = match env::current_exe() {
-            Ok(exe) => exe,
-            Err(e) => {
-                eprintln!("Failed to get current executable path for autostart: {}", e);
-                return Ok(());
-            }
-        };
-        
-        let path_str = current_exe.to_string_lossy().into_owned();
-        
-        let config_dir = match app.path().config_dir() {
-            Ok(dir) => dir,
-            Err(e) => {
-                eprintln!("Failed to get config directory for Linux autostart: {}", e);
-                return Ok(());
-            }
-        };
-        let autostart_dir = config_dir.join("autostart");
-        let desktop_path = autostart_dir.join("workout-reminder.desktop");
-
-        if enabled {
-            if !autostart_dir.exists() {
-                if let Err(e) = std_fs::create_dir_all(&autostart_dir) {
-                    eprintln!("Failed to create autostart directory: {}", e);
-                    return Ok(());
-                }
-            }
-            
-            let desktop_content = format!(
-                r#"[Desktop Entry]
-Type=Application
-Name=Workout Reminder
-Exec={}
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-Comment=Workout & Break Reminder
-"#,
-                path_str
-            );
-            
-            if let Err(e) = std_fs::write(desktop_path, desktop_content) {
-                eprintln!("Failed to write desktop autostart launcher: {}", e);
-            }
-        } else {
-            if desktop_path.exists() {
-                let _ = std_fs::remove_file(desktop_path);
-            }
-        }
-    }
-
-    Ok(())
+#[derive(serde::Serialize)]
+pub struct SessionDataPayload {
+    pub card: Option<ActiveRecallCard>,
+    pub prompt: Option<String>,
+    pub stretch: Option<Stretch>,
 }
