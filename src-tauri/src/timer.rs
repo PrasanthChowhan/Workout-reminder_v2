@@ -24,6 +24,15 @@ pub struct Stretch {
     pub sets: u64,
     #[serde(default)]
     pub reps: Option<String>,
+    #[serde(alias = "url")]
+    pub video_url: Option<String>,
+    pub image_url: Option<String>,
+    #[serde(default)]
+    pub is_unilateral: bool,
+    #[serde(default)]
+    pub equipment: Vec<String>,
+    #[serde(default)]
+    pub rest_secs: u64,
 }
 
 fn default_difficulty() -> String {
@@ -40,7 +49,42 @@ pub struct Level {
     pub title: String,
     pub description: String,
     pub target_duration_secs: u64,
-    pub asset_url: Option<String>,
+    pub asset_url: Option<String>, // Keep for backward compatibility
+    #[serde(alias = "url")]
+    pub video_url: Option<String>,
+    pub image_url: Option<String>,
+    #[serde(default)]
+    pub is_unilateral: bool,
+    #[serde(default)]
+    pub equipment: Vec<String>,
+    #[serde(default)]
+    pub rest_secs: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomExercise {
+    pub name: String,
+    pub description: String,
+    pub category: String,
+    #[serde(default)]
+    pub target_muscles: Vec<String>,
+    #[serde(default)]
+    #[serde(alias = "muscle_groups")]
+    pub muscle_groups: Vec<String>,
+    pub difficulty: String,
+    pub duration_secs: u64,
+    #[serde(default = "default_sets")]
+    pub sets: u64,
+    pub reps: Option<String>,
+    #[serde(alias = "url")]
+    pub video_url: Option<String>,
+    pub image_url: Option<String>,
+    #[serde(default)]
+    pub is_unilateral: bool,
+    #[serde(default)]
+    pub equipment: Vec<String>,
+    #[serde(default)]
+    pub rest_secs: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,6 +93,8 @@ pub struct PhysicalTrack {
     pub name: String,
     pub description: String,
     pub levels: Vec<Level>,
+    #[serde(default)]
+    pub exercises: Option<Vec<CustomExercise>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -134,6 +180,11 @@ impl Default for AppConfig {
                     difficulty_level: "Beginner".to_string(),
                     sets: 2,
                     reps: Some("10 reps".to_string()),
+                    video_url: None,
+                    image_url: None,
+                    is_unilateral: false,
+                    equipment: vec![],
+                    rest_secs: 15,
                 },
                 Stretch {
                     name: "Neck & Spine Reset".to_string(),
@@ -142,6 +193,11 @@ impl Default for AppConfig {
                     difficulty_level: "Beginner".to_string(),
                     sets: 2,
                     reps: Some("Hold 5s".to_string()),
+                    video_url: None,
+                    image_url: None,
+                    is_unilateral: true,
+                    equipment: vec![],
+                    rest_secs: 15,
                 },
                 Stretch {
                     name: "Wrist extension".to_string(),
@@ -150,6 +206,11 @@ impl Default for AppConfig {
                     difficulty_level: "Beginner".to_string(),
                     sets: 2,
                     reps: Some("Hold 15s".to_string()),
+                    video_url: None,
+                    image_url: None,
+                    is_unilateral: true,
+                    equipment: vec![],
+                    rest_secs: 15,
                 }
             ],
             tracks: vec![
@@ -164,6 +225,11 @@ impl Default for AppConfig {
                             description: "Lie flat on your back with your glutes pressed against the wall, legs pointing straight up. Slowly allow your legs to slide open sideways into a wide 'V' shape, letting gravity pull them down. Keep knees fully locked and toes flexed back toward shins. Relax upper body, keep lower back flat on the floor, and breathe deeply.".to_string(),
                             target_duration_secs: 60,
                             asset_url: Some("assets/stretches/wall-straddle.png".to_string()),
+                            video_url: None,
+                            image_url: Some("assets/stretches/wall-straddle.png".to_string()),
+                            is_unilateral: false,
+                            equipment: vec!["wall".to_string()],
+                            rest_secs: 15,
                         },
                         Level {
                             level_number: 2,
@@ -171,6 +237,11 @@ impl Default for AppConfig {
                             description: "Start on all fours. Extend your right leg straight out to the side, keeping the inner edge of your foot flat on the floor. Keep your left knee directly under your left hip at a 90-degree angle. Lower hands or forearms to the floor. Keeping your back flat, gently rock your hips backward toward your left heel, then forward. Hold the end range. Repeat on the left side.".to_string(),
                             target_duration_secs: 60,
                             asset_url: Some("assets/stretches/half-split.png".to_string()),
+                            video_url: None,
+                            image_url: Some("assets/stretches/half-split.png".to_string()),
+                            is_unilateral: true,
+                            equipment: vec![],
+                            rest_secs: 15,
                         },
                         Level {
                             level_number: 3,
@@ -178,6 +249,11 @@ impl Default for AppConfig {
                             description: "Begin on hands and knees. Slide your knees out to the sides as wide as comfortable. Bend your knees at a 90-degree angle and flex your feet so your inner shins and ankles rest on the floor (toes pointing outward). Lower down to your forearms. Keep your spine neutral and core lightly engaged. Slowly press your hips back toward your heels until you feel a deep stretch in the groin.".to_string(),
                             target_duration_secs: 45,
                             asset_url: Some("assets/stretches/frog-stretch.png".to_string()),
+                            video_url: None,
+                            image_url: Some("assets/stretches/frog-stretch.png".to_string()),
+                            is_unilateral: false,
+                            equipment: vec![],
+                            rest_secs: 15,
                         },
                         Level {
                             level_number: 4,
@@ -185,8 +261,150 @@ impl Default for AppConfig {
                             description: "From a standing wide-legged stance, place your hands on the floor for support. Slowly slide your feet out to the sides, keeping your legs straight and kneecaps pointing up or forward. Lower down onto your hands, blocks, or forearms. Keep hips aligned vertically with heels. Flex your quadriceps and glutes to active-stabilize the joints.".to_string(),
                             target_duration_secs: 45,
                             asset_url: Some("assets/stretches/side-split.png".to_string()),
+                            video_url: None,
+                            image_url: Some("assets/stretches/side-split.png".to_string()),
+                            is_unilateral: false,
+                            equipment: vec![],
+                            rest_secs: 15,
                         },
                     ],
+                    exercises: None,
+                },
+                PhysicalTrack {
+                    id: "split_training_program".to_string(),
+                    name: "Split Training Program".to_string(),
+                    description: "A neuro-biomechanical approach combining neural dynamics, eccentric loading, PNF (Contract-Relax), and passive static elongation.".to_string(),
+                    levels: vec![],
+                    exercises: Some(vec![
+                        CustomExercise {
+                            name: "Sciatic Nerve Slider".to_string(),
+                            description: "Reduces sciatic mechanosensitivity to rapidly improve apparent hamstring extensibility prior to mechanical stretching.".to_string(),
+                            category: "Neural Dynamics".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Sciatic Nerve Pathway".to_string(), "Posterior Chain".to_string()],
+                            difficulty: "Beginner".to_string(),
+                            duration_secs: 45,
+                            sets: 3,
+                            reps: Some("10-15 slow, dynamic repetitions per leg".to_string()),
+                            video_url: Some("N/A".to_string()),
+                            image_url: Some("assets/stretches/sciatic-slider.png".to_string()),
+                            is_unilateral: true,
+                            equipment: vec![],
+                            rest_secs: 15,
+                        },
+                        CustomExercise {
+                            name: "Low Lunge with Posterior Pelvic Tilt".to_string(),
+                            description: "Elongates the anterior structures required for the trailing leg in a front split. The posterior pelvic tilt is essential to prevent lumbar hyperlordosis.".to_string(),
+                            category: "Static / Active Stretch".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Iliopsoas".to_string(), "Rectus Femoris (Hip Flexors)".to_string()],
+                            difficulty: "Beginner".to_string(),
+                            duration_secs: 60,
+                            sets: 2,
+                            reps: Some("30-60s hold per leg".to_string()),
+                            video_url: Some("https://www.youtube.com/watch?v=rje-n0iGvcs".to_string()),
+                            image_url: Some("assets/stretches/low-lunge.png".to_string()),
+                            is_unilateral: true,
+                            equipment: vec![],
+                            rest_secs: 15,
+                        },
+                        CustomExercise {
+                            name: "Half Split (Flat Back)".to_string(),
+                            description: "Isolates the hamstring of the leading leg for the front split without requiring concurrent hip extension of the opposite leg.".to_string(),
+                            category: "Static Stretch".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Hamstrings (Biceps Femoris, Semitendinosus, Semimembranosus)".to_string()],
+                            difficulty: "Beginner".to_string(),
+                            duration_secs: 60,
+                            sets: 2,
+                            reps: Some("30-60s hold per leg".to_string()),
+                            video_url: Some("https://www.youtube.com/watch?v=rje-n0iGvcs".to_string()),
+                            image_url: Some("assets/stretches/half-split.png".to_string()),
+                            is_unilateral: true,
+                            equipment: vec![],
+                            rest_secs: 15,
+                        },
+                        CustomExercise {
+                            name: "Cossack Squat".to_string(),
+                            description: "Builds eccentric strength in the adductors and improves end-range hip mobility required to safely support the middle split.".to_string(),
+                            category: "Eccentric / Dynamic Mobility".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Adductor Magnus".to_string(), "Adductor Longus".to_string(), "Gluteus Medius".to_string()],
+                            difficulty: "Intermediate".to_string(),
+                            duration_secs: 60,
+                            sets: 3,
+                            reps: Some("8-10 reps per side".to_string()),
+                            video_url: Some("https://www.youtube.com/watch?v=X3kbyAYCm4w".to_string()),
+                            image_url: Some("assets/stretches/cossack-squat.png".to_string()),
+                            is_unilateral: true,
+                            equipment: vec![],
+                            rest_secs: 30,
+                        },
+                        CustomExercise {
+                            name: "Frog Stretch".to_string(),
+                            description: "Prepares the pelvis for the anterior tilt necessary to clear the greater trochanter in a middle split, bypassing the medial knee stress associated with straight legs.".to_string(),
+                            category: "Static / PNF Stretch".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Adductor Complex".to_string(), "Pectineus".to_string(), "Gracilis".to_string()],
+                            difficulty: "Beginner".to_string(),
+                            duration_secs: 90,
+                            sets: 2,
+                            reps: Some("60-120s hold".to_string()),
+                            video_url: Some("https://www.youtube.com/watch?v=y0AyIsNPMk0".to_string()),
+                            image_url: Some("assets/stretches/frog-stretch.png".to_string()),
+                            is_unilateral: false,
+                            equipment: vec![],
+                            rest_secs: 30,
+                        },
+                        CustomExercise {
+                            name: "Pancake Stretch".to_string(),
+                            description: "Improves straddle fold mechanics. Note: This stretch uses a downward pelvic orientation, distinct from the true middle split.".to_string(),
+                            category: "Static Stretch".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Hamstrings".to_string(), "Lower Back".to_string(), "Adductors".to_string()],
+                            difficulty: "Intermediate".to_string(),
+                            duration_secs: 60,
+                            sets: 2,
+                            reps: Some("60s hold".to_string()),
+                            video_url: Some("https://www.youtube.com/watch?v=mvNXJOVD_VI".to_string()),
+                            image_url: Some("assets/stretches/pancake.png".to_string()),
+                            is_unilateral: false,
+                            equipment: vec![],
+                            rest_secs: 30,
+                        },
+                        CustomExercise {
+                            name: "Assisted Front Split (with Blocks/Pillows)".to_string(),
+                            description: "Allows the nervous system to adapt to the full split position using viscoelastic stress relaxation without triggering the myotatic reflex.".to_string(),
+                            category: "End-Range Static Stretch".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Full Anterior and Posterior Chains".to_string()],
+                            difficulty: "Beginner".to_string(),
+                            duration_secs: 60,
+                            sets: 3,
+                            reps: Some("30-60s hold per leg".to_string()),
+                            video_url: Some("https://www.youtube.com/watch?v=Ulnw1WRubX0".to_string()),
+                            image_url: Some("assets/stretches/front-split-assisted.png".to_string()),
+                            is_unilateral: true,
+                            equipment: vec![],
+                            rest_secs: 30,
+                        },
+                        CustomExercise {
+                            name: "Wall Middle Split".to_string(),
+                            description: "Utilizes gravity to safely accumulate time-under-tension in abducted hip ranges while supporting the spine and neutralizing the pelvic tilt requirement.".to_string(),
+                            category: "Passive Static Stretch".to_string(),
+                            target_muscles: vec![],
+                            muscle_groups: vec!["Adductor Complex".to_string()],
+                            difficulty: "Beginner".to_string(),
+                            duration_secs: 90,
+                            sets: 1,
+                            reps: Some("2-3 min hold".to_string()),
+                            video_url: Some("https://www.youtube.com/watch?v=y0AyIsNPMk0".to_string()),
+                            image_url: Some("assets/stretches/wall-straddle.png".to_string()),
+                            is_unilateral: false,
+                            equipment: vec![],
+                            rest_secs: 0,
+                        },
+                    ]),
                 }
             ],
             user_progress: UserProgress {
