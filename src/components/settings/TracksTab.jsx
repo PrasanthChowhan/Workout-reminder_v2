@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { validateTrack } from "../../utils/track";
+import styles from "./TracksTab.module.css";
 
 /**
  * TracksTab handles selecting physical tracks, flex tiers, importing custom tracks,
@@ -11,12 +12,14 @@ import { validateTrack } from "../../utils/track";
  * @param {function} props.setAppConfig Parent callback to update active application configuration
  * @param {object} props.settingsProgress Current progress configuration structure
  * @param {function} props.setSettingsProgress Callback to update settings progress
+ * @param {object} props.parentStyles General settings CSS module styles object from parent
  */
 export default function TracksTab({ 
   appConfig, 
   setAppConfig, 
   settingsProgress, 
-  setSettingsProgress 
+  setSettingsProgress,
+  parentStyles
 }) {
   const [onboardingTrackId, setOnboardingTrackId] = useState(null);
   const [onboardingTier, setOnboardingTier] = useState("beginner");
@@ -115,17 +118,17 @@ export default function TracksTab({
   };
 
   return (
-    <div className="tab-pane">
+    <div className={parentStyles['tab-pane'] || "tab-pane"}>
       {onboardingTrackId ? (
         /* Onboarding Flow Screen */
-        <div className="onboarding-container">
-          <h3 className="onboarding-title">
+        <div className={styles['onboarding-container']}>
+          <h3 className={styles['onboarding-title']}>
             Setup Track: {appConfig?.tracks?.find(t => t.id === onboardingTrackId)?.name || onboardingTrackId}
           </h3>
-          <p className="onboarding-desc">
+          <p className={styles['onboarding-desc']}>
             Select your starting flexibility tier. This will configure your initial stretch level and safe hold duration.
           </p>
-          <div className="onboarding-tiers">
+          <div className={styles['onboarding-tiers']}>
             {[
               {
                 id: "beginner",
@@ -148,21 +151,21 @@ export default function TracksTab({
             ].map(tier => (
               <div
                 key={tier.id}
-                className={`onboarding-tier-card ${onboardingTier === tier.id ? "selected" : ""}`}
+                className={`${styles['onboarding-tier-card']} ${onboardingTier === tier.id ? styles['selected'] : ""}`}
                 onClick={() => setOnboardingTier(tier.id)}
               >
-                <div className="onboarding-tier-header">
-                  <span className={`onboarding-tier-name ${tier.id}`}>{tier.name}</span>
-                  <span className="onboarding-tier-mult">{tier.multiplier}</span>
+                <div className={styles['onboarding-tier-header']}>
+                  <span className={`${styles['onboarding-tier-name']} ${styles[tier.id]}`}>{tier.name}</span>
+                  <span className={styles['onboarding-tier-mult']}>{tier.multiplier}</span>
                 </div>
-                <p className="onboarding-tier-desc">{tier.description}</p>
+                <p className={styles['onboarding-tier-desc']}>{tier.description}</p>
               </div>
             ))}
           </div>
-          <div className="onboarding-actions">
+          <div className={styles['onboarding-actions']}>
             <button
               type="button"
-              className="track-action-btn"
+              className={styles['track-action-btn']}
               onClick={() => {
                 const track = appConfig?.tracks?.find(t => t.id === onboardingTrackId);
                 let startingLevel = onboardingTier === "beginner" ? 1 : onboardingTier === "intermediate" ? 2 : 3;
@@ -229,7 +232,7 @@ export default function TracksTab({
             </button>
             <button
               type="button"
-              className="onboarding-back-btn"
+              className={styles['onboarding-back-btn']}
               onClick={() => setOnboardingTrackId(null)}
             >
               Back
@@ -238,7 +241,7 @@ export default function TracksTab({
         </div>
       ) : settingsProgress.active_track_id ? (
         /* Active Track Progress Screen */
-        <div className="active-track-panel">
+        <div className={styles['active-track-panel']}>
           {(() => {
             const activeTrack = appConfig?.tracks?.find(t => t.id === settingsProgress.active_track_id);
             if (!activeTrack) return null;
@@ -247,22 +250,22 @@ export default function TracksTab({
             
             return (
               <>
-                <div className="active-track-header">
-                  <div className="active-track-name-row">
-                    <h3 className="track-selection-title">{activeTrack.name}</h3>
-                    <span className="active-track-label">Active Track</span>
+                <div className={styles['active-track-header']}>
+                  <div className={styles['active-track-name-row']}>
+                    <h3 className={styles['track-selection-title']}>{activeTrack.name}</h3>
+                    <span className={styles['active-track-label']}>Active Track</span>
                   </div>
-                  <p className="track-selection-desc" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                  <p className={styles['track-selection-desc']} style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
                     {activeTrack.description}
                   </p>
-                  <div className="active-track-info-row">
+                  <div className={styles['active-track-info-row']}>
                     <span>
                       Tier: <strong>{settingsProgress.onboarding_tier?.toUpperCase()}</strong>
                     </span>
                     <div>
                       <label style={{ marginRight: '0.5rem' }}>Change Tier:</label>
                       <select
-                        className="active-track-tier-select"
+                        className={styles['active-track-tier-select']}
                         value={settingsProgress.onboarding_tier || "beginner"}
                         onChange={(e) => {
                            const newTier = e.target.value;
@@ -329,16 +332,16 @@ export default function TracksTab({
                       </select>
                     </div>
                   </div>
-                  <div className="active-track-info-row" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+                  <div className={styles['active-track-info-row']} style={{ marginTop: '0.75rem', marginBottom: 0 }}>
                     <span>Completed Sessions (Current Level): {completedSessions} / 5</span>
                   </div>
-                  <div className="active-track-progress-bar-container">
-                    <div className="active-track-progress-bar" style={{ width: `${progressPercent}%` }}></div>
+                  <div className={styles['active-track-progress-bar-container']}>
+                    <div className={styles['active-track-progress-bar']} style={{ width: `${progressPercent}%` }}></div>
                   </div>
                 </div>
 
-                <div className="levels-list-container">
-                  <h4 className="levels-list-title">Track Levels</h4>
+                <div className={styles['levels-list-container'] || "levels-list-container"}>
+                  <h4 className={styles['levels-list-title']}>Track Levels</h4>
                   {activeTrack.levels?.map(level => {
                     const isActive = settingsProgress.current_level_number === level.level_number;
                     const isCompleted = settingsProgress.current_level_number > level.level_number;
@@ -352,24 +355,24 @@ export default function TracksTab({
                     return (
                       <div
                         key={level.level_number}
-                        className={`level-item-card ${isActive ? "active" : ""}`}
+                        className={`${styles['level-item-card']} ${isActive ? styles['active'] : ""}`}
                       >
-                        <div className="level-item-header">
-                          <div className="level-item-title-col">
-                            <span className="level-item-number">L{level.level_number}</span>
-                            <span className="level-item-title">{level.title}</span>
+                        <div className={styles['level-item-header']}>
+                          <div className={styles['level-item-title-col']}>
+                            <span className={styles['level-item-number']}>L{level.level_number}</span>
+                            <span className={styles['level-item-title']}>{level.title}</span>
                           </div>
-                          <span className={`level-item-badge ${isActive ? "active" : isCompleted ? "completed" : "locked"}`}>
+                          <span className={`${styles['level-item-badge']} ${isActive ? styles['active'] : isCompleted ? styles['completed'] : styles['locked']}`}>
                             {isActive ? "Active" : isCompleted ? "Completed" : "Locked"}
                           </span>
                         </div>
-                        <p className="level-item-desc">{level.description}</p>
-                        <div className="level-item-footer">
-                          <span className="level-item-duration">Target hold: {duration}s</span>
+                        <p className={styles['level-item-desc']}>{level.description}</p>
+                        <div className={styles['level-item-footer']}>
+                          <span className={styles['level-item-duration']}>Target hold: {duration}s</span>
                           {!isActive && (
                             <button
                               type="button"
-                              className="level-select-btn"
+                              className={styles['level-select-btn']}
                               onClick={() => {
                                 setSettingsProgress({
                                   ...settingsProgress,
@@ -389,7 +392,7 @@ export default function TracksTab({
 
                 <button
                   type="button"
-                  className="deactivate-track-btn"
+                  className={styles['deactivate-track-btn']}
                   onClick={() => {
                     setSettingsProgress({
                       active_track_id: null,
@@ -409,12 +412,12 @@ export default function TracksTab({
         </div>
       ) : (
         /* Track Selection Screen */
-        <div className="tracks-container">
-          <div className="tracks-header-row">
-            <h3 className="settings-group-title" style={{ margin: 0 }}>Available Skill Tracks</h3>
+        <div className={styles['tracks-container']}>
+          <div className={styles['tracks-header-row']}>
+            <h3 className={parentStyles['settings-group-title']} style={{ margin: 0 }}>Available Skill Tracks</h3>
             <button
               type="button"
-              className="track-import-btn"
+              className={styles['track-import-btn']}
               onClick={() => fileInputRef.current?.click()}
             >
               Import Track (.json)
@@ -427,17 +430,17 @@ export default function TracksTab({
             accept=".json"
             onChange={handleImportTrack}
           />
-          <p className="settings-item-desc" style={{ marginBottom: "1rem" }}>
+          <p className={parentStyles['settings-item-desc']} style={{ marginBottom: "1rem" }}>
             Choose a tailored physical progression track to follow during active breaks.
           </p>
           {appConfig?.tracks?.map(track => (
-            <div key={track.id} className="track-selection-card">
+            <div key={track.id} className={styles['track-selection-card']}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <h4 className="track-selection-title">{track.name}</h4>
+                <h4 className={styles['track-selection-title']}>{track.name}</h4>
                 {track.id !== "side_splits" && (
                   <button
                     type="button"
-                    className="track-delete-btn"
+                    className={styles['track-delete-btn']}
                     onClick={() => handleDeleteTrack(track.id)}
                     title="Delete Custom Track"
                   >
@@ -448,10 +451,10 @@ export default function TracksTab({
                   </button>
                 )}
               </div>
-              <p className="track-selection-desc">{track.description}</p>
+              <p className={styles['track-selection-desc']}>{track.description}</p>
               <button
                 type="button"
-                className="track-action-btn"
+                className={styles['track-action-btn']}
                 onClick={() => {
                   setOnboardingTrackId(track.id);
                   setOnboardingTier("beginner");
@@ -466,18 +469,18 @@ export default function TracksTab({
 
       {/* Confirmation Dialog Overlay */}
       {confirmDialog && (
-        <div className="skip-reason-overlay" style={{ zIndex: 300 }}>
-          <div className="skip-reason-modal" style={{ maxWidth: "400px", padding: "2rem" }}>
-            <h3 className="settings-title" style={{ borderBottom: "none", marginBottom: "1rem", fontSize: "1.2rem" }}>
+        <div className={styles['dialog-overlay']} style={{ zIndex: 300 }}>
+          <div className={styles['dialog-modal']} style={{ maxWidth: "400px", padding: "2rem" }}>
+            <h3 className={parentStyles['settings-title']} style={{ borderBottom: "none", marginBottom: "1rem", fontSize: "1.2rem" }}>
               Confirm Action
             </h3>
-            <p className="skip-reason-subtitle" style={{ marginBottom: "1.5rem" }}>
+            <p className={parentStyles['settings-item-desc']} style={{ marginBottom: "1.5rem" }}>
               {confirmDialog.message}
             </p>
             <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
               <button 
                 type="button" 
-                className="settings-cancel-btn" 
+                className={parentStyles['settings-cancel-btn']} 
                 style={{ margin: 0, padding: "0.5rem 1rem" }}
                 onClick={() => setConfirmDialog(null)}
               >
@@ -485,7 +488,7 @@ export default function TracksTab({
               </button>
               <button 
                 type="button" 
-                className="settings-save-btn" 
+                className={parentStyles['settings-save-btn']} 
                 style={{ margin: 0, padding: "0.5rem 1rem" }}
                 onClick={() => {
                   confirmDialog.onConfirm();
@@ -501,18 +504,18 @@ export default function TracksTab({
 
       {/* Notification Dialog Overlay */}
       {notification && (
-        <div className="skip-reason-overlay" style={{ zIndex: 310 }}>
-          <div className="skip-reason-modal" style={{ maxWidth: "400px", padding: "2rem" }}>
-            <h3 className="settings-title" style={{ borderBottom: "none", marginBottom: "1rem", fontSize: "1.2rem" }}>
+        <div className={styles['dialog-overlay']} style={{ zIndex: 310 }}>
+          <div className={styles['dialog-modal']} style={{ maxWidth: "400px", padding: "2rem" }}>
+            <h3 className={parentStyles['settings-title']} style={{ borderBottom: "none", marginBottom: "1rem", fontSize: "1.2rem" }}>
               Message
             </h3>
-            <p className="skip-reason-subtitle" style={{ marginBottom: "1.5rem" }}>
+            <p className={parentStyles['settings-item-desc']} style={{ marginBottom: "1.5rem" }}>
               {notification.message}
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button 
                 type="button" 
-                className="settings-save-btn" 
+                className={parentStyles['settings-save-btn']} 
                 style={{ margin: 0, padding: "0.5rem 1.5rem" }}
                 onClick={() => setNotification(null)}
               >

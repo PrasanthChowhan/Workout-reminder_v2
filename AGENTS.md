@@ -11,7 +11,7 @@ Welcome to the Workout & Break Reminder repository. Below are the commands and c
 
 ## Coding Guidelines
 
-- **Frontend Tech Stack**: React + Vite + Vanilla CSS (no Tailwind CSS framework for production files).
+- **Frontend Tech Stack**: React + Vite + CSS Modules (Vanilla CSS scoped via `*.module.css` files, no Tailwind CSS framework for production files). Keep `src/styles.css` minimal (global variables, resets, core active-break-screen layout, and headers/footers). All component-specific styles should go into `.module.css` files co-located with their components.
 - **Design Alignment**: Adhere strictly to the design system in [DESIGN.md](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/DESIGN.md) (Obsidian Kinetic: Ignition Orange accents, Terminal Green success states, and rounded-pill buttons).
 - **Rust Guidelines**:
   - Keep Tauri commands clean; delegate complex timer or state logic to helper modules.

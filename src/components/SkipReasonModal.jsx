@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import styles from "./SkipReasonModal.module.css";
 
 /**
  * SkipReasonModal allows users to log the reason for skipping a break.
@@ -27,12 +28,12 @@ export default function SkipReasonModal({ onSubmit, onCancel }) {
   ];
 
   return (
-    <div className="skip-reason-overlay" onClick={onCancel}>
-      <div className="skip-reason-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="settings-header" style={{ marginBottom: "1rem" }}>
-          <h2 className="skip-reason-title">Skip Session Reason</h2>
+    <div className={styles['skip-reason-overlay']} onClick={onCancel}>
+      <div className={styles['skip-reason-modal']} onClick={(e) => e.stopPropagation()}>
+        <div className={styles['settings-header']} style={{ marginBottom: "1rem" }}>
+          <h2 className={styles['skip-reason-title']}>Skip Session Reason</h2>
           <button 
-            className="settings-close-btn" 
+            className={styles['settings-close-btn']} 
             onClick={onCancel}
             title="Cancel skipping"
           >
@@ -43,14 +44,14 @@ export default function SkipReasonModal({ onSubmit, onCancel }) {
           </button>
         </div>
         
-        <p className="skip-reason-subtitle">
+        <p className={styles['skip-reason-subtitle']}>
           Logging the reason for skipping breaks helps track your focus habits and posture cycles.
         </p>
         
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            className="skip-reason-input"
+            className={styles['skip-reason-input']}
             placeholder="Or type a custom reason..."
             value={skipReason}
             onChange={(e) => setSkipReason(e.target.value)}
@@ -58,12 +59,12 @@ export default function SkipReasonModal({ onSubmit, onCancel }) {
             required
           />
           
-          <div className="skip-chips-container">
+          <div className={styles['skip-chips-container']}>
             {presetReasons.map((reason) => (
               <button
                 key={reason}
                 type="button"
-                className={`skip-chip ${skipReason === reason ? "active" : ""}`}
+                className={`${styles['skip-chip']} ${skipReason === reason ? styles['active'] : ""}`}
                 onClick={() => setSkipReason(reason)}
               >
                 {reason}
@@ -71,7 +72,7 @@ export default function SkipReasonModal({ onSubmit, onCancel }) {
             ))}
           </div>
           
-          <button type="submit" className="skip-reason-submit-btn">
+          <button type="submit" className={styles['skip-reason-submit-btn']}>
             Confirm Skip & Exit
           </button>
         </form>

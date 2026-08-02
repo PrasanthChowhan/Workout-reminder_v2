@@ -3,6 +3,7 @@ import TracksTab from "./TracksTab";
 import CardsTab from "./CardsTab";
 import PromptsTab from "./PromptsTab";
 import StretchesTab from "./StretchesTab";
+import styles from "./SettingsModal.module.css";
 
 /**
  * SettingsModal is the configuration modal orchestration overlay.
@@ -68,11 +69,11 @@ export default function SettingsModal({ config, onSave, onCancel }) {
   };
 
   return (
-    <div className="settings-overlay" onClick={onCancel}>
-      <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="settings-header">
-          <h2 className="settings-title">Configuration</h2>
-          <button className="settings-close-btn" onClick={onCancel} title="Close Settings">
+    <div className={styles['settings-overlay']} onClick={onCancel}>
+      <div className={styles['settings-modal']} onClick={(e) => e.stopPropagation()}>
+        <div className={styles['settings-header']}>
+          <h2 className={styles['settings-title']}>Configuration</h2>
+          <button className={styles['settings-close-btn']} onClick={onCancel} title="Close Settings">
             <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
               <line x1="18" x2="6" y1="6" y2="18"></line>
               <line x1="6" x2="18" y1="6" y2="18"></line>
@@ -81,67 +82,67 @@ export default function SettingsModal({ config, onSave, onCancel }) {
         </div>
         
         {/* Tab navigation */}
-        <div className="settings-tabs">
+        <div className={styles['settings-tabs']}>
           <button 
             type="button" 
-            className={`settings-tab-btn ${activeTab === "general" ? "active" : ""}`}
+            className={`${styles['settings-tab-btn']} ${activeTab === "general" ? styles['active'] : ""}`}
             onClick={() => setActiveTab("general")}
           >
             General
           </button>
           <button 
             type="button" 
-            className={`settings-tab-btn ${activeTab === "timers" ? "active" : ""}`}
+            className={`${styles['settings-tab-btn']} ${activeTab === "timers" ? styles['active'] : ""}`}
             onClick={() => setActiveTab("timers")}
           >
             Timers
           </button>
           <button 
             type="button" 
-            className={`settings-tab-btn ${activeTab === "tracks" ? "active" : ""}`}
+            className={`${styles['settings-tab-btn']} ${activeTab === "tracks" ? styles['active'] : ""}`}
             onClick={() => setActiveTab("tracks")}
           >
             Physical Tracks
           </button>
           <button 
             type="button" 
-            className={`settings-tab-btn ${activeTab === "cards" ? "active" : ""}`}
+            className={`${styles['settings-tab-btn']} ${activeTab === "cards" ? styles['active'] : ""}`}
             onClick={() => setActiveTab("cards")}
           >
             Recall Cards
           </button>
           <button 
             type="button" 
-            className={`settings-tab-btn ${activeTab === "prompts" ? "active" : ""}`}
+            className={`${styles['settings-tab-btn']} ${activeTab === "prompts" ? styles['active'] : ""}`}
             onClick={() => setActiveTab("prompts")}
           >
             Reflection Prompts
           </button>
           <button 
             type="button" 
-            className={`settings-tab-btn ${activeTab === "stretches" ? "active" : ""}`}
+            className={`${styles['settings-tab-btn']} ${activeTab === "stretches" ? styles['active'] : ""}`}
             onClick={() => setActiveTab("stretches")}
           >
             Stretches
           </button>
         </div>
 
-        <form onSubmit={handleSaveSettings} className="settings-form">
-          <div className="settings-tab-content">
+        <form onSubmit={handleSaveSettings} className={styles['settings-form']}>
+          <div className={styles['settings-tab-content']}>
             {activeTab === "general" && (
-              <div className="tab-pane">
-                <div className="settings-group">
-                  <h3 className="settings-group-title">System Settings</h3>
-                  <div className="settings-field checkbox-field">
-                    <label className="settings-label">Run at Startup</label>
+              <div className={styles['tab-pane']}>
+                <div className={styles['settings-group']}>
+                  <h3 className={styles['settings-group-title']}>System Settings</h3>
+                  <div className={`${styles['settings-field']} ${styles['checkbox-field']}`}>
+                    <label className={styles['settings-label']}>Run at Startup</label>
                     <input
                       type="checkbox"
-                      className="settings-checkbox"
+                      className={styles['settings-checkbox']}
                       checked={settingsForm.run_at_start}
                       onChange={(e) => setSettingsForm({ ...settingsForm, run_at_start: e.target.checked })}
                     />
                   </div>
-                  <p className="settings-item-desc" style={{ marginTop: "0.5rem" }}>
+                  <p className={styles['settings-item-desc']} style={{ marginTop: "0.5rem" }}>
                     Automatically launch Workout & Break Reminder when you log into Windows.
                   </p>
                 </div>
@@ -149,25 +150,25 @@ export default function SettingsModal({ config, onSave, onCancel }) {
             )}
 
             {activeTab === "timers" && (
-              <div className="tab-pane">
-                <div className="settings-group">
-                  <h3 className="settings-group-title">Micro-Breaks</h3>
-                  <div className="settings-field">
-                    <label className="settings-label">Interval (minutes)</label>
+              <div className={styles['tab-pane']}>
+                <div className={styles['settings-group']}>
+                  <h3 className={styles['settings-group-title']}>Micro-Breaks</h3>
+                  <div className={styles['settings-field']}>
+                    <label className={styles['settings-label']}>Interval (minutes)</label>
                     <input
                       type="number"
-                      className="settings-input"
+                      className={styles['settings-input']}
                       value={settingsForm.micro_break_interval_mins}
                       onChange={(e) => setSettingsForm({ ...settingsForm, micro_break_interval_mins: e.target.value })}
                       min="1"
                       required
                     />
                   </div>
-                  <div className="settings-field" style={{ marginTop: "1rem" }}>
-                    <label className="settings-label">Duration (seconds)</label>
+                  <div className={styles['settings-field']} style={{ marginTop: "1rem" }}>
+                    <label className={styles['settings-label']}>Duration (seconds)</label>
                     <input
                       type="number"
-                      className="settings-input"
+                      className={styles['settings-input']}
                       value={settingsForm.micro_break_duration_secs}
                       onChange={(e) => setSettingsForm({ ...settingsForm, micro_break_duration_secs: e.target.value })}
                       min="5"
@@ -176,24 +177,24 @@ export default function SettingsModal({ config, onSave, onCancel }) {
                   </div>
                 </div>
                 
-                <div className="settings-group" style={{ marginTop: "1.5rem" }}>
-                  <h3 className="settings-group-title">Active Breaks</h3>
-                  <div className="settings-field">
-                    <label className="settings-label">Interval (minutes)</label>
+                <div className={styles['settings-group']} style={{ marginTop: "1.5rem" }}>
+                  <h3 className={styles['settings-group-title']}>Active Breaks</h3>
+                  <div className={styles['settings-field']}>
+                    <label className={styles['settings-label']}>Interval (minutes)</label>
                     <input
                       type="number"
-                      className="settings-input"
+                      className={styles['settings-input']}
                       value={settingsForm.active_break_interval_mins}
                       onChange={(e) => setSettingsForm({ ...settingsForm, active_break_interval_mins: e.target.value })}
                       min="1"
                       required
                     />
                   </div>
-                  <div className="settings-field" style={{ marginTop: "1rem" }}>
-                    <label className="settings-label">Duration (seconds)</label>
+                  <div className={styles['settings-field']} style={{ marginTop: "1rem" }}>
+                    <label className={styles['settings-label']}>Duration (seconds)</label>
                     <input
                       type="number"
-                      className="settings-input"
+                      className={styles['settings-input']}
                       value={settingsForm.active_break_duration_secs}
                       onChange={(e) => setSettingsForm({ ...settingsForm, active_break_duration_secs: e.target.value })}
                       min="10"
@@ -210,6 +211,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
                 setAppConfig={setDraftConfig}
                 settingsProgress={settingsProgress}
                 setSettingsProgress={setSettingsProgress}
+                parentStyles={styles}
               />
             )}
 
@@ -217,6 +219,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
               <CardsTab 
                 editableCards={editableCards}
                 setEditableCards={setEditableCards}
+                styles={styles}
               />
             )}
 
@@ -224,6 +227,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
               <PromptsTab 
                 editablePrompts={editablePrompts}
                 setEditablePrompts={setEditablePrompts}
+                styles={styles}
               />
             )}
 
@@ -231,15 +235,16 @@ export default function SettingsModal({ config, onSave, onCancel }) {
               <StretchesTab 
                 editableStretches={editableStretches}
                 setEditableStretches={setEditableStretches}
+                styles={styles}
               />
             )}
           </div>
           
-          <div className="settings-footer">
-            <button type="button" className="settings-cancel-btn" onClick={onCancel}>
+          <div className={styles['settings-footer']}>
+            <button type="button" className={styles['settings-cancel-btn']} onClick={onCancel}>
               Cancel
             </button>
-            <button type="submit" className="settings-save-btn">
+            <button type="submit" className={styles['settings-save-btn']}>
               Save Changes
             </button>
           </div>

@@ -1,0 +1,182 @@
+/* Dev Issue Reporter styles (Vanilla CSS fallback for Tailwind) */
+.dev-issue-reporter.fixed {
+  position: fixed;
+}
+.dev-issue-reporter.bottom-4 {
+  bottom: 1rem;
+}
+.dev-issue-reporter.right-4 {
+  right: 1rem;
+}
+.dev-issue-reporter.z-\[9999\] {
+  z-index: 9999;
+}
+.dev-issue-reporter.font-sans {
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* Floating Bug Button */
+.dev-issue-reporter button.bg-red-500 {
+  background-color: #ef4444;
+  color: #ffffff;
+  border-radius: 9999px;
+  padding: 0.75rem;
+  border: 2px solid #f87171;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, background-color 0.2s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dev-issue-reporter button.bg-red-500:hover {
+  background-color: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Lucide SVGs */
+.dev-issue-reporter svg.w-6 { width: 1.5rem; height: 1.5rem; }
+.dev-issue-reporter svg.w-5 { width: 1.25rem; height: 1.25rem; }
+.dev-issue-reporter svg.w-4 { width: 1rem; height: 1rem; }
+
+/* Modal Container */
+.dev-issue-reporter .bg-neutral-900 {
+  background-color: #171717;
+  border: 1px solid #404040;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border-radius: 0.5rem;
+  width: 24rem; /* 384px */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #e5e5e5;
+}
+
+/* Modal Header */
+.dev-issue-reporter .bg-neutral-800 {
+  background-color: #262626;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #404040;
+}
+.dev-issue-reporter h3.font-semibold {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dev-issue-reporter .text-red-400 {
+  color: #f87171;
+}
+.dev-issue-reporter button.text-neutral-400 {
+  background: transparent;
+  border: none;
+  color: #a3a3a3;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+.dev-issue-reporter button.text-neutral-400:hover {
+  color: #ffffff;
+}
+
+/* Modal Content Form */
+.dev-issue-reporter .p-3 {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.dev-issue-reporter textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #0a0a0a;
+  border: 1px solid #404040;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  color: #ffffff;
+  min-height: 160px;
+  resize: vertical;
+  font-family: inherit;
+}
+.dev-issue-reporter textarea:focus {
+  outline: none;
+  border-color: #ef4444;
+}
+
+/* Button Row */
+.dev-issue-reporter .flex {
+  display: flex;
+}
+.dev-issue-reporter .gap-2 {
+  gap: 0.5rem;
+}
+.dev-issue-reporter .flex-1 {
+  flex: 1 1 0%;
+}
+.dev-issue-reporter .flex-\[2\] {
+  flex: 2 2 0%;
+}
+
+/* Action Buttons */
+.dev-issue-reporter .flex-1.bg-neutral-800 {
+  background-color: #262626;
+  color: #d4d4d4;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+.dev-issue-reporter .flex-1.bg-neutral-800:hover {
+  background-color: #404040;
+}
+.dev-issue-reporter .flex-1.bg-red-500\/20 {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.dev-issue-reporter .bg-red-600 {
+  background-color: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+.dev-issue-reporter .bg-red-600:hover:not(:disabled) {
+  background-color: #ef4444;
+}
+.dev-issue-reporter .bg-red-600:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
