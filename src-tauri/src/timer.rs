@@ -459,7 +459,19 @@ pub fn load_config(app: &AppHandle) -> AppConfig {
     if let Ok(path) = get_config_path(app) {
         if path.exists() {
             if let Ok(data) = fs::read_to_string(path) {
-                if let Ok(config) = serde_json::from_str::<AppConfig>(&data) {
+                if let Ok(mut config) = serde_json::from_str::<AppConfig>(&data) {
+                    // Update default tracks to ensure they have the latest exercises/video URLs
+                    let default_config = AppConfig::default();
+                    for default_track in default_config.tracks {
+                        if let Some(existing_track) = config.tracks.iter_mut().find(|t| t.id == default_track.id) {
+                            existing_track.exercises = default_track.exercises;
+                            existing_track.levels = default_track.levels;
+                            existing_track.name = default_track.name;
+                            existing_track.description = default_track.description;
+                        } else {
+                            config.tracks.push(default_track);
+                        }
+                    }
                     return config;
                 }
             }
