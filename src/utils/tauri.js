@@ -76,7 +76,7 @@ export async function invoke(cmd, args) {
               reps: "10-15 slow, dynamic repetitions per leg",
               is_unilateral: true,
               rest_secs: 15,
-              url: "N/A",
+              video_url: "https://www.youtube.com/watch?v=XP1yzpFR6ho",
               image_url: "assets/stretches/sciatic-slider.png"
             },
             {
@@ -90,7 +90,7 @@ export async function invoke(cmd, args) {
               reps: "30-60s hold per leg",
               is_unilateral: true,
               rest_secs: 15,
-              url: "https://www.youtube.com/watch?v=rje-n0iGvcs",
+              video_url: "https://www.youtube.com/watch?v=aOfniMZY2hk",
               image_url: "assets/stretches/low-lunge.png"
             },
             {
@@ -104,7 +104,7 @@ export async function invoke(cmd, args) {
               reps: "30-60s hold per leg",
               is_unilateral: true,
               rest_secs: 15,
-              url: "https://www.youtube.com/watch?v=rje-n0iGvcs",
+              video_url: "https://www.youtube.com/watch?v=1wXNELxZI4I",
               image_url: "assets/stretches/half-split.png"
             },
             {
@@ -118,7 +118,7 @@ export async function invoke(cmd, args) {
               reps: "8-10 reps per side",
               is_unilateral: true,
               rest_secs: 30,
-              url: "https://www.youtube.com/watch?v=X3kbyAYCm4w",
+              video_url: "https://www.youtube.com/watch?v=xXwdKm5uLAM",
               image_url: "assets/stretches/cossack-squat.png"
             },
             {
@@ -132,7 +132,7 @@ export async function invoke(cmd, args) {
               reps: "60-120s hold",
               is_unilateral: false,
               rest_secs: 30,
-              url: "https://www.youtube.com/watch?v=y0AyIsNPMk0",
+              video_url: "https://www.youtube.com/watch?v=mO8S7qOdcdU",
               image_url: "assets/stretches/frog-stretch.png"
             },
             {
@@ -146,7 +146,7 @@ export async function invoke(cmd, args) {
               reps: "60s hold",
               is_unilateral: false,
               rest_secs: 30,
-              url: "https://www.youtube.com/watch?v=mvNXJOVD_VI",
+              video_url: "https://www.youtube.com/watch?v=CHRUb43S6RM",
               image_url: "assets/stretches/pancake.png"
             },
             {
@@ -160,7 +160,7 @@ export async function invoke(cmd, args) {
               reps: "30-60s hold per leg",
               is_unilateral: true,
               rest_secs: 30,
-              url: "https://www.youtube.com/watch?v=Ulnw1WRubX0",
+              video_url: "https://www.youtube.com/watch?v=B8BivbTW-_0",
               image_url: "assets/stretches/front-split-assisted.png"
             },
             {
@@ -174,7 +174,7 @@ export async function invoke(cmd, args) {
               reps: "2-3 min hold",
               is_unilateral: false,
               rest_secs: 0,
-              url: "https://www.youtube.com/watch?v=y0AyIsNPMk0",
+              video_url: "https://www.youtube.com/watch?v=Iy_zqS8notQ",
               image_url: "assets/stretches/wall-straddle.png"
             }
           ]

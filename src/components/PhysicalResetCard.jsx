@@ -65,6 +65,9 @@ export default function PhysicalResetCard({ sessionStretch }) {
   if (!displayMetadata["Instructions"] && sessionStretch?.reps) {
     displayMetadata["Instructions"] = `${sessionStretch.reps}${sessionStretch.sets ? ` (${sessionStretch.sets} Sets)` : ""}`;
   }
+  if (!displayMetadata["Video URL"] && sessionStretch?.video_url && sessionStretch.video_url !== "N/A") {
+    displayMetadata["Video URL"] = sessionStretch.video_url;
+  }
 
   return (
     <section className={`active-break-card ${styles['stretch-card']}`} style={{ position: "relative", overflow: "hidden" }} data-purpose="side-card">
@@ -86,10 +89,28 @@ export default function PhysicalResetCard({ sessionStretch }) {
           <div className={styles['stretch-details-body']}>
             {Object.entries(displayMetadata).map(([key, value]) => {
               if (!value) return null;
+              const isUrl = typeof value === "string" && (value.startsWith("http://") || value.startsWith("https://"));
               return (
                 <div className={styles['stretch-detail-item']} key={key}>
                   <span className={styles['stretch-detail-label']}>{key}</span>
-                  <span className={styles['stretch-detail-value']}>{value}</span>
+                  <span className={styles['stretch-detail-value']}>
+                    {isUrl ? (
+                      <a 
+                        href={value} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className={styles['detail-link']}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          openUrl(value);
+                        }}
+                      >
+                        Watch Video
+                      </a>
+                    ) : (
+                      value
+                    )}
+                  </span>
                 </div>
               );
             })}
@@ -124,12 +145,29 @@ export default function PhysicalResetCard({ sessionStretch }) {
         <p className={styles['stretch-description']}>
           {mainDesc || "Quick desk-side mobility routine to realign posture and improve blood flow."}
         </p>
+        {sessionStretch?.video_url && sessionStretch.video_url !== "N/A" && (
+          <div className={styles['stretch-video-link-container']}>
+            <span className={styles['video-label']}>Watch:</span>
+            <a 
+              href={sessionStretch.video_url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className={styles['video-link']}
+              onClick={(e) => {
+                e.preventDefault();
+                openUrl(sessionStretch.video_url);
+              }}
+            >
+              {sessionStretch.video_url}
+            </a>
+          </div>
+        )}
       </div>
       <div className={styles['stretch-card-footer']}>
         <div className={styles['stretch-actions']}>
           <button 
             className={styles['stretch-action-btn']} 
-            title="Watch demo video"
+            title={sessionStretch?.video_url && sessionStretch.video_url !== "N/A" ? `Watch: ${sessionStretch.video_url}` : "Watch demo video"}
             disabled={!sessionStretch?.video_url || sessionStretch.video_url === "N/A"}
             style={{ 
               opacity: (sessionStretch?.video_url && sessionStretch.video_url !== "N/A") ? 1 : 0.5, 
@@ -138,8 +176,7 @@ export default function PhysicalResetCard({ sessionStretch }) {
             onClick={handleWatchVideo}
           >
             <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="m9 12 2 2 4-4"></path>
+              <polygon points="6 3 20 12 6 21 6 3"></polygon>
             </svg>
             Watch
           </button>
