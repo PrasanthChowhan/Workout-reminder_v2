@@ -86,7 +86,7 @@ export default function TracksTab({
   };
 
   const handleDeleteTrack = (trackId) => {
-    if (trackId === "side_splits") return;
+    if (trackId === "split_training_program") return;
     
     showConfirm(
       "Are you sure you want to delete this custom track?",
@@ -193,7 +193,6 @@ export default function TracksTab({
                     target_duration_secs: ex.duration_secs,
                     video_url: ex.video_url || ex.url || ex.video_link || null,
                     image_url: ex.image_url || null,
-                    asset_url: ex.image_url || null,
                     is_unilateral: ex.is_unilateral || false,
                     equipment: ex.equipment || [],
                     rest_secs: ex.rest_secs || 0
@@ -295,7 +294,6 @@ export default function TracksTab({
                                target_duration_secs: ex.duration_secs,
                                video_url: ex.video_url || ex.url || ex.video_link || null,
                                image_url: ex.image_url || null,
-                               asset_url: ex.image_url || null,
                                is_unilateral: ex.is_unilateral || false,
                                equipment: ex.equipment || [],
                                rest_secs: ex.rest_secs || 0
@@ -437,7 +435,7 @@ export default function TracksTab({
             <div key={track.id} className={styles['track-selection-card']}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <h4 className={styles['track-selection-title']}>{track.name}</h4>
-                {track.id !== "side_splits" && (
+                {track.id !== "split_training_program" && (
                   <button
                     type="button"
                     className={styles['track-delete-btn']}

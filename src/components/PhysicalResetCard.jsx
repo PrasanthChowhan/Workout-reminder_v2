@@ -123,7 +123,7 @@ export default function PhysicalResetCard({ sessionStretch }) {
           <img 
             alt="Physical Reset Visual" 
             className={styles['stretch-image']} 
-            src={sessionStretch?.image_url || sessionStretch?.asset_url || fallbackImage}
+            src={sessionStretch?.image_url || fallbackImage}
           />
         </div>
       </div>

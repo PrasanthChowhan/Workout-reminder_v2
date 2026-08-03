@@ -46,7 +46,6 @@ pub struct Level {
     pub title: String,
     pub description: String,
     pub target_duration_secs: u64,
-    pub asset_url: Option<String>, // Keep for backward compatibility
     #[serde(alias = "url")]
     pub video_url: Option<String>,
     pub image_url: Option<String>,
@@ -125,7 +124,7 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        Self {
+        let mut config = Self {
             settings: Settings {
                 micro_break_interval_mins: 20,
                 active_break_interval_mins: 50,
@@ -356,6 +355,97 @@ impl Default for AppConfig {
                 last_completed_at: None,
                 level_started_at: None,
             },
+        };
+        config.populate_levels();
+        config
+    }
+}
+
+impl AppConfig {
+    pub fn populate_levels(&mut self) {
+        let onboarding_tier = self
+            .user_progress
+            .onboarding_tier
+            .as_deref()
+            .unwrap_or("beginner")
+            .to_lowercase();
+
+        let difficulty_priority = |diff: &str| -> u32 {
+            match diff.to_lowercase().as_str() {
+                "beginner" => 1,
+                "intermediate" => 2,
+                "advanced" => 3,
+                _ => 1,
+            }
+        };
+
+        let user_priority = difficulty_priority(&onboarding_tier);
+
+        for track in &mut self.tracks {
+            if let Some(ref exercises) = track.exercises {
+                if !exercises.is_empty() {
+                    let filtered: Vec<&CustomExercise> = exercises
+                        .iter()
+                        .filter(|ex| difficulty_priority(&ex.difficulty) <= user_priority)
+                        .collect();
+
+                    let mut levels = Vec::new();
+                    for (index, ex) in filtered.iter().enumerate() {
+                        let target_muscles = if !ex.target_muscles.is_empty() {
+                            ex.target_muscles.clone()
+                        } else {
+                            ex.muscle_groups.clone()
+                        };
+
+                        let equipment_str = if !ex.equipment.is_empty() {
+                            ex.equipment.join(", ")
+                        } else {
+                            "None".to_string()
+                        };
+
+                        let rest_str = if ex.rest_secs > 0 {
+                            format!("{}s", ex.rest_secs)
+                        } else {
+                            "None".to_string()
+                        };
+
+                        let reps_str = if let Some(ref reps) = ex.reps {
+                            reps.clone()
+                        } else {
+                            format!("{}s Hold", ex.duration_secs)
+                        };
+
+                        let description = format!(
+                            "{}\n\n• Category: {}\n• Target: {}\n• Side: {}\n• Equipment: {}\n• Rest: {}\n• Instructions: {} ({} Sets)",
+                            ex.description,
+                            ex.category,
+                            target_muscles.join(", "),
+                            if ex.is_unilateral {
+                                "Unilateral (Perform per side)"
+                            } else {
+                                "Bilateral"
+                            },
+                            equipment_str,
+                            rest_str,
+                            reps_str,
+                            ex.sets
+                        );
+
+                        levels.push(Level {
+                            level_number: (index + 1) as u64,
+                            title: ex.name.clone(),
+                            description,
+                            target_duration_secs: ex.duration_secs,
+                            video_url: ex.video_url.clone(),
+                            image_url: ex.image_url.clone(),
+                            is_unilateral: ex.is_unilateral,
+                            equipment: ex.equipment.clone(),
+                            rest_secs: ex.rest_secs,
+                        });
+                    }
+                    track.levels = levels;
+                }
+            }
         }
     }
 }

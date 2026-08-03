@@ -61,8 +61,14 @@ pub fn get_session_data(
                             _ => "Beginner",
                         }.to_string();
 
+                        let stretch_name = if track.exercises.is_some() {
+                            level.title.clone()
+                        } else {
+                            format!("{} (Level {})", level.title, level.level_number)
+                        };
+
                         Some(Stretch {
-                            name: format!("{} (Level {})", level.title, level.level_number),
+                            name: stretch_name,
                             description: level.description.clone(),
                             duration_secs: custom_duration,
                             difficulty_level: difficulty,

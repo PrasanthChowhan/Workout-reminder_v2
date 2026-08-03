@@ -30,8 +30,13 @@ pub fn load_config(app: &AppHandle) -> AppConfig {
 
                     for default_track in default_config.tracks {
                         if let Some(existing_track) = config.tracks.iter_mut().find(|t| t.id == default_track.id) {
+                            // Only overwrite levels if the default track doesn't use the exercises schema.
+                            // For tracks with exercises (new schema), levels are dynamically generated.
+                            let has_no_exercises = default_track.exercises.is_none();
                             existing_track.exercises = default_track.exercises;
-                            existing_track.levels = default_track.levels;
+                            if has_no_exercises {
+                                existing_track.levels = default_track.levels;
+                            }
                             existing_track.name = default_track.name;
                             existing_track.description = default_track.description;
                         } else {
@@ -39,14 +44,14 @@ pub fn load_config(app: &AppHandle) -> AppConfig {
                         }
                     }
 
-                    // Auto-migrate active track if it is empty or invalid (e.g. side_splits)
-                    if config.user_progress.active_track_id.as_deref() == Some("side_splits")
-                        || config.user_progress.active_track_id.is_none() 
-                    {
+                    // Initialize default track if none is selected
+                    if config.user_progress.active_track_id.is_none() {
                         config.user_progress.active_track_id = Some("split_training_program".to_string());
                         config.user_progress.current_level_number = Some(1);
                         config.user_progress.onboarding_tier = Some("beginner".to_string());
                     }
+
+                    config.populate_levels();
 
                     return config;
                 }
