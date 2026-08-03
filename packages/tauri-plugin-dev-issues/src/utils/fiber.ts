@@ -23,7 +23,7 @@ export function cleanFilePath(path: string): string {
 /**
  * Extracts React Fiber metadata from a clicked DOM element.
  */
-export function extractFiberMetadata(domElement: HTMLElement): FiberMetadata | null {
+export function extractFiberMetadata(domElement: HTMLElement, maxStackDepth: number = 15): FiberMetadata | null {
   try {
     // 1. Walk up the DOM tree if needed to find the nearest element with a React fiber node
     let currentEl: HTMLElement | null = domElement;
@@ -52,7 +52,7 @@ export function extractFiberMetadata(domElement: HTMLElement): FiberMetadata | n
     let componentProps: any = null;
     let primaryComponentName = "";
 
-    while (currentFiber && depth < 15) {
+    while (currentFiber && depth < maxStackDepth) {
       const type = currentFiber.type;
       const elementType = currentFiber.elementType;
       let name = "";

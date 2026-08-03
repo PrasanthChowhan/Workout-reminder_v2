@@ -2,11 +2,27 @@
  * Safely extracts level-1 primitive values from props,
  * redacts sensitive information, and truncates long strings.
  */
-export function sanitizeProps(props: any): Record<string, any> | null {
+export function sanitizeProps(
+  props: any,
+  customRedactionKeys?: (string | RegExp)[]
+): Record<string, any> | null {
   if (!props || typeof props !== "object") return null;
 
   const sanitized: Record<string, any> = {};
-  const sensitiveRegex = /token|auth|password|secret|key|user/i;
+  const defaultSensitiveRegex = /token|auth|password|secret|key/i;
+
+  const isSensitive = (key: string): boolean => {
+    if (defaultSensitiveRegex.test(key)) return true;
+    if (customRedactionKeys) {
+      return customRedactionKeys.some(pattern => {
+        if (pattern instanceof RegExp) {
+          return pattern.test(key);
+        }
+        return key.toLowerCase().includes(pattern.toLowerCase());
+      });
+    }
+    return false;
+  };
 
   for (const key of Object.keys(props)) {
     // Skip internal React properties, children, ref
@@ -17,7 +33,7 @@ export function sanitizeProps(props: any): Record<string, any> | null {
     const val = props[key];
 
     // Redact sensitive keys
-    if (sensitiveRegex.test(key)) {
+    if (isSensitive(key)) {
       sanitized[key] = "[REDACTED]";
       continue;
     }

@@ -9,7 +9,6 @@ import ActiveRecallCard from "./components/ActiveRecallCard";
 import SkipReasonModal from "./components/SkipReasonModal";
 import SettingsModal from "./components/settings/SettingsModal";
 import { DevIssueReporter } from "tauri-plugin-dev-issues";
-import "./styles/dev-issues.css";
 
 /**
  * App is the high-level orchestrator component.

@@ -1,173 +1,230 @@
-import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { Bug, X, MousePointer2, Send } from "lucide-react";
-import { extractFiberMetadata } from "./utils/fiber";
+import { useState, useEffect, useRef } from "react";
 import { sanitizeProps } from "./utils/sanitizer";
+import { STYLES } from "./styles/styles";
+import { invoke } from "@tauri-apps/api/core";
 
-export function DevIssueReporter() {
+// Subcomponents
+import { FABButton } from "./components/FABButton";
+import { Header } from "./components/Header";
+import { MarkdownEditor } from "./components/MarkdownEditor";
+import { MetadataCard } from "./components/MetadataCard";
+import { ActionButtons } from "./components/ActionButtons";
+
+// Custom Hooks
+import { useKeyboardShortcut } from "./hooks/useKeyboardShortcut";
+import { useElementInspector } from "./hooks/useElementInspector";
+
+export interface DevIssueReporterProps {
+  maxStackDepth?: number;
+  customRedactionKeys?: (string | RegExp)[];
+  onSubmit?: (markdown: string) => void | Promise<void>;
+}
+
+export function DevIssueReporter({
+  maxStackDepth = 15,
+  customRedactionKeys = [],
+  onSubmit,
+}: DevIssueReporterProps) {
+  // Verify environment to no-op in production
+  let isProd = false;
+  try {
+    const nodeEnv = (globalThis as any).process?.env?.NODE_ENV;
+    if (nodeEnv === "production") {
+      isProd = true;
+    }
+  } catch (e) {}
+
+  try {
+    // @ts-ignore
+    const viteEnv = import.meta.env;
+    if (viteEnv && viteEnv.PROD) {
+      isProd = true;
+    }
+  } catch (e) {}
+
+  if (isProd) {
+    return null;
+  }
+
   const [isOpen, setIsOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [isInspecting, setIsInspecting] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Inspector hook
+  const {
+    isInspecting,
+    setIsInspecting,
+    inspectedMeta,
+    setInspectedMeta,
+    inspectedDetails,
+    setInspectedDetails,
+  } = useElementInspector({ maxStackDepth });
+
+  // Keyboard shortcut listener: Ctrl/Cmd + Shift + U
+  useKeyboardShortcut("u", () => {
+    setIsOpen(true);
+    setIsInspecting((prev) => !prev);
+  });
+
+  // Inject styles on mount
   useEffect(() => {
-    if (!isInspecting) return;
+    const styleId = "dev-issue-reporter-styles";
+    if (document.getElementById(styleId)) return;
 
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      // Don't highlight our own reporter to avoid infinite recursion or weirdness
-      if (target.closest('.dev-issue-reporter')) return;
-      target.style.outline = "2px solid #ef4444";
-      target.style.outlineOffset = "-2px";
-      target.style.cursor = "crosshair";
-    };
+    const styleEl = document.createElement("style");
+    styleEl.id = styleId;
+    styleEl.innerHTML = STYLES;
+    document.head.appendChild(styleEl);
+  }, []);
 
-    const handleMouseOut = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('.dev-issue-reporter')) return;
-      target.style.outline = "";
-      target.style.outlineOffset = "";
-      target.style.cursor = "";
-    };
+  const insertMarkdown = (before: string, after: string = "") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
 
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('.dev-issue-reporter')) return;
-      
-      e.preventDefault();
-      e.stopPropagation();
-      
-      target.style.outline = "";
-      target.style.outlineOffset = "";
-      target.style.cursor = "";
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+    const replacement = before + selectedText + after;
 
-      const tag = target.tagName.toLowerCase();
-      const id = target.id ? `#${target.id}` : "";
-      
-      // Handle className gracefully if it's an SVGAnimatedString or string
-      let classStr = "";
-      if (typeof target.className === "string") {
-        classStr = target.className;
-      } else if (target.className && typeof (target.className as any).baseVal === "string") {
-        classStr = (target.className as any).baseVal;
-      }
-      const classes = classStr.trim() ? `.${classStr.trim().split(/\s+/).join(".")}` : "";
-      
-      const textContent = target.textContent?.slice(0, 100).trim() || "";
-      
-      // Extract React Fiber metadata and props
-      const fiberMeta = extractFiberMetadata(target);
-      
-      let context = `\n\n### Context (Inspected Element)\n`;
-      if (fiberMeta) {
-        context += `- **Component**: \`${fiberMeta.componentName}\`\n`;
-        if (fiberMeta.sourceFile) {
-          context += `- **Source Code**: \`${fiberMeta.sourceFile}:${fiberMeta.lineNumber}\`\n`;
-        }
-        if (fiberMeta.componentStack && fiberMeta.componentStack.length > 0) {
-          context += `- **Component Stack**: \`${fiberMeta.componentStack.join(" > ")}\`\n`;
-        }
-      }
-      
-      context += `- **Selector**: \`${tag}${id}${classes}\`\n`;
-      if (textContent) {
-        context += `- **Text**: \`${textContent}...\`\n`;
-      }
+    setDescription(
+      text.substring(0, start) + replacement + text.substring(end)
+    );
 
-      if (fiberMeta && fiberMeta.memoizedProps) {
-        const cleanProps = sanitizeProps(fiberMeta.memoizedProps);
-        if (cleanProps) {
-          context += `\n### Active State (Sanitized Props)\n\`\`\`json\n${JSON.stringify(cleanProps, null, 2)}\n\`\`\`\n`;
-        }
-      }
-      
-      setText(prev => prev + context);
-      setIsInspecting(false);
-    };
-
-    document.addEventListener("mouseover", handleMouseOver);
-    document.addEventListener("mouseout", handleMouseOut);
-    document.addEventListener("click", handleClick, { capture: true });
-
-    return () => {
-      document.removeEventListener("mouseover", handleMouseOver);
-      document.removeEventListener("mouseout", handleMouseOut);
-      document.removeEventListener("click", handleClick, { capture: true });
-      
-      // Cleanup any remaining outlines
-      document.querySelectorAll('*').forEach(el => {
-        (el as HTMLElement).style.outline = "";
-        (el as HTMLElement).style.outlineOffset = "";
-        (el as HTMLElement).style.cursor = "";
-      });
-    };
-  }, [isInspecting]);
+    // Re-focus and set selection
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + before.length + selectedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
 
   const handleSubmit = async () => {
-    if (!text.trim()) return;
+    let markdown = "";
+    if (title.trim()) {
+      markdown += `## ${title.trim()}\n\n`;
+    }
+    if (description.trim()) {
+      markdown += `${description.trim()}\n\n`;
+    }
+
+    if (inspectedDetails || inspectedMeta) {
+      markdown += `### Context (Inspected Element)\n`;
+
+      if (inspectedMeta) {
+        markdown += `- **Component**: \`${inspectedMeta.componentName}\`\n`;
+        if (inspectedMeta.sourceFile) {
+          markdown += `- **Source Code**: \`${inspectedMeta.sourceFile}:${inspectedMeta.lineNumber}\`\n`;
+        }
+        if (inspectedMeta.componentStack && inspectedMeta.componentStack.length > 0) {
+          markdown += `- **Component Stack**: \`${inspectedMeta.componentStack.join(" > ")}\`\n`;
+        }
+      }
+
+      if (inspectedDetails) {
+        markdown += `- **Selector**: \`${inspectedDetails.selector}\`\n`;
+        if (inspectedDetails.textContent) {
+          markdown += `- **Text**: \`${inspectedDetails.textContent}...\`\n`;
+        }
+      }
+
+      if (inspectedMeta && inspectedMeta.memoizedProps) {
+        const cleanProps = sanitizeProps(inspectedMeta.memoizedProps, customRedactionKeys);
+        if (cleanProps) {
+          markdown += `\n### Active State (Sanitized Props)\n\`\`\`json\n${JSON.stringify(cleanProps, null, 2)}\n\`\`\`\n`;
+        }
+      }
+    }
+
     setIsSubmitting(true);
     try {
-      await invoke("create_dev_issue", { text });
-      setText("");
+      if (onSubmit) {
+        await onSubmit(markdown);
+      } else {
+        // Dynamic fallback: attempt to call tauri backend plugin/global commands directly
+        try {
+          await invoke("plugin:dev-issues|create_dev_issue", { text: markdown });
+        } catch (pluginErr) {
+          try {
+            await invoke("create_dev_issue", { text: markdown });
+          } catch (globalErr) {
+            // Tauri not active, attempt calling local Vite dev server endpoint
+            try {
+              const res = await fetch("/api/dev-issues", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: markdown }),
+              });
+              if (!res.ok) throw new Error("HTTP " + res.status);
+              console.log("DevIssueReporter: Saved local issue via API endpoint /api/dev-issues.");
+            } catch (webErr) {
+              console.warn(
+                "DevIssueReporter: Local persistence failed (Tauri & endpoint /api/dev-issues not active). Emitted markdown payload:\n",
+                markdown
+              );
+            }
+          }
+        }
+      }
+      setTitle("");
+      setDescription("");
+      setInspectedMeta(null);
+      setInspectedDetails(null);
       setIsOpen(false);
     } catch (err) {
-      console.error("Failed to create issue:", err);
-      alert("Failed to create issue. Check console.");
+      console.error("Failed to submit issue:", err);
+      alert("Failed to submit issue. Check console.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="dev-issue-reporter fixed bottom-4 right-4 z-[9999] font-sans">
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-red-500 hover:bg-red-600 text-white rounded-full p-3 shadow-lg transition-transform hover:scale-110 flex items-center justify-center border-2 border-red-400"
-          title="Report Dev Issue"
-        >
-          <Bug className="w-6 h-6" />
-        </button>
-      )}
+  const handleClose = () => {
+    setIsOpen(false);
+    setIsInspecting(false);
+  };
 
-      {isOpen && (
-        <div className="bg-neutral-900 border border-neutral-700 shadow-2xl rounded-lg w-96 flex flex-col overflow-hidden text-neutral-200">
-          <div className="bg-neutral-800 px-4 py-3 flex items-center justify-between border-b border-neutral-700">
-            <h3 className="font-semibold text-sm flex items-center gap-2">
-              <Bug className="w-4 h-4 text-red-400" /> Dev Issue Reporter
-            </h3>
-            <button onClick={() => setIsOpen(false)} className="text-neutral-400 hover:text-white transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="p-3 flex flex-col gap-3">
-            <textarea
-              className="w-full bg-neutral-950 border border-neutral-700 rounded p-3 text-sm text-white focus:outline-none focus:border-red-500 min-h-[160px] resize-y"
-              placeholder="Describe the issue, bug, or feature request..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
+  return (
+    <div className="dev-issue-reporter">
+      {!isOpen ? (
+        <FABButton onClick={() => setIsOpen(true)} />
+      ) : (
+        <div className="dir-overlay">
+          <Header title="Dev Issue Reporter" onClose={handleClose} />
+
+          <div className="dir-content">
+            <input
+              type="text"
+              className="dir-title-input"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              disabled={isSubmitting}
             />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsInspecting(!isInspecting)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-xs font-medium transition-colors ${
-                  isInspecting 
-                    ? "bg-red-500/20 text-red-400 border border-red-500/50" 
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700 border border-transparent"
-                }`}
-              >
-                <MousePointer2 className="w-4 h-4" />
-                {isInspecting ? "Inspecting..." : "Inspect Context"}
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !text.trim()}
-                className="flex-[2] flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:hover:bg-red-600 text-white py-2 px-3 rounded text-xs font-bold transition-colors"
-              >
-                <Send className="w-4 h-4" />
-                {isSubmitting ? "Saving..." : "Create Issue"}
-              </button>
-            </div>
+
+            <MarkdownEditor
+              description={description}
+              setDescription={setDescription}
+              textareaRef={textareaRef}
+              isSubmitting={isSubmitting}
+              insertMarkdown={insertMarkdown}
+            />
+
+            <MetadataCard
+              inspectedDetails={inspectedDetails}
+              inspectedMeta={inspectedMeta}
+            />
+
+            <ActionButtons
+              isInspecting={isInspecting}
+              onInspectToggle={() => setIsInspecting((prev) => !prev)}
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              disableSubmit={isSubmitting || (!description.trim() && !inspectedDetails)}
+            />
           </div>
         </div>
       )}

@@ -1,1 +1,1 @@
-export { DevIssueReporter } from './DevIssueReporter';
+export { DevIssueReporter, type DevIssueReporterProps } from './DevIssueReporter';
