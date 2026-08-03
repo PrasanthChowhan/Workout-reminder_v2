@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Bug, X, MousePointer2, Send } from "lucide-react";
+import { extractFiberMetadata } from "./utils/fiber";
+import { sanitizeProps } from "./utils/sanitizer";
 
 export function DevIssueReporter() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,9 +55,30 @@ export function DevIssueReporter() {
       
       const textContent = target.textContent?.slice(0, 100).trim() || "";
       
-      let context = `\n\n### Context (Inspected Element)\n- **Selector**: \`${tag}${id}${classes}\`\n`;
+      // Extract React Fiber metadata and props
+      const fiberMeta = extractFiberMetadata(target);
+      
+      let context = `\n\n### Context (Inspected Element)\n`;
+      if (fiberMeta) {
+        context += `- **Component**: \`${fiberMeta.componentName}\`\n`;
+        if (fiberMeta.sourceFile) {
+          context += `- **Source Code**: \`${fiberMeta.sourceFile}:${fiberMeta.lineNumber}\`\n`;
+        }
+        if (fiberMeta.componentStack && fiberMeta.componentStack.length > 0) {
+          context += `- **Component Stack**: \`${fiberMeta.componentStack.join(" > ")}\`\n`;
+        }
+      }
+      
+      context += `- **Selector**: \`${tag}${id}${classes}\`\n`;
       if (textContent) {
         context += `- **Text**: \`${textContent}...\`\n`;
+      }
+
+      if (fiberMeta && fiberMeta.memoizedProps) {
+        const cleanProps = sanitizeProps(fiberMeta.memoizedProps);
+        if (cleanProps) {
+          context += `\n### Active State (Sanitized Props)\n\`\`\`json\n${JSON.stringify(cleanProps, null, 2)}\n\`\`\`\n`;
+        }
       }
       
       setText(prev => prev + context);
