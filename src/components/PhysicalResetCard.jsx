@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { openUrl } from "../utils/tauri";
+import EmbeddedPlayer from "./EmbeddedPlayer";
 import styles from "./PhysicalResetCard.module.css";
 
 /**
@@ -10,10 +11,16 @@ import styles from "./PhysicalResetCard.module.css";
  */
 export default function PhysicalResetCard({ sessionStretch }) {
   const [showDetails, setShowDetails] = useState(false);
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+
+  // Reset video playback state when the active stretch changes
+  useEffect(() => {
+    setIsPlayingVideo(false);
+  }, [sessionStretch]);
 
   const handleWatchVideo = () => {
     if (sessionStretch?.video_url && sessionStretch.video_url !== "N/A") {
-      openUrl(sessionStretch.video_url);
+      setIsPlayingVideo(!isPlayingVideo);
     }
   };
 
@@ -102,7 +109,8 @@ export default function PhysicalResetCard({ sessionStretch }) {
                         className={styles['detail-link']}
                         onClick={(e) => {
                           e.preventDefault();
-                          openUrl(value);
+                          setIsPlayingVideo(true);
+                          setShowDetails(false);
                         }}
                       >
                         Watch Video
@@ -120,11 +128,21 @@ export default function PhysicalResetCard({ sessionStretch }) {
 
       <div className={styles['stretch-image-container']}>
         <div className={styles['stretch-image-wrapper']}>
-          <img 
-            alt="Physical Reset Visual" 
-            className={styles['stretch-image']} 
-            src={sessionStretch?.image_url || fallbackImage}
-          />
+          {isPlayingVideo && sessionStretch?.video_url && sessionStretch.video_url !== "N/A" ? (
+            <EmbeddedPlayer
+              videoUrl={sessionStretch.video_url}
+              title={sessionStretch.name || "Physical Reset"}
+              subtitle={`${sessionStretch.difficulty_level || "All Levels"} · ${sessionStretch.reps || `${sessionStretch.duration_secs ?? 30}s Hold`}`}
+              durationSecs={sessionStretch.duration_secs || 60}
+              onClose={() => setIsPlayingVideo(false)}
+            />
+          ) : (
+            <img 
+              alt="Physical Reset Visual" 
+              className={styles['stretch-image']} 
+              src={sessionStretch?.image_url || fallbackImage}
+            />
+          )}
         </div>
       </div>
       <div className={styles['stretch-text-content']}>
@@ -145,12 +163,19 @@ export default function PhysicalResetCard({ sessionStretch }) {
         <p className={styles['stretch-description']}>
           {mainDesc || "Quick desk-side mobility routine to realign posture and improve blood flow."}
         </p>
+        {isPlayingVideo && (
+          <p className={styles['youtube-disclaimer']}>
+            Video streamed via YouTube. All intellectual property belongs strictly to the respective owner.
+          </p>
+        )}
       </div>
       <div className={styles['stretch-card-footer']}>
         <div className={styles['stretch-actions']}>
           <button 
-            className={styles['stretch-action-btn']} 
-            title={sessionStretch?.video_url && sessionStretch.video_url !== "N/A" ? `Watch: ${sessionStretch.video_url}` : "Watch demo video"}
+            className={`${styles['stretch-action-btn']} ${styles['stretch-toggle-btn']}`} 
+            title={sessionStretch?.video_url && sessionStretch.video_url !== "N/A" 
+              ? (isPlayingVideo ? "Show pose illustration" : `Watch: ${sessionStretch.video_url}`) 
+              : "Watch demo video"}
             disabled={!sessionStretch?.video_url || sessionStretch.video_url === "N/A"}
             style={{ 
               opacity: (sessionStretch?.video_url && sessionStretch.video_url !== "N/A") ? 1 : 0.5, 
@@ -158,10 +183,18 @@ export default function PhysicalResetCard({ sessionStretch }) {
             }}
             onClick={handleWatchVideo}
           >
-            <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <polygon points="6 3 20 12 6 21 6 3"></polygon>
-            </svg>
-            Watch
+            {isPlayingVideo ? (
+              <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            ) : (
+              <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <polygon points="6 3 20 12 6 21 6 3"></polygon>
+              </svg>
+            )}
+            {isPlayingVideo ? "Pose" : "Watch"}
           </button>
           <button 
             className={`${styles['stretch-action-btn']} ${showDetails ? styles['active'] : ""}`}

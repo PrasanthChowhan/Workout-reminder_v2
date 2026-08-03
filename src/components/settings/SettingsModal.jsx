@@ -125,6 +125,13 @@ export default function SettingsModal({ config, onSave, onCancel }) {
           >
             Stretches
           </button>
+          <button 
+            type="button" 
+            className={`${styles['settings-tab-btn']} ${activeTab === "about" ? styles['active'] : ""}`}
+            onClick={() => setActiveTab("about")}
+          >
+            About & Legal
+          </button>
         </div>
 
         <form onSubmit={handleSaveSettings} className={styles['settings-form']}>
@@ -237,6 +244,31 @@ export default function SettingsModal({ config, onSave, onCancel }) {
                 setEditableStretches={setEditableStretches}
                 styles={styles}
               />
+            )}
+
+            {activeTab === "about" && (
+              <div className={styles['tab-pane']}>
+                <div className={styles['settings-group']}>
+                  <h3 className={styles['settings-group-title']}>Workout & Break Reminder</h3>
+                  <p className={styles['settings-item-desc']}>
+                    A cognitive companion to help you stay physically active and mentally focused.
+                  </p>
+                </div>
+
+                <div className={styles['settings-group']} style={{ marginTop: "1.5rem" }}>
+                  <h3 className={styles['settings-group-title']}>Medical & Liability Waiver</h3>
+                  <p className={styles['settings-item-desc']} style={{ fontSize: "0.75rem", lineHeight: "1.5", color: "var(--color-text-muted)" }}>
+                    <strong>NOTICE:</strong> The stretches and exercises suggested by this app are for informational/educational purposes only. They are not a substitute for professional medical advice. Consult a physician before performing them. By continuing, you agree that you participate at your own risk and release the creators from any liability.
+                  </p>
+                </div>
+
+                <div className={styles['settings-group']} style={{ marginTop: "1.5rem" }}>
+                  <h3 className={styles['settings-group-title']}>YouTube Content Attribution</h3>
+                  <p className={styles['settings-item-desc']} style={{ fontSize: "0.75rem", lineHeight: "1.5", color: "var(--color-text-muted)" }}>
+                    All exercise demonstration videos are streamed directly from YouTube using the official embed API. All trademarks, copyrights, and intellectual property in these videos belong strictly to their respective creators. This app is not affiliated with or endorsed by YouTube or the original creators.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
           

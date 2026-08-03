@@ -238,6 +238,10 @@
   color: #fff;
 }
 
+.stretch-toggle-btn {
+  width: 85px;
+}
+
 .stretch-maximize-btn {
   color: var(--color-text-muted);
   background: transparent;
@@ -299,3 +303,16 @@
   color: #fff;
   border-bottom-color: #fff;
 }
+
+.youtube-disclaimer {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.8;
+  margin-top: -1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+  border-left: 2px solid var(--color-brand-orange);
+  padding-left: 0.5rem;
+}
+
