@@ -125,6 +125,22 @@ export default function App() {
     }
   };
 
+  const handleUpdateCardMetadata = async (cardId, newMetadata) => {
+    try {
+      const updatedConfig = await invoke("update_flashcard_metadata", { cardId, metadata: newMetadata });
+      setAppConfig(updatedConfig);
+      setSessionCard(prev => {
+        if (prev && prev.id === cardId) {
+          const updatedCard = updatedConfig.active_recall_cards.find(c => c.id === cardId);
+          return updatedCard || { ...prev, metadata: { ...prev.metadata, ...newMetadata } };
+        }
+        return prev;
+      });
+    } catch (err) {
+      console.error("Failed to update card metadata", err);
+    }
+  };
+
   return (
     <div className="active-break-screen">
       {/* Background Decorative Element */}
@@ -160,6 +176,7 @@ export default function App() {
           showAnswer={showAnswer}
           setShowAnswer={setShowAnswer}
           onCompleteBreak={handleCompleteBreak}
+          onUpdateMetadata={handleUpdateCardMetadata}
         />
       </main>
 

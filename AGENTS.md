@@ -28,3 +28,10 @@ Issues and PRDs for this repo live as GitHub issues. See `docs/agents/issue-trac
 ### Domain docs
 
 Single-context repository layout. See `docs/agents/domain.md`.
+
+## Dynamic Metadata Architecture
+
+We support a type-flexible JSON metadata extension on core models (`ActiveRecallCard`, `Stretch`, `PhysicalTrack`) via `metadata: Option<serde_json::Value>` to support UI prototyping without rigid schema migrations.
+- **Merge & Persistence**: Updates are merged recursively in [`state.rs`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/src-tauri/src/core/state.rs) and persisted to disk via Tauri commands in [`data_cmds.rs`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/src-tauri/src/commands/data_cmds.rs).
+
+

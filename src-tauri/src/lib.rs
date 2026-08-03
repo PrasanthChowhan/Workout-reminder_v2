@@ -58,7 +58,10 @@ pub fn run() {
             commands::config_cmds::set_active_track,
             commands::config_cmds::update_track_level,
             commands::dev_cmds::create_dev_issue,
-            commands::config_cmds::open_external_url
+            commands::config_cmds::open_external_url,
+            commands::data_cmds::update_flashcard_metadata,
+            commands::data_cmds::update_track_metadata,
+            commands::data_cmds::update_stretch_metadata
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

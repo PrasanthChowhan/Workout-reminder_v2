@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::sync::Mutex;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -8,6 +9,8 @@ pub struct ActiveRecallCard {
     pub answer: String,
     pub category: String,
     pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +33,8 @@ pub struct Stretch {
     pub equipment: Vec<String>,
     #[serde(default)]
     pub rest_secs: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Value>,
 }
 
 fn default_difficulty() -> String {
@@ -91,6 +96,8 @@ pub struct PhysicalTrack {
     pub levels: Vec<Level>,
     #[serde(default)]
     pub exercises: Option<Vec<CustomExercise>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,6 +146,7 @@ impl Default for AppConfig {
                     answer: "A lifetime is a construct the compiler uses to ensure all borrows are valid and that data isn't dropped while it's still being used.".to_string(),
                     category: "Rust".to_string(),
                     source: Some("https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html".to_string()),
+                    metadata: None,
                 },
                 ActiveRecallCard {
                     id: "2".to_string(),
@@ -146,6 +154,7 @@ impl Default for AppConfig {
                     answer: "String is an owned, growable UTF-8 buffer on the heap. &str is an immutable borrow/view of a UTF-8 string that points to stack, heap, or static memory.".to_string(),
                     category: "Rust".to_string(),
                     source: None,
+                    metadata: None,
                 },
                 ActiveRecallCard {
                     id: "3".to_string(),
@@ -153,6 +162,7 @@ impl Default for AppConfig {
                     answer: "A distributed system can guarantee at most two of: Consistency (every read gets recent data), Availability (every request gets a non-error response), and Partition Tolerance (system functions despite networking splits).".to_string(),
                     category: "System Design".to_string(),
                     source: None,
+                    metadata: None,
                 },
                 ActiveRecallCard {
                     id: "4".to_string(),
@@ -160,6 +170,7 @@ impl Default for AppConfig {
                     answer: "A deep module has a simple interface (few methods) but hides a large amount of complex implementation/behavior behind it, maximizing code leverage.".to_string(),
                     category: "Software Design".to_string(),
                     source: None,
+                    metadata: None,
                 }
             ],
             reflection_prompts: vec![
@@ -181,6 +192,7 @@ impl Default for AppConfig {
                     is_unilateral: false,
                     equipment: vec![],
                     rest_secs: 15,
+                    metadata: None,
                 },
                 Stretch {
                     name: "Neck & Spine Reset".to_string(),
@@ -194,6 +206,7 @@ impl Default for AppConfig {
                     is_unilateral: true,
                     equipment: vec![],
                     rest_secs: 15,
+                    metadata: None,
                 },
                 Stretch {
                     name: "Wrist extension".to_string(),
@@ -207,6 +220,7 @@ impl Default for AppConfig {
                     is_unilateral: true,
                     equipment: vec![],
                     rest_secs: 15,
+                    metadata: None,
                 }
             ],
             tracks: vec![
@@ -345,6 +359,7 @@ impl Default for AppConfig {
                             rest_secs: 0,
                         },
                     ]),
+                    metadata: None,
                 }
             ],
             user_progress: UserProgress {
@@ -472,6 +487,59 @@ impl AppState {
             toggle_menu_item: Mutex::new(None),
         }
     }
+
+    pub fn update_flashcard_metadata(&self, card_id: &str, new_metadata: Value) -> Result<AppConfig, String> {
+        let mut config = self.config.lock().map_err(|e| e.to_string())?;
+        if let Some(card) = config.active_recall_cards.iter_mut().find(|c| c.id == card_id) {
+            let mut current_meta = card.metadata.take().unwrap_or(Value::Object(serde_json::Map::new()));
+            deep_merge(&mut current_meta, new_metadata);
+            card.metadata = Some(current_meta);
+            Ok(config.clone())
+        } else {
+            Err(format!("Flashcard with ID {} not found", card_id))
+        }
+    }
+
+    pub fn update_track_metadata(&self, track_id: &str, new_metadata: Value) -> Result<AppConfig, String> {
+        let mut config = self.config.lock().map_err(|e| e.to_string())?;
+        if let Some(track) = config.tracks.iter_mut().find(|t| t.id == track_id) {
+            let mut current_meta = track.metadata.take().unwrap_or(Value::Object(serde_json::Map::new()));
+            deep_merge(&mut current_meta, new_metadata);
+            track.metadata = Some(current_meta);
+            Ok(config.clone())
+        } else {
+            Err(format!("PhysicalTrack with ID {} not found", track_id))
+        }
+    }
+
+    pub fn update_stretch_metadata(&self, stretch_name: &str, new_metadata: Value) -> Result<AppConfig, String> {
+        let mut config = self.config.lock().map_err(|e| e.to_string())?;
+        if let Some(stretch) = config.stretches.iter_mut().find(|s| s.name == stretch_name) {
+            let mut current_meta = stretch.metadata.take().unwrap_or(Value::Object(serde_json::Map::new()));
+            deep_merge(&mut current_meta, new_metadata);
+            stretch.metadata = Some(current_meta);
+            Ok(config.clone())
+        } else {
+            Err(format!("Stretch with name {} not found", stretch_name))
+        }
+    }
+}
+
+fn deep_merge(a: &mut Value, b: Value) {
+    match (a, b) {
+        (Value::Object(a), Value::Object(b)) => {
+            for (k, v) in b {
+                if v.is_null() {
+                    a.remove(&k);
+                } else {
+                    deep_merge(a.entry(k).or_insert(Value::Null), v);
+                }
+            }
+        }
+        (a, b) => {
+            *a = b;
+        }
+    }
 }
 
 #[derive(serde::Serialize)]
@@ -488,3 +556,80 @@ pub struct SessionDataPayload {
     pub prompt: Option<String>,
     pub stretch: Option<Stretch>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_legacy_deserialization_without_metadata() {
+        let legacy_json = r#"{
+            "id": "legacy_card",
+            "question": "What is 2+2?",
+            "answer": "4",
+            "category": "Math",
+            "source": null
+        }"#;
+
+        let card: ActiveRecallCard = serde_json::from_str(legacy_json).unwrap();
+        assert_eq!(card.id, "legacy_card");
+        assert_eq!(card.question, "What is 2+2?");
+        assert_eq!(card.answer, "4");
+        assert_eq!(card.category, "Math");
+        assert!(card.source.is_none());
+        assert!(card.metadata.is_none());
+    }
+
+    #[test]
+    fn test_deserialization_with_metadata() {
+        let json_data = r#"{
+            "id": "new_card",
+            "question": "What is Rust?",
+            "answer": "A language.",
+            "category": "Programming",
+            "source": "https://rust-lang.org",
+            "metadata": {
+                "difficulty": "easy",
+                "reviews": 5
+            }
+        }"#;
+
+        let card: ActiveRecallCard = serde_json::from_str(json_data).unwrap();
+        assert_eq!(card.id, "new_card");
+        let meta = card.metadata.unwrap();
+        assert_eq!(meta["difficulty"], "easy");
+        assert_eq!(meta["reviews"], 5);
+    }
+
+    #[test]
+    fn test_deep_merge_metadata() {
+        let mut target = json!({
+            "difficulty": "medium",
+            "tags": ["core", "rust"],
+            "details": {
+                "views": 10,
+                "notes": "review needed"
+            }
+        });
+
+        let patch = json!({
+            "difficulty": "easy",
+            "details": {
+                "views": 11,
+                "author": "Antigravity"
+            },
+            "new_field": "hello"
+        });
+
+        deep_merge(&mut target, patch);
+
+        assert_eq!(target["difficulty"], "easy");
+        assert_eq!(target["tags"], json!(["core", "rust"]));
+        assert_eq!(target["details"]["views"], 11);
+        assert_eq!(target["details"]["notes"], "review needed");
+        assert_eq!(target["details"]["author"], "Antigravity");
+        assert_eq!(target["new_field"], "hello");
+    }
+}
+

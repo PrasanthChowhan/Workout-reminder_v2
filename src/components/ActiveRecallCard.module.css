@@ -109,3 +109,60 @@
   width: 1rem;
   height: 1rem;
 }
+
+.difficulty-section {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.difficulty-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+}
+
+.difficulty-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.diff-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px; /* Rounded pill style */
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.diff-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.diff-btn.easy.active {
+  background: rgba(0, 230, 57, 0.15); /* Terminal Green */
+  border-color: #00e639;
+  color: #00e639;
+}
+
+.diff-btn.medium.active {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-off-white);
+  color: var(--color-off-white);
+}
+
+.diff-btn.hard.active {
+  background: rgba(255, 122, 69, 0.15); /* Ignition Orange */
+  border-color: var(--color-brand-orange);
+  color: var(--color-brand-orange);
+}
+

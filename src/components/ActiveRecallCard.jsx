@@ -15,7 +15,8 @@ export default function ActiveRecallCard({
   sessionCard, 
   showAnswer, 
   setShowAnswer, 
-  onCompleteBreak 
+  onCompleteBreak,
+  onUpdateMetadata
  }) {
   const handleOpenSource = () => {
     if (sessionCard?.source) {
@@ -39,6 +40,30 @@ export default function ActiveRecallCard({
               <p>
                 {sessionCard?.answer || "Yes! Continue doing healthy breaks."}
               </p>
+              
+              <div className={styles['difficulty-section']}>
+                <span className={styles['difficulty-label']}>DIFFICULTY RATING:</span>
+                <div className={styles['difficulty-buttons']}>
+                  <button
+                    onClick={() => onUpdateMetadata && onUpdateMetadata(sessionCard.id, { difficulty: "easy" })}
+                    className={`${styles['diff-btn']} ${styles['easy']} ${sessionCard?.metadata?.difficulty === "easy" ? styles['active'] : ""}`}
+                  >
+                    Easy
+                  </button>
+                  <button
+                    onClick={() => onUpdateMetadata && onUpdateMetadata(sessionCard.id, { difficulty: "medium" })}
+                    className={`${styles['diff-btn']} ${styles['medium']} ${sessionCard?.metadata?.difficulty === "medium" ? styles['active'] : ""}`}
+                  >
+                    Medium
+                  </button>
+                  <button
+                    onClick={() => onUpdateMetadata && onUpdateMetadata(sessionCard.id, { difficulty: "hard" })}
+                    className={`${styles['diff-btn']} ${styles['hard']} ${sessionCard?.metadata?.difficulty === "hard" ? styles['active'] : ""}`}
+                  >
+                    Hard
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className={styles['recall-card-answer']} style={{ display: "block" }}>

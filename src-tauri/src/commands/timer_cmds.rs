@@ -79,6 +79,7 @@ pub fn get_session_data(
                             is_unilateral: level.is_unilateral,
                             equipment: level.equipment.clone(),
                             rest_secs: level.rest_secs,
+                            metadata: None,
                         })
                     } else {
                         config.stretches.choose(&mut rng).cloned()
