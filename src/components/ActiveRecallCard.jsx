@@ -26,16 +26,6 @@ export default function ActiveRecallCard({
   return (
     <section className={`active-break-card ${styles['recall-card']}`} data-purpose="primary-session-card">
       <div className={styles['recall-card-top']}>
-        <div className={styles['recall-card-header']}>
-          <span className={styles['recall-card-title-label']}>Active Recall Session</span>
-          <button className={styles['recall-help-btn']} title="Help / Tips">
-            <svg className={styles['help-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <path d="M12 17h.01"></path>
-            </svg>
-          </button>
-        </div>
         <div className={styles['recall-card-body']}>
           <span className={styles['recall-card-category']}>
             {sessionCard?.category || "GENERAL"}
