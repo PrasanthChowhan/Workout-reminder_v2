@@ -19,6 +19,49 @@ const getDifficultyPriority = (diff) => {
   return DIFFICULTY_LEVELS[diff.toLowerCase()] || 1;
 };
 
+const GOAL_PRESETS = [
+  { value: "hip mobility", label: "Hip Mobility" },
+  { value: "core strengthening", label: "Core Strengthening" },
+  { value: "shoulder stability", label: "Shoulder Stability" },
+  { value: "lower body strength", label: "Lower Body Strength" },
+  { value: "posture improvement", label: "Posture Improvement" },
+  { value: "lower back pain relief", label: "Lower Back Pain Relief" },
+  { value: "wrist & forearm mobility", label: "Wrist & Forearm Mobility" },
+  { value: "hamstring flexibility", label: "Hamstring Flexibility" },
+];
+
+const EQUIPMENT_PRESETS = [
+  { value: "[]", label: "Bodyweight (No Equipment)" },
+  { value: '["Mat"]', label: "Mat Only" },
+  { value: '["Resistance Band"]', label: "Resistance Band Only" },
+  { value: '["Mat", "Resistance Band"]', label: "Mat & Resistance Band" },
+];
+
+const DURATION_PRESETS = [
+  { value: "5", label: "5 Minutes" },
+  { value: "10", label: "10 Minutes" },
+  { value: "15", label: "15 Minutes" },
+  { value: "20", label: "20 Minutes" },
+  { value: "30", label: "30 Minutes" },
+];
+
+const INJURY_PRESETS = [
+  { value: "none", label: "None (Healthy)" },
+  { value: "knee pain", label: "Knee Pain / Limitations" },
+  { value: "wrist pain", label: "Wrist Pain / Carpal Tunnel" },
+  { value: "lower back pain", label: "Lower Back Pain" },
+  { value: "shoulder pain", label: "Shoulder Pain / Stiffness" },
+];
+
+const STYLE_PRESETS = [
+  { value: "general", label: "General" },
+  { value: "mobility-focused", label: "Mobility Focused" },
+  { value: "strength-focused", label: "Strength Focused" },
+  { value: "rehab-friendly", label: "Rehab & Recovery" },
+  { value: "yoga/stretching", label: "Yoga & Stretching" },
+];
+
+
 /**
  * TracksTab handles selecting physical tracks, flex tiers, importing custom tracks,
  * deactivating current track, and deleting custom tracks. It implements React-based
@@ -47,12 +90,17 @@ export default function TracksTab({
   const [pastedJson, setPastedJson] = useState("");
   
   // Custom AI prompt input states
-  const [aiGoal, setAiGoal] = useState("hip mobility");
+  const [aiGoalSelect, setAiGoalSelect] = useState("hip mobility");
+  const [aiGoalCustom, setAiGoalCustom] = useState("");
   const [aiLevel, setAiLevel] = useState("beginner");
-  const [aiEquipment, setAiEquipment] = useState("[]");
-  const [aiDuration, setAiDuration] = useState("15");
-  const [aiInjuries, setAiInjuries] = useState("none");
-  const [aiStyle, setAiStyle] = useState("general");
+  const [aiEquipmentSelect, setAiEquipmentSelect] = useState("[]");
+  const [aiEquipmentCustom, setAiEquipmentCustom] = useState("");
+  const [aiDurationSelect, setAiDurationSelect] = useState("15");
+  const [aiDurationCustom, setAiDurationCustom] = useState("");
+  const [aiInjuriesSelect, setAiInjuriesSelect] = useState("none");
+  const [aiInjuriesCustom, setAiInjuriesCustom] = useState("");
+  const [aiStyleSelect, setAiStyleSelect] = useState("general");
+  const [aiStyleCustom, setAiStyleCustom] = useState("");
   
   const fileInputRef = useRef(null);
 
@@ -63,11 +111,31 @@ export default function TracksTab({
     const currentExcluded = selectedTrack.metadata?.excluded_exercises || [];
     let updatedExcluded;
 
+    const isActive = settingsProgress.active_track_id === selectedTrack.id;
+    let displayLevels = [];
+    if (isActive) {
+      displayLevels = selectedTrack.levels || [];
+    } else {
+      if (selectedTrack.exercises) {
+        const filteredExercises = selectedTrack.exercises.filter(ex => {
+          return ex.difficulty.toLowerCase() === previewTier.toLowerCase();
+        });
+        displayLevels = filteredExercises.map((ex, index) => ({
+          level_number: index + 1,
+          title: ex.name,
+          description: ex.description,
+          target_duration_secs: ex.duration_secs,
+          video_url: ex.video_url || ex.url || ex.video_link || null
+        }));
+      } else {
+        displayLevels = selectedTrack.levels || [];
+      }
+    }
+
     if (currentExcluded.includes(exerciseTitle)) {
       updatedExcluded = currentExcluded.filter(name => name !== exerciseTitle);
     } else {
-      const levels = selectedTrack.levels || [];
-      const activeCount = levels.filter(l => !currentExcluded.includes(l.title)).length;
+      const activeCount = displayLevels.filter(l => !currentExcluded.includes(l.title)).length;
       if (activeCount <= 1) {
         toast.error("You must keep at least one exercise active in the program.");
         return;
@@ -90,14 +158,13 @@ export default function TracksTab({
     });
 
     let newSettingsProgress = { ...settingsProgress };
-    if (settingsProgress.active_track_id === selectedTrack.id) {
-      const levels = selectedTrack.levels || [];
-      const activeLevel = levels.find(l => l.level_number === settingsProgress.current_level_number);
+    if (isActive) {
+      const activeLevel = displayLevels.find(l => l.level_number === settingsProgress.current_level_number);
       if (activeLevel && activeLevel.title === exerciseTitle && !currentExcluded.includes(exerciseTitle)) {
         // Find a resolved level number
         let resolvedLevelNum = null;
-        for (let num = settingsProgress.current_level_number; num <= levels.length; num++) {
-          const lvl = levels.find(l => l.level_number === num);
+        for (let num = settingsProgress.current_level_number; num <= displayLevels.length; num++) {
+          const lvl = displayLevels.find(l => l.level_number === num);
           if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
             resolvedLevelNum = num;
             break;
@@ -105,7 +172,7 @@ export default function TracksTab({
         }
         if (!resolvedLevelNum) {
           for (let num = settingsProgress.current_level_number - 1; num >= 1; num--) {
-            const lvl = levels.find(l => l.level_number === num);
+            const lvl = displayLevels.find(l => l.level_number === num);
             if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
               resolvedLevelNum = num;
               break;
@@ -121,7 +188,7 @@ export default function TracksTab({
         }
       } else if (settingsProgress.current_level_number === null) {
         if (currentExcluded.includes(exerciseTitle)) {
-          const lvl = levels.find(l => l.title === exerciseTitle);
+          const lvl = displayLevels.find(l => l.title === exerciseTitle);
           if (lvl) {
             newSettingsProgress.current_level_number = lvl.level_number;
             newSettingsProgress.completed_sessions_count = 0;
@@ -164,13 +231,17 @@ export default function TracksTab({
 
   const handleCopyPrompt = async () => {
     try {
+      const getParamValue = (selectVal, customVal) => {
+        return selectVal === "custom" ? customVal : selectVal;
+      };
+
       const fullPrompt = generateAiPrompt(trainingProgramSchema, {
-        userGoal: aiGoal,
-        userLevel: aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1),
-        availableEquipment: aiEquipment,
-        sessionDuration: aiDuration,
-        injuries: aiInjuries,
-        preferredStyle: aiStyle
+        userGoal: getParamValue(aiGoalSelect, aiGoalCustom) || "hip mobility",
+        userLevel: aiLevel === "progression" ? "Progression (Beginner to Advanced)" : aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1),
+        availableEquipment: getParamValue(aiEquipmentSelect, aiEquipmentCustom) || "[]",
+        sessionDuration: getParamValue(aiDurationSelect, aiDurationCustom) || "15",
+        injuries: getParamValue(aiInjuriesSelect, aiInjuriesCustom) || "none",
+        preferredStyle: getParamValue(aiStyleSelect, aiStyleCustom) || "general"
       });
       await navigator.clipboard.writeText(fullPrompt);
       toast.success("AI Prompt copied with custom parameters!");
@@ -774,19 +845,34 @@ export default function TracksTab({
               </ol>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", marginBottom: "1.5rem" }}>
+              {/* Goal / Focus Topic & Difficulty Level */}
               <div className={styles['ai-input-grid']}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
                     Goal / Focus Topic
                   </label>
-                  <input
-                    type="text"
-                    className={styles['ai-input']}
-                    value={aiGoal}
-                    onChange={(e) => setAiGoal(e.target.value)}
-                    placeholder="e.g., hip mobility, handstand prep"
-                  />
+                  <select
+                    className={styles['ai-select']}
+                    value={aiGoalSelect}
+                    onChange={(e) => setAiGoalSelect(e.target.value)}
+                  >
+                    {GOAL_PRESETS.map((preset) => (
+                      <option key={preset.value} value={preset.value}>{preset.label}</option>
+                    ))}
+                    <option value="custom">Custom...</option>
+                  </select>
+                  {aiGoalSelect === "custom" && (
+                    <input
+                      type="text"
+                      className={styles['ai-input']}
+                      style={{ marginTop: "0.35rem" }}
+                      value={aiGoalCustom}
+                      onChange={(e) => setAiGoalCustom(e.target.value)}
+                      placeholder="e.g., handstand prep, neck release"
+                      autoFocus
+                    />
+                  )}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
@@ -800,62 +886,122 @@ export default function TracksTab({
                     <option value="beginner">Beginner</option>
                     <option value="intermediate">Intermediate</option>
                     <option value="advanced">Advanced</option>
+                    <option value="progression">Progression (Beginner to Advanced)</option>
                   </select>
                 </div>
               </div>
 
+              {/* Available Equipment & Duration */}
               <div className={styles['ai-input-grid']}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
                     Available Equipment
                   </label>
-                  <input
-                    type="text"
-                    className={styles['ai-input']}
-                    value={aiEquipment}
-                    onChange={(e) => setAiEquipment(e.target.value)}
-                    placeholder='e.g., ["Mat", "Resistance Band"] or []'
-                  />
+                  <select
+                    className={styles['ai-select']}
+                    value={aiEquipmentSelect}
+                    onChange={(e) => setAiEquipmentSelect(e.target.value)}
+                  >
+                    {EQUIPMENT_PRESETS.map((preset) => (
+                      <option key={preset.value} value={preset.value}>{preset.label}</option>
+                    ))}
+                    <option value="custom">Custom...</option>
+                  </select>
+                  {aiEquipmentSelect === "custom" && (
+                    <input
+                      type="text"
+                      className={styles['ai-input']}
+                      style={{ marginTop: "0.35rem" }}
+                      value={aiEquipmentCustom}
+                      onChange={(e) => setAiEquipmentCustom(e.target.value)}
+                      placeholder='e.g., ["Mat", "Resistance Band"] or []'
+                      autoFocus
+                    />
+                  )}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
                     Duration (Minutes)
                   </label>
-                  <input
-                    type="number"
-                    min="5"
-                    max="60"
-                    className={styles['ai-input']}
-                    value={aiDuration}
-                    onChange={(e) => setAiDuration(e.target.value)}
-                  />
+                  <select
+                    className={styles['ai-select']}
+                    value={aiDurationSelect}
+                    onChange={(e) => setAiDurationSelect(e.target.value)}
+                  >
+                    {DURATION_PRESETS.map((preset) => (
+                      <option key={preset.value} value={preset.value}>{preset.label}</option>
+                    ))}
+                    <option value="custom">Custom...</option>
+                  </select>
+                  {aiDurationSelect === "custom" && (
+                    <input
+                      type="number"
+                      min="5"
+                      max="60"
+                      className={styles['ai-input']}
+                      style={{ marginTop: "0.35rem" }}
+                      value={aiDurationCustom}
+                      onChange={(e) => setAiDurationCustom(e.target.value)}
+                      placeholder="e.g. 15"
+                      autoFocus
+                    />
+                  )}
                 </div>
               </div>
 
+              {/* Injuries / Limitations & Preferred Style */}
               <div className={styles['ai-input-grid']}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
                     Injuries / Limitations
                   </label>
-                  <input
-                    type="text"
-                    className={styles['ai-input']}
-                    value={aiInjuries}
-                    onChange={(e) => setAiInjuries(e.target.value)}
-                    placeholder='e.g., knee pain, none'
-                  />
+                  <select
+                    className={styles['ai-select']}
+                    value={aiInjuriesSelect}
+                    onChange={(e) => setAiInjuriesSelect(e.target.value)}
+                  >
+                    {INJURY_PRESETS.map((preset) => (
+                      <option key={preset.value} value={preset.value}>{preset.label}</option>
+                    ))}
+                    <option value="custom">Custom...</option>
+                  </select>
+                  {aiInjuriesSelect === "custom" && (
+                    <input
+                      type="text"
+                      className={styles['ai-input']}
+                      style={{ marginTop: "0.35rem" }}
+                      value={aiInjuriesCustom}
+                      onChange={(e) => setAiInjuriesCustom(e.target.value)}
+                      placeholder="e.g., knee pain, none"
+                      autoFocus
+                    />
+                  )}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
                     Preferred Style
                   </label>
-                  <input
-                    type="text"
-                    className={styles['ai-input']}
-                    value={aiStyle}
-                    onChange={(e) => setAiStyle(e.target.value)}
-                    placeholder='e.g., strength-focused, rehab'
-                  />
+                  <select
+                    className={styles['ai-select']}
+                    value={aiStyleSelect}
+                    onChange={(e) => setAiStyleSelect(e.target.value)}
+                  >
+                    {STYLE_PRESETS.map((preset) => (
+                      <option key={preset.value} value={preset.value}>{preset.label}</option>
+                    ))}
+                    <option value="custom">Custom...</option>
+                  </select>
+                  {aiStyleSelect === "custom" && (
+                    <input
+                      type="text"
+                      className={styles['ai-input']}
+                      style={{ marginTop: "0.35rem" }}
+                      value={aiStyleCustom}
+                      onChange={(e) => setAiStyleCustom(e.target.value)}
+                      placeholder="e.g., strength-focused, rehab"
+                      autoFocus
+                    />
+                  )}
                 </div>
               </div>
             </div>
