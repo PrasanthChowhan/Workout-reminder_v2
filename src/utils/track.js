@@ -38,8 +38,8 @@ export const validateTrack = (track) => {
       if (typeof ex.difficulty !== "string" || !ex.difficulty.trim()) {
         return `Exercise ${i + 1}: Missing or invalid 'difficulty'.`;
       }
-      if (typeof ex.duration_secs !== "number" || isNaN(ex.duration_secs) || ex.duration_secs <= 0) {
-        return `Exercise ${i + 1}: Missing or invalid 'duration_secs' (must be a positive number).`;
+      if (typeof ex.duration_secs !== "number" || isNaN(ex.duration_secs) || ex.duration_secs < 0) {
+        return `Exercise ${i + 1}: Missing or invalid 'duration_secs' (must be a non-negative number).`;
       }
     }
   } else if (Array.isArray(track.levels)) {
