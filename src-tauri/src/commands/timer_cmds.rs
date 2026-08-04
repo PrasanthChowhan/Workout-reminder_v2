@@ -124,9 +124,23 @@ pub fn complete_break(
     // If action is "done", increment progress
     if action == "done" {
         let mut config = state.config.lock().unwrap();
-        if config.user_progress.active_track_id.is_some() {
+        if let Some(ref track_id) = config.user_progress.active_track_id {
             config.user_progress.completed_sessions_count += 1;
             config.user_progress.last_completed_at = Some(chrono::Utc::now().to_rfc3339());
+            
+            // Auto-advance level after 5 completed sessions if a next level exists
+            if config.user_progress.completed_sessions_count >= 5 {
+                if let Some(current_level) = config.user_progress.current_level_number {
+                    if let Some(track) = config.tracks.iter().find(|t| t.id == *track_id) {
+                        let max_levels = track.levels.len() as u64;
+                        if current_level < max_levels {
+                            config.user_progress.current_level_number = Some(current_level + 1);
+                            config.user_progress.completed_sessions_count = 0;
+                        }
+                    }
+                }
+            }
+
             if let Err(e) = save_config_file(&app, &config) {
                 eprintln!("Failed to save config on break completion: {}", e);
             }
