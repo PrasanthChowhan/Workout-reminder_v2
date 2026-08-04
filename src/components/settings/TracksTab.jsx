@@ -483,7 +483,7 @@ export default function TracksTab({
             onChange={handleImportTrack}
           />
           <p className={parentStyles['settings-item-desc']} style={{ marginBottom: "1rem" }}>
-            Double-click a track or hover and click "View Exercises" to inspect workouts, configure difficulty, and select your progression.
+            Double-click a track to inspect workouts, configure difficulty, and select your progression.
           </p>
 
           {sortedTracks.map(track => {
