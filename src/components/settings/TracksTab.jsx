@@ -46,6 +46,14 @@ export default function TracksTab({
   const [showAiWorkoutModal, setShowAiWorkoutModal] = useState(false);
   const [pastedJson, setPastedJson] = useState("");
   
+  // Custom AI prompt input states
+  const [aiGoal, setAiGoal] = useState("hip mobility");
+  const [aiLevel, setAiLevel] = useState("beginner");
+  const [aiEquipment, setAiEquipment] = useState("[]");
+  const [aiDuration, setAiDuration] = useState("15");
+  const [aiInjuries, setAiInjuries] = useState("none");
+  const [aiStyle, setAiStyle] = useState("general");
+  
   const fileInputRef = useRef(null);
 
   const handleToggleExclude = (exerciseTitle) => {
@@ -156,9 +164,16 @@ export default function TracksTab({
 
   const handleCopyPrompt = async () => {
     try {
-      const fullPrompt = generateAiPrompt(trainingProgramSchema);
+      const fullPrompt = generateAiPrompt(trainingProgramSchema, {
+        userGoal: aiGoal,
+        userLevel: aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1),
+        availableEquipment: aiEquipment,
+        sessionDuration: aiDuration,
+        injuries: aiInjuries,
+        preferredStyle: aiStyle
+      });
       await navigator.clipboard.writeText(fullPrompt);
-      toast.success("AI Prompt copied!");
+      toast.success("AI Prompt copied with custom parameters!");
     } catch (e) {
       console.error(e);
       toast.error("Failed to copy prompt.");
@@ -604,6 +619,10 @@ export default function TracksTab({
                                 e.stopPropagation();
                                 handleToggleExclude(level.title);
                               }}
+                              title={isExcluded 
+                                ? "Include this exercise back into your break and progression list." 
+                                : "Exclude this exercise. It will be skipped during breaks and automatic progression."
+                              }
                             >
                               {isExcluded ? "Excluded" : "Exclude"}
                             </button>
@@ -753,6 +772,92 @@ export default function TracksTab({
                 <li>Paste the prompt into any AI tool (Gemini, Claude, ChatGPT, etc.) to generate your custom program.</li>
                 <li>Paste the resulting JSON block in the textarea below and click <strong>"Apply Program"</strong>.</li>
               </ol>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div className={styles['ai-input-grid']}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
+                    Goal / Focus Topic
+                  </label>
+                  <input
+                    type="text"
+                    className={styles['ai-input']}
+                    value={aiGoal}
+                    onChange={(e) => setAiGoal(e.target.value)}
+                    placeholder="e.g., hip mobility, handstand prep"
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
+                    Difficulty Level
+                  </label>
+                  <select
+                    className={styles['ai-select']}
+                    value={aiLevel}
+                    onChange={(e) => setAiLevel(e.target.value)}
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles['ai-input-grid']}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
+                    Available Equipment
+                  </label>
+                  <input
+                    type="text"
+                    className={styles['ai-input']}
+                    value={aiEquipment}
+                    onChange={(e) => setAiEquipment(e.target.value)}
+                    placeholder='e.g., ["Mat", "Resistance Band"] or []'
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
+                    Duration (Minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="60"
+                    className={styles['ai-input']}
+                    value={aiDuration}
+                    onChange={(e) => setAiDuration(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className={styles['ai-input-grid']}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
+                    Injuries / Limitations
+                  </label>
+                  <input
+                    type="text"
+                    className={styles['ai-input']}
+                    value={aiInjuries}
+                    onChange={(e) => setAiInjuries(e.target.value)}
+                    placeholder='e.g., knee pain, none'
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.8rem", textTransform: "none", letterSpacing: "normal" }}>
+                    Preferred Style
+                  </label>
+                  <input
+                    type="text"
+                    className={styles['ai-input']}
+                    value={aiStyle}
+                    onChange={(e) => setAiStyle(e.target.value)}
+                    placeholder='e.g., strength-focused, rehab'
+                  />
+                </div>
+              </div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "1.5rem" }}>
