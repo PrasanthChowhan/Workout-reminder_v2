@@ -66,11 +66,18 @@
   color: var(--color-off-white);
   background: transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring));
 }
 
 .recall-source-btn:hover {
   background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.35);
+  scale: 1.04;
+}
+
+.recall-source-btn:active {
+  scale: 0.96;
+  transition: scale 0.12s ease-out;
 }
 
 .source-icon {
@@ -92,12 +99,19 @@
   letter-spacing: 0.1em;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: filter 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
   text-transform: uppercase;
 }
 
 .recall-primary-btn:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.15);
+  scale: 1.04;
+  box-shadow: 0 0 16px rgba(255, 122, 69, 0.45);
+}
+
+.recall-primary-btn:active {
+  scale: 0.96;
+  transition: scale 0.12s ease-out;
 }
 
 .recall-primary-btn.success {
@@ -140,29 +154,84 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--color-text-muted);
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
   text-transform: uppercase;
 }
 
 .diff-btn:hover {
   background: rgba(255, 255, 255, 0.08);
+  scale: 1.05;
+}
+
+.diff-btn:active {
+  scale: 0.95;
+  transition: scale 0.12s ease-out;
 }
 
 .diff-btn.easy.active {
   background: rgba(0, 230, 57, 0.15); /* Terminal Green */
   border-color: #00e639;
   color: #00e639;
+  box-shadow: 0 0 10px rgba(0, 230, 57, 0.35);
 }
 
 .diff-btn.medium.active {
   background: rgba(255, 255, 255, 0.1);
   border-color: var(--color-off-white);
   color: var(--color-off-white);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
 }
 
 .diff-btn.hard.active {
   background: rgba(255, 122, 69, 0.15); /* Ignition Orange */
   border-color: var(--color-brand-orange);
   color: var(--color-brand-orange);
+  box-shadow: 0 0 10px rgba(255, 122, 69, 0.35);
+}
+
+/* Answer reveal transitions */
+.recall-card-answer-hint {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.4s var(--spring-easing, var(--fallback-spring));
+}
+
+.recall-card-answer-hint.hidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.recall-card-answer-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: grid-template-rows 0.5s var(--spring-easing, var(--fallback-spring)),
+              opacity 0.3s ease,
+              transform 0.4s var(--spring-easing, var(--fallback-spring));
+}
+
+.recall-card-answer-wrapper.visible {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.recall-card-answer-content {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recall-source-btn,
+  .recall-primary-btn,
+  .diff-btn,
+  .recall-card-answer-hint,
+  .recall-card-answer-wrapper {
+    transition: none !important;
+    scale: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
 }
 

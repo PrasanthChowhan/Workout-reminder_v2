@@ -22,7 +22,7 @@
   width: 100%;
   max-width: 500px;
   box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.9);
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUp 0.5s var(--spring-easing, var(--fallback-spring));
   display: flex;
   flex-direction: column;
 }
@@ -53,7 +53,7 @@
   font-family: var(--font-sans);
   font-size: 0.95rem;
   margin-bottom: 1.25rem;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.4s var(--spring-easing, var(--fallback-spring)), scale 0.4s var(--spring-easing, var(--fallback-spring));
   width: 100%;
   box-sizing: border-box;
 }
@@ -61,6 +61,8 @@
 .skip-reason-input:focus {
   outline: none;
   border-color: var(--color-brand-orange);
+  box-shadow: 0 0 10px rgba(255, 122, 69, 0.3);
+  scale: 1.015;
 }
 
 .skip-chips-container {
@@ -80,19 +82,27 @@
   padding: 0.5rem 1rem;
   border-radius: var(--radius-full);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
 }
 
 .skip-chip:hover {
   background-color: rgba(255, 255, 255, 0.08);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.15);
+  scale: 1.04;
+}
+
+.skip-chip:active {
+  scale: 0.96;
+  transition: scale 0.12s ease-out;
 }
 
 .skip-chip.active {
   background-color: rgba(255, 92, 0, 0.12);
   border-color: var(--color-brand-orange);
   color: var(--color-brand-orange);
+  box-shadow: 0 0 10px rgba(255, 122, 69, 0.25);
+  scale: 1.04;
 }
 
 .skip-reason-submit-btn {
@@ -106,13 +116,20 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: filter 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
   text-transform: uppercase;
   width: 100%;
 }
 
 .skip-reason-submit-btn:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.15);
+  scale: 1.03;
+  box-shadow: 0 0 16px rgba(255, 122, 69, 0.45);
+}
+
+.skip-reason-submit-btn:active {
+  scale: 0.97;
+  transition: scale 0.12s ease-out;
 }
 
 @keyframes fadeIn {
@@ -138,7 +155,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.6s var(--bounce-easing, var(--fallback-bounce));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -150,5 +167,25 @@
 .settings-close-btn:hover {
   color: var(--color-brand-orange);
   background-color: rgba(255, 255, 255, 0.05);
+  transform: scale(1.15) rotate(90deg);
+}
+
+.settings-close-btn:active {
+  transform: scale(0.9) rotate(90deg);
+  transition: transform 0.12s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-reason-modal,
+  .skip-reason-input,
+  .skip-chip,
+  .skip-reason-submit-btn,
+  .settings-close-btn {
+    transition: none !important;
+    animation: none !important;
+    scale: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
 }
 

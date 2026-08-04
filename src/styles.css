@@ -20,6 +20,17 @@
   --radius-lg: 2rem;
   --radius-xl: 3rem;
   --radius-full: 9999px;
+
+  /* Apple-Style Easing Curves (Smooth and Snappy) */
+  /* --spring-easing mimics Apple's iOS/macOS Default Smooth Spring (Critically Damped, 0% overshoot) */
+  --spring-easing: linear(0, 0.12 1.9%, 0.28 4%, 0.43 6.3%, 0.55 8.8%, 0.65 11.5%, 0.73 14.5%, 0.80 18%, 0.85 22.1%, 0.89 27.1%, 0.93 33.3%, 0.96 41.5%, 0.98 52.8%, 0.99 70.3%, 1);
+  
+  /* --bounce-easing mimics Apple's Snappy Spring (Slightly Underdamped, ~2.8% overshoot, zero wobble oscillation) */
+  --bounce-easing: linear(0, 0.16 1.7%, 0.37 3.5%, 0.55 5.5%, 0.70 7.7%, 0.82 10.2%, 0.91 13%, 0.97 16.2%, 1.01 20%, 1.025 24.7%, 1.028 27.7%, 1.025 31%, 1.01 37.8%, 1.002 47.7%, 1);
+
+  /* Fallback Bezier profiles matching Apple's smooth ease-out and snappy springs */
+  --fallback-spring: cubic-bezier(0.15, 0.85, 0.35, 1);
+  --fallback-bounce: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -118,7 +129,7 @@ body {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.6s var(--bounce-easing, var(--fallback-bounce));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,6 +138,12 @@ body {
 
 .active-break-settings-btn:hover {
   color: var(--color-brand-orange);
+  transform: translateY(-50%) rotate(45deg) scale(1.15);
+}
+
+.active-break-settings-btn:active {
+  transform: translateY(-50%) rotate(45deg) scale(0.95);
+  transition: transform 0.12s ease-out;
 }
 
 /* Cards Layout Grid */
@@ -173,13 +190,19 @@ body {
   letter-spacing: 0.1em;
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring));
   text-transform: uppercase;
 }
 
 .footer-secondary-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: #fff;
+  scale: 1.04;
+}
+
+.footer-secondary-btn:active {
+  scale: 0.96;
+  transition: scale 0.12s ease-out;
 }
 
 .footer-primary-btn {
@@ -196,12 +219,19 @@ body {
   letter-spacing: 0.1em;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: filter 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
   text-transform: uppercase;
 }
 
 .footer-primary-btn:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.15);
+  scale: 1.04;
+  box-shadow: 0 0 16px rgba(255, 122, 69, 0.45);
+}
+
+.footer-primary-btn:active {
+  scale: 0.96;
+  transition: scale 0.12s ease-out;
 }
 
 .footer-check-icon {
@@ -241,7 +271,7 @@ body {
 .footer-secondary-btn.hold-btn.holding {
   border-color: var(--color-brand-orange);
   color: #fff;
-  transform: scale(0.98);
+  scale: 0.98;
 }
 
 .hold-progress-bar {
@@ -258,4 +288,126 @@ body {
 .footer-secondary-btn.hold-btn span {
   position: relative;
   z-index: 2;
+}
+
+/* Toast Notifications Stacker */
+.toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  background-color: var(--color-card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--color-brand-orange); /* Info/Default is Ignition Orange */
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+  min-width: 300px;
+  max-width: 450px;
+  animation: toastSlideIn 0.5s var(--spring-easing, var(--fallback-spring));
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.4s var(--spring-easing, var(--fallback-spring));
+}
+
+.toast:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.toast.success {
+  border-left-color: #00e639; /* Terminal Green success */
+}
+
+.toast.error {
+  border-left-color: var(--color-brand-orange);
+}
+
+.toast-body {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-grow: 1;
+}
+
+.toast-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+.toast-icon.success {
+  color: #00e639;
+}
+
+.toast-icon.error {
+  color: var(--color-brand-orange);
+}
+
+.toast-icon.info {
+  color: var(--color-brand-orange);
+}
+
+.toast-message {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-off-white);
+  line-height: 1.4;
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  transition: all 0.2s ease;
+}
+
+.toast-close-btn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateY(20px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-secondary-btn,
+  .footer-primary-btn,
+  .active-break-settings-btn,
+  .toast {
+    transition: none !important;
+    scale: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
 }

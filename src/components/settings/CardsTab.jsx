@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "../../utils/toast";
 
 /**
  * CardsTab renders the active recall cards CRUD list.
@@ -22,10 +23,12 @@ export default function CardsTab({ editableCards, setEditableCards, styles }) {
     };
     setEditableCards([...editableCards, card]);
     setNewCard({ category: "", question: "", answer: "" });
+    toast.success("Recall card added successfully!");
   };
 
   const handleDeleteCard = (id) => {
     setEditableCards(editableCards.filter(c => c.id !== id));
+    toast.info("Recall card deleted.");
   };
 
   return (

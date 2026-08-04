@@ -409,23 +409,12 @@ impl AppConfig {
             .unwrap_or("beginner")
             .to_lowercase();
 
-        let difficulty_priority = |diff: &str| -> u32 {
-            match diff.to_lowercase().as_str() {
-                "beginner" => 1,
-                "intermediate" => 2,
-                "advanced" => 3,
-                _ => 1,
-            }
-        };
-
-        let user_priority = difficulty_priority(&onboarding_tier);
-
         for track in &mut self.tracks {
             if let Some(ref exercises) = track.exercises {
                 if !exercises.is_empty() {
                     let filtered: Vec<&CustomExercise> = exercises
                         .iter()
-                        .filter(|ex| difficulty_priority(&ex.difficulty) <= user_priority)
+                        .filter(|ex| ex.difficulty.to_lowercase() == onboarding_tier)
                         .collect();
 
                     let mut levels = Vec::new();

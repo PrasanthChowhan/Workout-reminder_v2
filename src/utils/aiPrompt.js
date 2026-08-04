@@ -1,4 +1,11 @@
-export const generateAiPrompt = (schemaString) => {
+export const generateAiPrompt = (schemaString, options = {}) => {
+  const userGoal = options.userGoal || "hip mobility";
+  const userLevel = options.userLevel || "Beginner";
+  const availableEquipment = options.availableEquipment || "[]";
+  const sessionDuration = options.sessionDuration || "15";
+  const injuries = options.injuries || "none";
+  const preferredStyle = options.preferredStyle || "general";
+
   return `You are an expert personal trainer and physical therapist.
 
 Your task is to generate a custom physical training program as a single valid JSON object that strictly conforms to the JSON schema provided at the end of this prompt.
@@ -8,17 +15,17 @@ The program must be tailored to the user’s requested goal, such as hip mobilit
 Inputs
 Use these inputs to tailor the program:
 
-user_goal: {{USER_GOAL}}
+user_goal: ${userGoal}
 
-user_level: {{BEGINNER | INTERMEDIATE | ADVANCED}}
+user_level: ${userLevel}
 
-available_equipment: {{ARRAY_OF_STRINGS}} // e.g. ["Mat", "Resistance Band"] or []
+available_equipment: ${availableEquipment}
 
-session_duration_minutes: {{INTEGER}}
+session_duration_minutes: ${sessionDuration}
 
-injuries_or_limitations: {{STRING OR "none"}}
+injuries_or_limitations: ${injuries}
 
-preferred_style: {{STRING OR "general"}} // e.g. "mobility-focused", "strength-focused", "rehab"
+preferred_style: ${preferredStyle}
 
 If some inputs are missing, make conservative, safe assumptions appropriate for a general user. Do not ask the user any questions; just infer safe defaults.
 

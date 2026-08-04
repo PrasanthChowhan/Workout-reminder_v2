@@ -35,8 +35,14 @@ export default function ActiveRecallCard({
             {sessionCard?.question || "Are both study and body break concepts clear?"}
           </h2>
           
-          {showAnswer ? (
-            <div className={`${styles['recall-card-answer']} ${styles['visible']}`}>
+          <div className={`${styles['recall-card-answer-hint']} ${showAnswer ? styles['hidden'] : ""}`}>
+            <p style={{ opacity: 0.4, fontStyle: "italic", fontSize: "1rem" }}>
+              Answer is hidden. Click "Show Answer" below to reveal.
+            </p>
+          </div>
+          
+          <div className={`${styles['recall-card-answer-wrapper']} ${showAnswer ? styles['visible'] : ""}`}>
+            <div className={styles['recall-card-answer-content']}>
               <p>
                 {sessionCard?.answer || "Yes! Continue doing healthy breaks."}
               </p>
@@ -65,13 +71,7 @@ export default function ActiveRecallCard({
                 </div>
               </div>
             </div>
-          ) : (
-            <div className={styles['recall-card-answer']} style={{ display: "block" }}>
-              <p style={{ opacity: 0.4, fontStyle: "italic", fontSize: "1rem" }}>
-                Answer is hidden. Click "Show Answer" below to reveal.
-              </p>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 

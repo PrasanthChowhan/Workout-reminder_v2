@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "../../utils/toast";
 
 /**
  * PromptsTab renders the reflection prompts CRUD list.
@@ -15,10 +16,12 @@ export default function PromptsTab({ editablePrompts, setEditablePrompts, styles
     if (!newPrompt.trim()) return;
     setEditablePrompts([...editablePrompts, newPrompt.trim()]);
     setNewPrompt("");
+    toast.success("Reflection prompt added successfully!");
   };
 
   const handleDeletePrompt = (indexToDelete) => {
     setEditablePrompts(editablePrompts.filter((_, idx) => idx !== indexToDelete));
+    toast.info("Reflection prompt deleted.");
   };
 
   return (

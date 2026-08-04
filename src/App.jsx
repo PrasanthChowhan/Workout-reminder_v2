@@ -9,6 +9,7 @@ import ActiveRecallCard from "./components/ActiveRecallCard";
 import SkipReasonModal from "./components/SkipReasonModal";
 import SettingsModal from "./components/settings/SettingsModal";
 import { DevIssueReporter } from "tauri-plugin-dev-issues";
+import { toast } from "./utils/toast";
 
 /**
  * App is the high-level orchestrator component.
@@ -25,6 +26,22 @@ export default function App() {
   // Modal visibility states
   const [showSkipReasonModal, setShowSkipReasonModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    const handleToastEvent = (e) => {
+      const { message, type } = e.detail;
+      const id = Math.random().toString(36).substring(2, 9);
+      setToasts((prev) => [...prev, { id, message, type }]);
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 4000);
+    };
+    window.addEventListener("app-toast", handleToastEvent);
+    return () => window.removeEventListener("app-toast", handleToastEvent);
+  }, []);
 
   // Load configuration and default first break data on mount
   useEffect(() => {
@@ -120,8 +137,10 @@ export default function App() {
       setAppConfig(newConfig);
       setShowSettings(false);
       triggerBreak();
+      toast.success("Configuration saved successfully.");
     } catch (err) {
       console.error("Failed to save configuration", err);
+      toast.error("Failed to save configuration.");
     }
   };
 
@@ -222,6 +241,39 @@ export default function App() {
 
       {/* Dev Issue Reporter (only enabled in development environment) */}
       {import.meta.env.DEV && <DevIssueReporter />}
+
+      {/* Toast Notification Container */}
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div 
+            key={t.id} 
+            className={`toast ${t.type}`}
+            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+          >
+            <div className="toast-body">
+              {t.type === "success" ? (
+                <svg className="toast-icon success" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              ) : t.type === "error" ? (
+                <svg className="toast-icon error" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" x2="9" y1="9" y2="15"></line>
+                  <line x1="9" x2="15" y1="9" y2="15"></line>
+                </svg>
+              ) : (
+                <svg className="toast-icon info" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" x2="12" y1="16" y2="12"></line>
+                  <line x1="12" x2="12.01" y1="8" y2="8"></line>
+                </svg>
+              )}
+              <span className="toast-message">{t.message}</span>
+            </div>
+            <button className="toast-close-btn">&times;</button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

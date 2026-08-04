@@ -96,13 +96,13 @@
   flex-direction: column;
   box-sizing: border-box;
   border-radius: 3rem; /* Match card radius */
-  animation: fadeInDetails 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInDetails 0.6s var(--spring-easing, var(--fallback-spring));
 }
 
 @keyframes fadeInDetails {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -132,7 +132,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.6s var(--bounce-easing, var(--fallback-bounce));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,7 +144,12 @@
 .stretch-details-close-btn:hover {
   color: var(--color-brand-orange);
   background-color: rgba(255, 255, 255, 0.05);
-  transform: scale(1.05);
+  transform: scale(1.15) rotate(90deg);
+}
+
+.stretch-details-close-btn:active {
+  transform: scale(0.9) rotate(90deg);
+  transition: transform 0.12s ease-out;
 }
 
 .stretch-details-close-btn .close-icon {
@@ -229,12 +234,18 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring));
   text-transform: uppercase;
 }
 
 .stretch-action-btn:hover {
   color: #fff;
+  scale: 1.05;
+}
+
+.stretch-action-btn:active {
+  scale: 0.95;
+  transition: scale 0.12s ease-out;
 }
 
 .stretch-action-btn.active {
@@ -250,7 +261,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -258,6 +269,12 @@
 
 .stretch-maximize-btn:hover {
   color: #fff;
+  scale: 1.12;
+}
+
+.stretch-maximize-btn:active {
+  scale: 0.88;
+  transition: scale 0.12s ease-out;
 }
 
 .action-icon {
@@ -388,5 +405,21 @@
   color: var(--color-text-muted);
   font-size: 8px;
   font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-path {
+    animation: none !important;
+  }
+  .stretch-details-overlay {
+    animation: none !important;
+  }
+  .stretch-details-close-btn,
+  .stretch-action-btn,
+  .stretch-maximize-btn {
+    transition: none !important;
+    scale: none !important;
+    transform: none !important;
+  }
 }
 

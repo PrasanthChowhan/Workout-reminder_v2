@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "../../utils/toast";
 
 /**
  * StretchesTab renders the custom stretches CRUD list.
@@ -24,10 +25,12 @@ export default function StretchesTab({ editableStretches, setEditableStretches, 
     };
     setEditableStretches([...editableStretches, stretch]);
     setNewStretch({ name: "", description: "", duration_secs: 30 });
+    toast.success("Guided stretch added successfully!");
   };
 
   const handleDeleteStretch = (name) => {
     setEditableStretches(editableStretches.filter(s => s.name !== name));
+    toast.info("Guided stretch deleted.");
   };
 
   return (
