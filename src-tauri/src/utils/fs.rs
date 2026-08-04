@@ -23,11 +23,6 @@ pub fn load_config(app: &AppHandle) -> AppConfig {
                     // Update default tracks to ensure they have the latest exercises/video URLs
                     let default_config = AppConfig::default();
                     
-                    // Retain only default tracks
-                    config.tracks.retain(|existing_track| {
-                        default_config.tracks.iter().any(|dt| dt.id == existing_track.id)
-                    });
-
                     for default_track in default_config.tracks {
                         if let Some(existing_track) = config.tracks.iter_mut().find(|t| t.id == default_track.id) {
                             // Only overwrite levels if the default track doesn't use the exercises schema.

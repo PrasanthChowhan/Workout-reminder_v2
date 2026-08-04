@@ -18,6 +18,11 @@
   border-color: var(--color-brand-orange);
   background-color: rgba(255, 92, 0, 0.02);
 }
+.track-selection-card.selected {
+  border-color: var(--color-brand-orange);
+  background-color: rgba(255, 92, 0, 0.05);
+  box-shadow: 0 0 8px rgba(255, 92, 0, 0.15);
+}
 .track-selection-title {
   font-family: var(--font-sans);
   font-size: 1.1rem;
