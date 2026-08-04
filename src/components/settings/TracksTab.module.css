@@ -435,31 +435,6 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-.view-exercises-overlay-btn {
-  position: absolute;
-  right: 1.25rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: var(--color-brand-orange);
-  color: #000;
-  border: none;
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.track-selection-card:hover .view-exercises-overlay-btn {
-  opacity: 1;
-  pointer-events: auto;
-}
 
 .back-btn {
   display: inline-flex;

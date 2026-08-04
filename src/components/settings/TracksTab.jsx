@@ -498,7 +498,7 @@ export default function TracksTab({
                 }}
                 title="Double click to open exercises"
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingRight: "7.5rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                     <h4 className={styles['track-selection-title']}>{track.name}</h4>
                     {isActive && (
@@ -523,16 +523,6 @@ export default function TracksTab({
                   )}
                 </div>
                 <p className={styles['track-selection-desc']}>{track.description}</p>
-                <button 
-                  type="button" 
-                  className={styles['view-exercises-overlay-btn']}
-                  onClick={() => {
-                    setViewedTrackId(track.id);
-                    setPreviewTier(isActive ? (settingsProgress.onboarding_tier || "beginner") : "beginner");
-                  }}
-                >
-                  View Exercises
-                </button>
               </div>
             );
           })}
