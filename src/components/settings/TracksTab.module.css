@@ -351,6 +351,26 @@
   color: #fff;
 }
 
+.track-copy-prompt-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(82, 196, 26, 0.4);
+  background-color: transparent;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #52c41a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+.track-copy-prompt-btn:hover {
+  background-color: rgba(82, 196, 26, 0.1);
+  border-color: #52c41a;
+  color: #fff;
+}
+
 .track-delete-btn {
   background: transparent;
   border: none;

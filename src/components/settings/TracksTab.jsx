@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { validateTrack } from "../../utils/track";
 import styles from "./TracksTab.module.css";
+import trainingProgramSchema from "../../../docs/schemas/training-program.schema.json";
 
 /**
  * TracksTab handles selecting physical tracks, flex tiers, importing custom tracks,
@@ -36,6 +37,41 @@ export default function TracksTab({
 
   const showNotify = (message) => {
     setNotification({ message });
+  };
+
+  const handleCopyPrompt = async () => {
+    try {
+      const schemaString = JSON.stringify(trainingProgramSchema, null, 2);
+      const promptText = `You are an expert personal trainer and physical therapist. Your task is to generate a custom physical training program JSON file that conforms to the JSON schema provided below.
+
+The training program should be designed around the user's specific request (e.g. "I want a routine for hip opening", "I want a core strengthening routine", etc.).
+
+Please ensure the generated JSON strictly follows these rules:
+1. Conform to the JSON Schema provided.
+2. All fields in the exercises must be present.
+3. Use a unique \`id\` for the program (e.g., 'my_custom_program_001').
+4. The \`exercises\` array should contain a progression of exercises (e.g. 5 to 8 exercises) with clear \`difficulty\` levels (Beginner, Intermediate, Advanced, Expert).
+5. For each exercise:
+   - \`duration_secs\`: set to a positive integer (e.g. 30, 45, 60) for static holds, OR 0 if the exercise is strictly rep-based (where reps are defined by reps_min and reps_max).
+   - \`reps_min\` and \`reps_max\`: positive integers for rep-based exercises, OR null if the exercise is a static hold.
+   - \`sets\`: positive integer (typically 3 or 4).
+   - \`rest_secs\`: rest time in seconds between sets (e.g. 30, 45, 60).
+   - \`is_unilateral\`: true if the exercise is done on one side at a time (e.g. single-leg stands, one-sided stretches), false otherwise.
+   - \`category\`: e.g. "Mobility", "Strength", "Power", "Core", "Skill".
+   - \`muscle_groups\`: array of target muscles (e.g. ["Hamstrings", "Glutes", "Core"]). At least 1 muscle group must be specified.
+   - \`equipment\`: array of required equipment (e.g. ["Wall", "Mat", "Yoga Block"]) or empty array \`[]\` if no equipment is needed.
+   - \`video_url\` and \`image_url\`: set to null or a valid URL/string.
+
+Here is the JSON Schema:
+${schemaString}
+
+Please output ONLY the valid JSON object. Do not include markdown code block formatting (such as \`\`\`json) or any conversational text.`;
+
+      await navigator.clipboard.writeText(promptText);
+      showNotify("Successfully copied the AI Prompt & JSON Schema to your clipboard! You can paste this to any AI model (e.g., Gemini, Claude, ChatGPT) along with your workout goals to generate a custom routine, then import the resulting JSON here.");
+    } catch (err) {
+      showNotify("Failed to copy prompt to clipboard. Please check browser permissions.");
+    }
   };
 
   const handleImportTrack = (e) => {
@@ -413,13 +449,22 @@ export default function TracksTab({
         <div className={styles['tracks-container']}>
           <div className={styles['tracks-header-row']}>
             <h3 className={parentStyles['settings-group-title']} style={{ margin: 0 }}>Available Skill Tracks</h3>
-            <button
-              type="button"
-              className={styles['track-import-btn']}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Import Track (.json)
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                type="button"
+                className={styles['track-copy-prompt-btn']}
+                onClick={handleCopyPrompt}
+              >
+                Copy AI Prompt & Schema
+              </button>
+              <button
+                type="button"
+                className={styles['track-import-btn']}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Import Track (.json)
+              </button>
+            </div>
           </div>
           <input
             type="file"
