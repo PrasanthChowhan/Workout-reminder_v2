@@ -22,6 +22,43 @@ pub fn toggle_timer(state: tauri::State<'_, AppState>) -> bool {
     *paused
 }
 
+fn is_level_excluded(track: &crate::core::state::PhysicalTrack, level_title: &str) -> bool {
+    if let Some(metadata) = &track.metadata {
+        if let Some(excluded) = metadata.get("excluded_exercises") {
+            if let Some(arr) = excluded.as_array() {
+                return arr.iter().any(|val| val.as_str() == Some(level_title));
+            }
+        }
+    }
+    false
+}
+
+fn find_active_level(track: &crate::core::state::PhysicalTrack, level_num: u64) -> Option<&crate::core::state::Level> {
+    if track.levels.is_empty() {
+        return None;
+    }
+
+    // First search upwards from level_num to max
+    for num in level_num..=(track.levels.len() as u64) {
+        if let Some(level) = track.levels.iter().find(|l| l.level_number == num) {
+            if !is_level_excluded(track, &level.title) {
+                return Some(level);
+            }
+        }
+    }
+
+    // Then search downwards from level_num - 1 to 1
+    for num in (1..level_num).rev() {
+        if let Some(level) = track.levels.iter().find(|l| l.level_number == num) {
+            if !is_level_excluded(track, &level.title) {
+                return Some(level);
+            }
+        }
+    }
+
+    None
+}
+
 #[tauri::command]
 pub fn get_session_data(
     state: tauri::State<'_, AppState>,
@@ -41,8 +78,8 @@ pub fn get_session_data(
             ) {
                 // Find active track
                 if let Some(track) = config.tracks.iter().find(|t| t.id == *track_id) {
-                    // Find active level
-                    if let Some(level) = track.levels.iter().find(|l| l.level_number == level_num) {
+                    // Find active level, skipping excluded ones
+                    if let Some(level) = find_active_level(track, level_num) {
                         let custom_duration = level.target_duration_secs;
 
                         let tier = config.user_progress.onboarding_tier.as_deref().unwrap_or("beginner");
@@ -50,6 +87,7 @@ pub fn get_session_data(
                             "beginner" => "Beginner",
                             "intermediate" => "Intermediate",
                             "advanced" => "Advanced",
+                            "expert" => "Expert",
                             _ => "Beginner",
                         }.to_string();
 
@@ -124,9 +162,19 @@ pub fn complete_break(
             if config.user_progress.completed_sessions_count >= 5 {
                 if let Some(current_level) = config.user_progress.current_level_number {
                     if let Some(track) = config.tracks.iter().find(|t| t.id == track_id) {
+                        let mut next_level = current_level + 1;
                         let max_levels = track.levels.len() as u64;
-                        if current_level < max_levels {
-                            config.user_progress.current_level_number = Some(current_level + 1);
+                        while next_level <= max_levels {
+                            if let Some(lvl) = track.levels.iter().find(|l| l.level_number == next_level) {
+                                if is_level_excluded(track, &lvl.title) {
+                                    next_level += 1;
+                                    continue;
+                                }
+                            }
+                            break;
+                        }
+                        if next_level <= max_levels {
+                            config.user_progress.current_level_number = Some(next_level);
                             config.user_progress.completed_sessions_count = 0;
                         }
                     }

@@ -5,6 +5,19 @@ import trainingProgramSchema from "../../../docs/schemas/training-program.schema
 import { generateAiPrompt } from "../../utils/aiPrompt";
 import { openUrl } from "../../utils/tauri";
 import EmbeddedPlayer from "../EmbeddedPlayer";
+import { toast } from "../../utils/toast";
+
+const DIFFICULTY_LEVELS = {
+  beginner: 1,
+  intermediate: 2,
+  advanced: 3,
+  expert: 4
+};
+
+const getDifficultyPriority = (diff) => {
+  if (!diff) return 1;
+  return DIFFICULTY_LEVELS[diff.toLowerCase()] || 1;
+};
 
 /**
  * TracksTab handles selecting physical tracks, flex tiers, importing custom tracks,
@@ -28,12 +41,93 @@ export default function TracksTab({
   const [viewedTrackId, setViewedTrackId] = useState(null);
   const [previewTier, setPreviewTier] = useState("beginner");
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
-  
-  // Custom dialog states (to avoid thread-blocking window.alert & window.confirm)
+  // Custom dialog states (to avoid thread-blocking window.confirm)
   const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
-  const [notification, setNotification] = useState(null); // { message }
+  const [showAiWorkoutModal, setShowAiWorkoutModal] = useState(false);
+  const [pastedJson, setPastedJson] = useState("");
   
   const fileInputRef = useRef(null);
+
+  const handleToggleExclude = (exerciseTitle) => {
+    const selectedTrack = appConfig?.tracks?.find(t => t.id === viewedTrackId);
+    if (!selectedTrack) return;
+
+    const currentExcluded = selectedTrack.metadata?.excluded_exercises || [];
+    let updatedExcluded;
+
+    if (currentExcluded.includes(exerciseTitle)) {
+      updatedExcluded = currentExcluded.filter(name => name !== exerciseTitle);
+    } else {
+      const levels = selectedTrack.levels || [];
+      const activeCount = levels.filter(l => !currentExcluded.includes(l.title)).length;
+      if (activeCount <= 1) {
+        toast.error("You must keep at least one exercise active in the program.");
+        return;
+      }
+      updatedExcluded = [...currentExcluded, exerciseTitle];
+    }
+
+    // Update track metadata
+    const updatedTracks = appConfig.tracks.map(track => {
+      if (track.id === selectedTrack.id) {
+        return {
+          ...track,
+          metadata: {
+            ...track.metadata,
+            excluded_exercises: updatedExcluded
+          }
+        };
+      }
+      return track;
+    });
+
+    let newSettingsProgress = { ...settingsProgress };
+    if (settingsProgress.active_track_id === selectedTrack.id) {
+      const levels = selectedTrack.levels || [];
+      const activeLevel = levels.find(l => l.level_number === settingsProgress.current_level_number);
+      if (activeLevel && activeLevel.title === exerciseTitle && !currentExcluded.includes(exerciseTitle)) {
+        // Find a resolved level number
+        let resolvedLevelNum = null;
+        for (let num = settingsProgress.current_level_number; num <= levels.length; num++) {
+          const lvl = levels.find(l => l.level_number === num);
+          if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
+            resolvedLevelNum = num;
+            break;
+          }
+        }
+        if (!resolvedLevelNum) {
+          for (let num = settingsProgress.current_level_number - 1; num >= 1; num--) {
+            const lvl = levels.find(l => l.level_number === num);
+            if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
+              resolvedLevelNum = num;
+              break;
+            }
+          }
+        }
+        if (resolvedLevelNum) {
+          newSettingsProgress.current_level_number = resolvedLevelNum;
+          newSettingsProgress.completed_sessions_count = 0;
+        } else {
+          newSettingsProgress.current_level_number = null;
+          newSettingsProgress.completed_sessions_count = 0;
+        }
+      } else if (settingsProgress.current_level_number === null) {
+        if (currentExcluded.includes(exerciseTitle)) {
+          const lvl = levels.find(l => l.title === exerciseTitle);
+          if (lvl) {
+            newSettingsProgress.current_level_number = lvl.level_number;
+            newSettingsProgress.completed_sessions_count = 0;
+          }
+        }
+      }
+    }
+
+    setAppConfig({
+      ...appConfig,
+      tracks: updatedTracks
+    });
+    setSettingsProgress(newSettingsProgress);
+  };
 
   // Pin active track at the top
   const sortedTracks = React.useMemo(() => {
@@ -53,20 +147,76 @@ export default function TracksTab({
   };
 
   const showNotify = (message) => {
-    setNotification({ message });
+    if (message.toLowerCase().includes("error") || message.toLowerCase().includes("failed") || message.toLowerCase().includes("validation")) {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   const handleCopyPrompt = async () => {
     try {
-      const schemaString = JSON.stringify(trainingProgramSchema, null, 2);
-      const promptText = generateAiPrompt(schemaString);
-
-      await navigator.clipboard.writeText(promptText);
-      showNotify("Successfully copied the AI Prompt & JSON Schema to your clipboard! You can paste this to any AI model (e.g., Gemini, Claude, ChatGPT) along with your workout goals to generate a custom routine, then import the resulting JSON here.");
-    } catch (err) {
-      showNotify("Failed to copy prompt to clipboard. Please check browser permissions.");
+      const fullPrompt = generateAiPrompt(trainingProgramSchema);
+      await navigator.clipboard.writeText(fullPrompt);
+      toast.success("AI Prompt copied!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to copy prompt.");
     }
   };
+
+  const handlePasteTrack = (jsonStr) => {
+    try {
+      if (!jsonStr || !jsonStr.trim()) {
+        toast.error("Please paste the AI-generated JSON response.");
+        return;
+      }
+      
+      const importedTrack = JSON.parse(jsonStr.trim());
+      const validationError = validateTrack(importedTrack);
+      if (validationError) {
+        toast.error(`Validation error: ${validationError}`);
+        return;
+      }
+
+      const updatedTracks = [...(appConfig?.tracks || [])];
+      const existingIndex = updatedTracks.findIndex(t => t.id === importedTrack.id);
+
+      if (existingIndex > -1) {
+        showConfirm(
+          `Track with ID "${importedTrack.id}" already exists. Do you want to overwrite it?`,
+          () => {
+            const tracksCopy = [...(appConfig?.tracks || [])];
+            const idx = tracksCopy.findIndex(t => t.id === importedTrack.id);
+            tracksCopy[idx] = importedTrack;
+            setAppConfig({
+              ...appConfig,
+              tracks: tracksCopy
+            });
+            setViewedTrackId(importedTrack.id);
+            setPreviewTier("beginner");
+            setShowAiWorkoutModal(false);
+            setPastedJson("");
+            toast.success(`Track "${importedTrack.name}" updated!`);
+          }
+        );
+      } else {
+        updatedTracks.push(importedTrack);
+        setAppConfig({
+          ...appConfig,
+          tracks: updatedTracks
+        });
+        setViewedTrackId(importedTrack.id);
+        setPreviewTier("beginner");
+        setShowAiWorkoutModal(false);
+        setPastedJson("");
+        toast.success(`Track "${importedTrack.name}" imported!`);
+      }
+    } catch (err) {
+      toast.error("Failed to parse pasted JSON. Please check the format.");
+    }
+  };
+
 
   const handleImportTrack = (e) => {
     const file = e.target.files[0];
@@ -78,7 +228,7 @@ export default function TracksTab({
         const importedTrack = JSON.parse(event.target.result);
         const validationError = validateTrack(importedTrack);
         if (validationError) {
-          showNotify(`Validation Error: ${validationError}`);
+          toast.error(`Validation error: ${validationError}`);
           return;
         }
 
@@ -98,7 +248,7 @@ export default function TracksTab({
               });
               setViewedTrackId(importedTrack.id);
               setPreviewTier("beginner");
-              showNotify(`Successfully overwritten track "${importedTrack.name}"! Click "Save Changes" to save permanently.`);
+              toast.success(`Track "${importedTrack.name}" updated!`);
             }
           );
         } else {
@@ -109,10 +259,10 @@ export default function TracksTab({
           });
           setViewedTrackId(importedTrack.id);
           setPreviewTier("beginner");
-          showNotify(`Successfully imported track "${importedTrack.name}"! Click "Save Changes" to save permanently.`);
+          toast.success(`Track "${importedTrack.name}" imported!`);
         }
       } catch (err) {
-        showNotify("Failed to parse JSON file. Please ensure it is valid JSON.");
+        toast.error("Failed to parse JSON file.");
       }
     };
     reader.readAsText(file);
@@ -147,6 +297,7 @@ export default function TracksTab({
 
         setAppConfig(updatedConfig);
         setSettingsProgress(newProgress);
+        toast.info("Custom track deleted.");
 
         if (viewedTrackId === trackId) {
           setViewedTrackId(null);
@@ -217,18 +368,8 @@ export default function TracksTab({
                             let updatedTracks = [...(appConfig?.tracks || [])];
 
                             if (selectedTrack && selectedTrack.exercises) {
-                              const difficultyPriority = (diff) => {
-                                switch (diff.toLowerCase()) {
-                                  case "beginner": return 1;
-                                  case "intermediate": return 2;
-                                  case "advanced": return 3;
-                                  default: return 1;
-                                }
-                              };
-                              
-                              const userPriority = difficultyPriority(previewTier);
                               const filteredExercises = selectedTrack.exercises.filter(ex => {
-                                return difficultyPriority(ex.difficulty) <= userPriority;
+                                return ex.difficulty.toLowerCase() === previewTier.toLowerCase();
                               });
 
                               const levels = filteredExercises.map((ex, index) => {
@@ -262,7 +403,14 @@ export default function TracksTab({
                                   levels: levels.length > 0 ? levels : selectedTrack.levels
                                 };
                               }
-                              startingLevel = 1;
+                              const excluded = selectedTrack.metadata?.excluded_exercises || [];
+                              const activeLevels = levels.length > 0 ? levels : (selectedTrack.levels || []);
+                              const firstNonExcluded = activeLevels.find(l => !excluded.includes(l.title));
+                              if (firstNonExcluded) {
+                                startingLevel = firstNonExcluded.level_number;
+                              } else {
+                                startingLevel = 1;
+                              }
                             }
 
                             setSettingsProgress({
@@ -309,18 +457,8 @@ export default function TracksTab({
                           let newLevelNum = settingsProgress.current_level_number;
 
                           if (track && track.exercises) {
-                            const difficultyPriority = (diff) => {
-                              switch (diff.toLowerCase()) {
-                                case "beginner": return 1;
-                                case "intermediate": return 2;
-                                case "advanced": return 3;
-                                default: return 1;
-                              }
-                            };
-                            
-                            const userPriority = difficultyPriority(newTier);
                             const filteredExercises = track.exercises.filter(ex => {
-                              return difficultyPriority(ex.difficulty) <= userPriority;
+                              return ex.difficulty.toLowerCase() === newTier.toLowerCase();
                             });
 
                             const levels = filteredExercises.map((ex, index) => {
@@ -354,7 +492,13 @@ export default function TracksTab({
                                 levels: levels.length > 0 ? levels : track.levels
                               };
                             }
-                            newLevelNum = 1; // Reset to 1 on tier change for custom routines
+                            const excluded = track.metadata?.excluded_exercises || [];
+                            const firstNonExcluded = levels.find(l => !excluded.includes(l.title));
+                            if (firstNonExcluded) {
+                              newLevelNum = firstNonExcluded.level_number;
+                            } else {
+                              newLevelNum = 1;
+                            }
                           }
 
                           setSettingsProgress({
@@ -378,6 +522,7 @@ export default function TracksTab({
                       <option value="beginner">Beginner</option>
                       <option value="intermediate">Intermediate</option>
                       <option value="advanced">Advanced</option>
+                      <option value="expert">Expert</option>
                     </select>
                   </div>
                 </div>
@@ -405,17 +550,8 @@ export default function TracksTab({
                     displayLevels = selectedTrack.levels || [];
                   } else {
                     if (selectedTrack.exercises) {
-                      const difficultyPriority = (diff) => {
-                        switch (diff.toLowerCase()) {
-                          case "beginner": return 1;
-                          case "intermediate": return 2;
-                          case "advanced": return 3;
-                          default: return 1;
-                        }
-                      };
-                      const userPriority = difficultyPriority(previewTier);
                       const filteredExercises = selectedTrack.exercises.filter(ex => {
-                        return difficultyPriority(ex.difficulty) <= userPriority;
+                        return ex.difficulty.toLowerCase() === previewTier.toLowerCase();
                       });
 
                       displayLevels = filteredExercises.map((ex, index) => ({
@@ -441,32 +577,37 @@ export default function TracksTab({
 
                     const duration = level.target_duration_secs;
 
+                    const excluded = selectedTrack?.metadata?.excluded_exercises || [];
+                    const isExcluded = excluded.includes(level.title);
+
                     return (
                       <div
                         key={level.level_number}
-                        className={`${styles['level-item-card']} ${isActiveLevel ? styles['active'] : ""}`}
-                        onClick={() => {
-                          if (isActive && !isActiveLevel) {
-                            setSettingsProgress({
-                              ...settingsProgress,
-                              current_level_number: level.level_number,
-                              completed_sessions_count: 0
-                            });
-                          }
-                        }}
-                        style={{ cursor: isActive ? "pointer" : "default" }}
-                        title={isActive && !isActiveLevel ? "Click to activate this level" : undefined}
+                        className={`${styles['level-item-card']} ${isActiveLevel ? styles['active'] : ""} ${isExcluded ? styles['excluded'] : ""}`}
+                        style={{ cursor: "default" }}
                       >
                         <div className={styles['level-item-header']}>
                           <div className={styles['level-item-title-col']}>
                             <span className={styles['level-item-number']}>L{level.level_number}</span>
                             <span className={styles['level-item-title']}>{level.title}</span>
                           </div>
-                          {isActive && (
-                            <span className={`${styles['level-item-badge']} ${isActiveLevel ? styles['active'] : isCompleted ? styles['completed'] : styles['locked']}`}>
-                              {isActiveLevel ? "Active" : isCompleted ? "Completed" : "Locked"}
-                            </span>
-                          )}
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            {isActive && isActiveLevel && (
+                              <span className={`${styles['level-item-badge']} ${styles['active']}`}>
+                                Active
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              className={isExcluded ? styles['exclude-btn-excluded'] : styles['exclude-btn']}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleExclude(level.title);
+                              }}
+                            >
+                              {isExcluded ? "Excluded" : "Exclude"}
+                            </button>
+                          </div>
                         </div>
                         <p className={styles['level-item-desc']}>{level.description}</p>
                         <div className={styles['level-item-footer']}>
@@ -507,9 +648,12 @@ export default function TracksTab({
               <button
                 type="button"
                 className={styles['track-copy-prompt-btn']}
-                onClick={handleCopyPrompt}
+                onClick={() => {
+                  setPastedJson("");
+                  setShowAiWorkoutModal(true);
+                }}
               >
-                Copy AI Prompt
+                Custom AI Workout
               </button>
               <button
                 type="button"
@@ -527,9 +671,11 @@ export default function TracksTab({
             accept=".json"
             onChange={handleImportTrack}
           />
-          <p className={parentStyles['settings-item-desc']} style={{ marginBottom: "1rem" }}>
-            Double-click a track to inspect workouts, configure difficulty, and select your progression.
-          </p>
+          <div className={styles['tracks-instructions']}>
+            <p className={parentStyles['settings-item-desc']} style={{ margin: 0 }}>
+              Double-click a track to inspect workouts, configure difficulty, and select your progression.
+            </p>
+          </div>
 
           {sortedTracks.map(track => {
             const isActive = settingsProgress.active_track_id === track.id;
@@ -574,6 +720,84 @@ export default function TracksTab({
         </div>
       )}
 
+      {/* Custom AI Workout Overlay */}
+      {showAiWorkoutModal && (
+        <div className={styles['dialog-overlay']} style={{ zIndex: 250 }} onClick={() => setShowAiWorkoutModal(false)}>
+          <div className={styles['dialog-modal']} style={{ maxWidth: "550px", padding: "2.5rem" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+              <h3 className={parentStyles['settings-title']} style={{ borderBottom: "none", margin: 0, fontSize: "1.2rem" }}>
+                Custom AI Workout
+              </h3>
+              <button
+                type="button"
+                className={styles['track-delete-btn']}
+                onClick={() => setShowAiWorkoutModal(false)}
+                title="Close Modal"
+              >
+                <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="18" x2="6" y1="6" y2="18"></line>
+                  <line x1="6" x2="18" y1="6" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <div className={styles['ai-routine-info']} style={{ marginBottom: "1.5rem", backgroundColor: "rgba(255, 92, 0, 0.02)", borderColor: "rgba(255, 92, 0, 0.15)" }}>
+              <span className={styles['ai-routine-tag']} style={{ color: "var(--color-brand-orange)", backgroundColor: "rgba(255, 92, 0, 0.1)" }}>
+                Instructions
+              </span>
+              <p className={parentStyles['settings-item-desc']} style={{ margin: 0, fontSize: "0.8rem", color: "var(--color-text-muted)", lineHeight: "1.5" }}>
+                Generate custom training programs using AI. Follow these steps:
+              </p>
+              <ol className={parentStyles['settings-item-desc']} style={{ margin: "0.5rem 0 0 1.25rem", padding: 0, fontSize: "0.8rem", color: "var(--color-text-muted)", lineHeight: "1.5" }}>
+                <li>Click <strong>"Copy AI Prompt"</strong> below to copy the system prompt & JSON schema.</li>
+                <li>Paste the prompt into any AI tool (Gemini, Claude, ChatGPT, etc.) to generate your custom program.</li>
+                <li>Paste the resulting JSON block in the textarea below and click <strong>"Apply Program"</strong>.</li>
+              </ol>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "1.5rem" }}>
+              <button
+                type="button"
+                className={styles['track-copy-prompt-btn']}
+                onClick={handleCopyPrompt}
+                style={{ borderRadius: "var(--radius-sm)" }}
+              >
+                Copy AI Prompt
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem" }}>
+              <label className={parentStyles['settings-item-title'] || styles['levels-list-title']} style={{ fontSize: "0.85rem", textTransform: "none", letterSpacing: "normal", display: "block" }}>
+                Paste AI Response (JSON)
+              </label>
+              <textarea
+                className={styles['json-textarea']}
+                placeholder='{ "id": "my_custom_routine", "name": "...", "description": "...", "exercises": [...] }'
+                value={pastedJson}
+                onChange={(e) => setPastedJson(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+              <button 
+                type="button" 
+                className={`${styles['workout-overlay-btn']} ${styles['secondary']}`}
+                onClick={() => setShowAiWorkoutModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className={`${styles['workout-overlay-btn']} ${styles['primary']}`}
+                onClick={() => handlePasteTrack(pastedJson)}
+              >
+                Apply Program
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Dialog Overlay */}
       {confirmDialog && (
         <div className={styles['dialog-overlay']} style={{ zIndex: 300 }}>
@@ -609,29 +833,7 @@ export default function TracksTab({
         </div>
       )}
 
-      {/* Notification Dialog Overlay */}
-      {notification && (
-        <div className={styles['dialog-overlay']} style={{ zIndex: 310 }}>
-          <div className={styles['dialog-modal']} style={{ maxWidth: "400px", padding: "2rem" }}>
-            <h3 className={parentStyles['settings-title']} style={{ borderBottom: "none", marginBottom: "1rem", fontSize: "1.2rem" }}>
-              Message
-            </h3>
-            <p className={parentStyles['settings-item-desc']} style={{ marginBottom: "1.5rem" }}>
-              {notification.message}
-            </p>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button 
-                type="button" 
-                className={parentStyles['settings-save-btn']} 
-                style={{ margin: 0, padding: "0.5rem 1.5rem" }}
-                onClick={() => setNotification(null)}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Notifications handled application-wide via Toast Container */}
       {/* Video Demonstration Player Overlay */}
       {activeVideoUrl && (
         <div className={styles['dialog-overlay']} style={{ zIndex: 400 }} onClick={() => setActiveVideoUrl(null)}>
@@ -657,6 +859,7 @@ export default function TracksTab({
           </div>
         </div>
       )}
+
     </div>
   );
 }
