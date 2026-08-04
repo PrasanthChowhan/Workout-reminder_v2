@@ -88,7 +88,7 @@ export default function TracksTab({
   const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
   const [showAiWorkoutModal, setShowAiWorkoutModal] = useState(false);
   const [pastedJson, setPastedJson] = useState("");
-  const [hideExcluded, setHideExcluded] = useState(false);
+  const [filterMode, setFilterMode] = useState("all");
   
   // Custom AI prompt input states
   const [aiGoalSelect, setAiGoalSelect] = useState("hip mobility");
@@ -135,6 +135,9 @@ export default function TracksTab({
 
     if (currentExcluded.includes(exerciseTitle)) {
       updatedExcluded = currentExcluded.filter(name => name !== exerciseTitle);
+      if (updatedExcluded.length === 0) {
+        setFilterMode("all");
+      }
     } else {
       const activeCount = displayLevels.filter(l => !currentExcluded.includes(l.title)).length;
       if (activeCount <= 1) {
@@ -629,50 +632,82 @@ export default function TracksTab({
               {/* Levels / Exercises list */}
               <div className={styles['levels-list-container'] || "levels-list-container"}>
                 {(() => {
-                  let displayLevels = [];
-                  if (isActive) {
-                    displayLevels = selectedTrack.levels || [];
-                  } else {
-                    if (selectedTrack.exercises) {
-                      const filteredExercises = selectedTrack.exercises.filter(ex => {
-                        return ex.difficulty.toLowerCase() === previewTier.toLowerCase();
-                      });
+                  const excluded = selectedTrack?.metadata?.excluded_exercises || [];
 
-                      displayLevels = filteredExercises.map((ex, index) => ({
+                  // Calculate total excluded exercises count across the entire program (all difficulties)
+                  const totalExcludedCount = selectedTrack.exercises
+                    ? selectedTrack.exercises.filter(ex => excluded.includes(ex.name)).length
+                    : (selectedTrack.levels || []).filter(lvl => excluded.includes(lvl.title)).length;
+
+                  let displayLevels = [];
+                  if (filterMode === "only-excluded") {
+                    if (selectedTrack.exercises) {
+                      const excludedExercises = selectedTrack.exercises.filter(ex => 
+                        excluded.includes(ex.name)
+                      );
+                      displayLevels = excludedExercises.map((ex, index) => ({
                         level_number: index + 1,
                         title: ex.name,
                         description: ex.description,
                         target_duration_secs: ex.duration_secs,
-                        video_url: ex.video_url || ex.url || ex.video_link || null
+                        video_url: ex.video_url || ex.url || ex.video_link || null,
+                        difficulty: ex.difficulty
                       }));
                     } else {
+                      const excludedLevels = (selectedTrack.levels || []).filter(lvl => 
+                        excluded.includes(lvl.title)
+                      );
+                      displayLevels = excludedLevels.map((lvl) => ({
+                        ...lvl,
+                        difficulty: "All Levels"
+                      }));
+                    }
+                  } else {
+                    if (isActive) {
                       displayLevels = selectedTrack.levels || [];
+                    } else {
+                      if (selectedTrack.exercises) {
+                        const filteredExercises = selectedTrack.exercises.filter(ex => {
+                          return ex.difficulty.toLowerCase() === previewTier.toLowerCase();
+                        });
+
+                        displayLevels = filteredExercises.map((ex, index) => ({
+                          level_number: index + 1,
+                          title: ex.name,
+                          description: ex.description,
+                          target_duration_secs: ex.duration_secs,
+                          video_url: ex.video_url || ex.url || ex.video_link || null
+                        }));
+                      } else {
+                        displayLevels = selectedTrack.levels || [];
+                      }
                     }
                   }
 
-                  const excluded = selectedTrack?.metadata?.excluded_exercises || [];
-                  const excludedCount = displayLevels.filter(lvl => excluded.includes(lvl.title)).length;
-                  const visibleLevels = hideExcluded 
-                    ? displayLevels.filter(lvl => !excluded.includes(lvl.title)) 
+                  const visibleLevels = filterMode === "hide"
+                    ? displayLevels.filter(lvl => !excluded.includes(lvl.title))
                     : displayLevels;
 
                   return (
                     <>
                       <div className={styles['levels-list-header-row']}>
                         <h4 className={styles['levels-list-title']}>
-                          {isActive ? "Track Levels" : "Progression Preview"}
+                          {filterMode === "only-excluded" ? "Excluded Exercises (Across Program)" : (isActive ? "Track Levels" : "Progression Preview")}
                         </h4>
-                        {excludedCount > 0 && (
-                          <label className={styles['hide-excluded-label']}>
-                            <input
-                              type="checkbox"
-                              className={styles['hide-excluded-checkbox']}
-                              checked={hideExcluded}
-                              onChange={(e) => setHideExcluded(e.target.checked)}
-                            />
-                            Hide Excluded ({excludedCount})
-                          </label>
-                        )}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <label className={styles['filter-label']}>Filter:</label>
+                          <select
+                            className={styles['filter-select']}
+                            value={filterMode}
+                            onChange={(e) => setFilterMode(e.target.value)}
+                          >
+                            <option value="all">Show All</option>
+                            <option value="hide">Hide Excluded</option>
+                            {totalExcludedCount > 0 && (
+                              <option value="only-excluded">Excluded Only ({totalExcludedCount})</option>
+                            )}
+                          </select>
+                        </div>
                       </div>
 
                       {displayLevels.length === 0 ? (
@@ -698,6 +733,11 @@ export default function TracksTab({
                                 <div className={styles['level-item-title-col']}>
                                   <span className={styles['level-item-number']}>L{level.level_number}</span>
                                   <span className={styles['level-item-title']}>{level.title}</span>
+                                  {level.difficulty && (
+                                    <span className={`${styles['level-item-badge']} ${styles['difficulty']}`}>
+                                      {level.difficulty}
+                                    </span>
+                                  )}
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                                   {isActive && isActiveLevel && (
