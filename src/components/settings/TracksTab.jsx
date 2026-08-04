@@ -3,6 +3,8 @@ import { validateTrack } from "../../utils/track";
 import styles from "./TracksTab.module.css";
 import trainingProgramSchema from "../../../docs/schemas/training-program.schema.json";
 import { generateAiPrompt } from "../../utils/aiPrompt";
+import { openUrl } from "../../utils/tauri";
+import EmbeddedPlayer from "../EmbeddedPlayer";
 
 /**
  * TracksTab handles selecting physical tracks, flex tiers, importing custom tracks,
@@ -25,6 +27,7 @@ export default function TracksTab({
 }) {
   const [viewedTrackId, setViewedTrackId] = useState(null);
   const [previewTier, setPreviewTier] = useState("beginner");
+  const [activeVideoUrl, setActiveVideoUrl] = useState(null);
   
   // Custom dialog states (to avoid thread-blocking window.alert & window.confirm)
   const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
@@ -304,7 +307,8 @@ export default function TracksTab({
                         level_number: index + 1,
                         title: ex.name,
                         description: ex.description,
-                        target_duration_secs: ex.duration_secs
+                        target_duration_secs: ex.duration_secs,
+                        video_url: ex.video_url || ex.url || ex.video_link || null
                       }));
                     } else {
                       displayLevels = selectedTrack.levels || [];
@@ -355,6 +359,23 @@ export default function TracksTab({
                         <p className={styles['level-item-desc']}>{level.description}</p>
                         <div className={styles['level-item-footer']}>
                           <span className={styles['level-item-duration']}>Target hold: {duration}s</span>
+                          {level.video_url && level.video_url !== "N/A" && (
+                            <a
+                              href={level.video_url}
+                              className={styles['level-item-video-link']}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveVideoUrl(level.video_url);
+                              }}
+                            >
+                              <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" width="12" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: "0.25rem" }}>
+                                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                                <rect height="14" rx="2" ry="2" width="15" x="1" y="5"></rect>
+                              </svg>
+                              Watch Video
+                            </a>
+                          )}
                         </div>
                       </div>
                     );
@@ -583,6 +604,32 @@ export default function TracksTab({
               >
                 OK
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Video Demonstration Player Overlay */}
+      {activeVideoUrl && (
+        <div className={styles['dialog-overlay']} style={{ zIndex: 400 }} onClick={() => setActiveVideoUrl(null)}>
+          <div className={styles['dialog-modal']} style={{ maxWidth: "640px", padding: "1.5rem", borderRadius: "1.5rem" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 className={parentStyles['settings-title']} style={{ borderBottom: "none", margin: 0, fontSize: "1.1rem" }}>
+                Exercise Video Demo
+              </h3>
+              <button
+                type="button"
+                className={styles['track-delete-btn']}
+                onClick={() => setActiveVideoUrl(null)}
+                style={{ padding: "0.25rem", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
+              >
+                <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="18" x2="6" y1="6" y2="18"></line>
+                  <line x1="6" x2="18" y1="6" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: "0.75rem", overflow: "hidden", backgroundColor: "#000" }}>
+              <EmbeddedPlayer videoUrl={activeVideoUrl} style={{ borderRadius: "0.75rem", boxShadow: "none" }} />
             </div>
           </div>
         </div>

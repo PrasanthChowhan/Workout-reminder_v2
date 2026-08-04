@@ -12,25 +12,58 @@ function getYoutubeId(url) {
 }
 
 /**
+ * Extracts the start timestamp (seconds or formats like 1m30s) from a YouTube URL.
+ */
+function getYoutubeStart(url) {
+  if (!url) return null;
+  const match = url.match(/(?:[?&])(?:t|start)=([^&#?]*)/);
+  if (!match) return null;
+
+  const val = match[1];
+
+  // If it's a simple number (possibly with an 's' suffix, e.g. "45s")
+  if (/^\d+s?$/.test(val)) {
+    return parseInt(val, 10);
+  }
+
+  // Handle h/m/s formatted times (e.g. "1m30s")
+  let seconds = 0;
+  const timeRegex = /(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/;
+  const timeMatch = val.match(timeRegex);
+  if (timeMatch) {
+    const hours = parseInt(timeMatch[1] || "0", 10);
+    const minutes = parseInt(timeMatch[2] || "0", 10);
+    const secs = parseInt(timeMatch[3] || "0", 10);
+    seconds = hours * 3600 + minutes * 60 + secs;
+  }
+
+  return seconds > 0 ? seconds : null;
+}
+
+/**
  * Stateless EmbeddedPlayer component that renders a clean YouTube embed iframe
  * using YouTube's native controls, including native fullscreen capabilities.
  */
-export default function EmbeddedPlayer({ videoUrl, title }) {
+export default function EmbeddedPlayer({ videoUrl, title, style }) {
   const videoId = getYoutubeId(videoUrl);
+  const startSecs = getYoutubeStart(videoUrl);
 
   if (!videoId) {
     return (
-      <div className={styles["player-container"]} style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-brand-orange)" }}>
+      <div className={styles["player-container"]} style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-brand-orange)", ...style }}>
         <p>Invalid or unsupported video URL</p>
       </div>
     );
   }
 
   // Embed URL with native controls and native fullscreen enabled (fs=1)
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&fs=1&rel=0&modestbranding=1&iv_load_policy=3`;
+  let embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&fs=1&rel=0&modestbranding=1&iv_load_policy=3`;
+  if (startSecs) {
+    embedUrl += `&start=${startSecs}`;
+  }
 
   return (
-    <div className={styles["player-container"]}>
+    <div className={styles["player-container"]} style={style}>
       <div className={styles["iframe-wrapper"]}>
         <iframe
           src={embedUrl}
