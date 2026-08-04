@@ -122,8 +122,9 @@ export const STYLES = `
   border: none;
   color: var(--gh-text-muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;

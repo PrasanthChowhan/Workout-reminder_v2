@@ -60,6 +60,10 @@ pub struct Level {
     pub equipment: Vec<String>,
     #[serde(default)]
     pub rest_secs: u64,
+    #[serde(default)]
+    pub reps: Option<String>,
+    #[serde(default)]
+    pub sets: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +81,10 @@ pub struct CustomExercise {
     #[serde(default = "default_sets")]
     pub sets: u64,
     pub reps: Option<String>,
+    #[serde(default)]
+    pub reps_min: Option<u64>,
+    #[serde(default)]
+    pub reps_max: Option<u64>,
     #[serde(alias = "url")]
     pub video_url: Option<String>,
     pub image_url: Option<String>,
@@ -239,7 +247,9 @@ impl Default for AppConfig {
                             difficulty: "Beginner".to_string(),
                             duration_secs: 45,
                             sets: 3,
-                            reps: Some("10-15 slow, dynamic repetitions per leg".to_string()),
+                            reps: None,
+                            reps_min: Some(10),
+                            reps_max: Some(15),
                             video_url: Some("https://www.youtube.com/watch?v=XP1yzpFR6ho".to_string()),
                             image_url: Some("assets/stretches/sciatic-slider.png".to_string()),
                             is_unilateral: true,
@@ -256,6 +266,8 @@ impl Default for AppConfig {
                             duration_secs: 60,
                             sets: 2,
                             reps: Some("30-60s hold per leg".to_string()),
+                            reps_min: None,
+                            reps_max: None,
                             video_url: Some("https://www.youtube.com/watch?v=aOfniMZY2hk".to_string()),
                             image_url: Some("assets/stretches/low-lunge.png".to_string()),
                             is_unilateral: true,
@@ -272,6 +284,8 @@ impl Default for AppConfig {
                             duration_secs: 60,
                             sets: 2,
                             reps: Some("30-60s hold per leg".to_string()),
+                            reps_min: None,
+                            reps_max: None,
                             video_url: Some("https://www.youtube.com/watch?v=1wXNELxZI4I".to_string()),
                             image_url: Some("assets/stretches/half-split.png".to_string()),
                             is_unilateral: true,
@@ -287,7 +301,9 @@ impl Default for AppConfig {
                             difficulty: "Intermediate".to_string(),
                             duration_secs: 60,
                             sets: 3,
-                            reps: Some("8-10 reps per side".to_string()),
+                            reps: None,
+                            reps_min: Some(8),
+                            reps_max: Some(10),
                             video_url: Some("https://www.youtube.com/watch?v=xXwdKm5uLAM".to_string()),
                             image_url: Some("assets/stretches/cossack-squat.png".to_string()),
                             is_unilateral: true,
@@ -304,6 +320,8 @@ impl Default for AppConfig {
                             duration_secs: 90,
                             sets: 2,
                             reps: Some("60-120s hold".to_string()),
+                            reps_min: None,
+                            reps_max: None,
                             video_url: Some("https://www.youtube.com/watch?v=mO8S7qOdcdU".to_string()),
                             image_url: Some("assets/stretches/frog-stretch.png".to_string()),
                             is_unilateral: false,
@@ -320,6 +338,8 @@ impl Default for AppConfig {
                             duration_secs: 60,
                             sets: 2,
                             reps: Some("60s hold".to_string()),
+                            reps_min: None,
+                            reps_max: None,
                             video_url: Some("https://www.youtube.com/watch?v=CHRUb43S6RM".to_string()),
                             image_url: Some("assets/stretches/pancake.png".to_string()),
                             is_unilateral: false,
@@ -336,6 +356,8 @@ impl Default for AppConfig {
                             duration_secs: 60,
                             sets: 3,
                             reps: Some("30-60s hold per leg".to_string()),
+                            reps_min: None,
+                            reps_max: None,
                             video_url: Some("https://www.youtube.com/watch?v=B8BivbTW-_0".to_string()),
                             image_url: Some("assets/stretches/front-split-assisted.png".to_string()),
                             is_unilateral: true,
@@ -352,6 +374,8 @@ impl Default for AppConfig {
                             duration_secs: 90,
                             sets: 1,
                             reps: Some("2-3 min hold".to_string()),
+                            reps_min: None,
+                            reps_max: None,
                             video_url: Some("https://www.youtube.com/watch?v=Iy_zqS8notQ".to_string()),
                             image_url: Some("assets/stretches/wall-straddle.png".to_string()),
                             is_unilateral: false,
@@ -426,6 +450,10 @@ impl AppConfig {
 
                         let reps_str = if let Some(ref reps) = ex.reps {
                             reps.clone()
+                        } else if let (Some(min), Some(max)) = (ex.reps_min, ex.reps_max) {
+                            format!("{}-{} Reps", min, max)
+                        } else if let Some(min) = ex.reps_min {
+                            format!("{} Reps", min)
                         } else {
                             format!("{}s Hold", ex.duration_secs)
                         };
@@ -456,6 +484,8 @@ impl AppConfig {
                             is_unilateral: ex.is_unilateral,
                             equipment: ex.equipment.clone(),
                             rest_secs: ex.rest_secs,
+                            reps: Some(reps_str),
+                            sets: Some(ex.sets),
                         });
                     }
                     track.levels = levels;

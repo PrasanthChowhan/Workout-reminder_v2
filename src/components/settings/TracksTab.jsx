@@ -182,13 +182,116 @@ export default function TracksTab({
 
               <div className={styles['active-track-header']} style={!isActive ? { backgroundColor: "rgba(255, 255, 255, 0.01)", borderColor: "rgba(255, 255, 255, 0.05)" } : {}}>
                 <div className={styles['active-track-name-row']}>
-                  <h3 className={styles['track-selection-title']}>{selectedTrack.name}</h3>
-                  {isActive && <span className={styles['active-track-label']}>Active Track</span>}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <h3 className={styles['track-selection-title']}>{selectedTrack.name}</h3>
+                    {isActive && <span className={styles['active-track-label']}>Active Track</span>}
+                  </div>
+                  {isActive ? (
+                    <button
+                      type="button"
+                      className={styles['deactivate-track-btn']}
+                      style={{ margin: 0, padding: "0.4rem 0.8rem", fontSize: "0.7rem" }}
+                      onClick={() => {
+                        setSettingsProgress({
+                          active_track_id: null,
+                          current_level_number: null,
+                          onboarding_tier: null,
+                          completed_sessions_count: 0,
+                          last_completed_at: null,
+                          level_started_at: null
+                        });
+                      }}
+                    >
+                      Deactivate
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles['track-action-btn']}
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.7rem" }}
+                      onClick={() => {
+                        showConfirm(
+                          `Are you sure you want to choose "${selectedTrack.name}" as your active track with ${previewTier.toUpperCase()} tier?`,
+                          () => {
+                            let startingLevel = 1;
+                            let updatedTracks = [...(appConfig?.tracks || [])];
+
+                            if (selectedTrack && selectedTrack.exercises) {
+                              const difficultyPriority = (diff) => {
+                                switch (diff.toLowerCase()) {
+                                  case "beginner": return 1;
+                                  case "intermediate": return 2;
+                                  case "advanced": return 3;
+                                  default: return 1;
+                                }
+                              };
+                              
+                              const userPriority = difficultyPriority(previewTier);
+                              const filteredExercises = selectedTrack.exercises.filter(ex => {
+                                return difficultyPriority(ex.difficulty) <= userPriority;
+                              });
+
+                              const levels = filteredExercises.map((ex, index) => {
+                                const repsStr = ex.reps 
+                                  ? ex.reps 
+                                  : (ex.reps_min && ex.reps_max) 
+                                    ? `${ex.reps_min}-${ex.reps_max} Reps` 
+                                    : ex.reps_min 
+                                      ? `${ex.reps_min} Reps` 
+                                      : `${ex.duration_secs}s Hold`;
+
+                                return {
+                                  level_number: index + 1,
+                                  title: ex.name,
+                                  description: `${ex.description}\n\n• Category: ${ex.category}\n• Target: ${(ex.target_muscles || ex.muscle_groups || []).join(", ")}\n• Side: ${ex.is_unilateral ? "Unilateral (Perform per side)" : "Bilateral"}\n• Equipment: ${(ex.equipment && ex.equipment.length > 0) ? ex.equipment.join(", ") : "None"}\n• Rest: ${ex.rest_secs ? ex.rest_secs + 's' : "None"}\n• Instructions: ${repsStr} (${ex.sets} Sets)`,
+                                  target_duration_secs: ex.duration_secs,
+                                  video_url: ex.video_url || ex.url || ex.video_link || null,
+                                  image_url: ex.image_url || null,
+                                  is_unilateral: ex.is_unilateral || false,
+                                  equipment: ex.equipment || [],
+                                  rest_secs: ex.rest_secs || 0,
+                                  reps: repsStr,
+                                  sets: ex.sets || 3
+                                };
+                              });
+
+                              const trackIndex = updatedTracks.findIndex(t => t.id === viewedTrackId);
+                              if (trackIndex > -1) {
+                                updatedTracks[trackIndex] = {
+                                  ...selectedTrack,
+                                  levels: levels.length > 0 ? levels : selectedTrack.levels
+                                };
+                              }
+                              startingLevel = 1;
+                            }
+
+                            setSettingsProgress({
+                              active_track_id: viewedTrackId,
+                              onboarding_tier: previewTier,
+                              current_level_number: startingLevel,
+                              completed_sessions_count: 0,
+                              last_completed_at: null,
+                              level_started_at: new Date().toISOString()
+                            });
+
+                            if (selectedTrack && selectedTrack.exercises) {
+                              setAppConfig({
+                                ...appConfig,
+                                tracks: updatedTracks
+                              });
+                            }
+                          }
+                        );
+                      }}
+                    >
+                      Choose Track & Start
+                    </button>
+                  )}
                 </div>
                 <p className={styles['track-selection-desc']} style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
                   {selectedTrack.description}
                 </p>
-
+                
                 <div className={styles['active-track-info-row']}>
                   <span>
                     Tier: <strong>{(isActive ? settingsProgress.onboarding_tier : previewTier)?.toUpperCase()}</strong>
@@ -220,17 +323,29 @@ export default function TracksTab({
                               return difficultyPriority(ex.difficulty) <= userPriority;
                             });
 
-                            const levels = filteredExercises.map((ex, index) => ({
-                              level_number: index + 1,
-                              title: ex.name,
-                              description: `${ex.description}\n\n• Category: ${ex.category}\n• Target: ${(ex.target_muscles || ex.muscle_groups || []).join(", ")}\n• Side: ${ex.is_unilateral ? "Unilateral (Perform per side)" : "Bilateral"}\n• Equipment: ${(ex.equipment && ex.equipment.length > 0) ? ex.equipment.join(", ") : "None"}\n• Rest: ${ex.rest_secs ? ex.rest_secs + 's' : "None"}\n• Instructions: ${ex.reps ? ex.reps : ex.duration_secs + 's Hold'} (${ex.sets} Sets)`,
-                              target_duration_secs: ex.duration_secs,
-                              video_url: ex.video_url || ex.url || ex.video_link || null,
-                              image_url: ex.image_url || null,
-                              is_unilateral: ex.is_unilateral || false,
-                              equipment: ex.equipment || [],
-                              rest_secs: ex.rest_secs || 0
-                            }));
+                            const levels = filteredExercises.map((ex, index) => {
+                              const repsStr = ex.reps 
+                                ? ex.reps 
+                                : (ex.reps_min && ex.reps_max) 
+                                  ? `${ex.reps_min}-${ex.reps_max} Reps` 
+                                  : ex.reps_min 
+                                    ? `${ex.reps_min} Reps` 
+                                    : `${ex.duration_secs}s Hold`;
+
+                              return {
+                                level_number: index + 1,
+                                title: ex.name,
+                                description: `${ex.description}\n\n• Category: ${ex.category}\n• Target: ${(ex.target_muscles || ex.muscle_groups || []).join(", ")}\n• Side: ${ex.is_unilateral ? "Unilateral (Perform per side)" : "Bilateral"}\n• Equipment: ${(ex.equipment && ex.equipment.length > 0) ? ex.equipment.join(", ") : "None"}\n• Rest: ${ex.rest_secs ? ex.rest_secs + 's' : "None"}\n• Instructions: ${repsStr} (${ex.sets} Sets)`,
+                                target_duration_secs: ex.duration_secs,
+                                video_url: ex.video_url || ex.url || ex.video_link || null,
+                                image_url: ex.image_url || null,
+                                is_unilateral: ex.is_unilateral || false,
+                                equipment: ex.equipment || [],
+                                rest_secs: ex.rest_secs || 0,
+                                reps: repsStr,
+                                sets: ex.sets || 3
+                              };
+                            });
 
                             const trackIndex = updatedTracks.findIndex(t => t.id === viewedTrackId);
                             if (trackIndex > -1) {
@@ -260,9 +375,9 @@ export default function TracksTab({
                         }
                       }}
                     >
-                      <option value="beginner">Beginner (0.75x)</option>
-                      <option value="intermediate">Intermediate (1.0x)</option>
-                      <option value="advanced">Advanced (1.25x)</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
                     </select>
                   </div>
                 </div>
@@ -324,10 +439,7 @@ export default function TracksTab({
                     const isCompleted = isActive && settingsProgress.current_level_number > level.level_number;
                     const isLocked = isActive && settingsProgress.current_level_number < level.level_number;
 
-                    const activeOrPreviewTier = isActive ? (settingsProgress.onboarding_tier || "beginner") : previewTier;
-                    const mult = activeOrPreviewTier === "beginner" ? 0.75 : activeOrPreviewTier === "advanced" ? 1.25 : 1.0;
-                    const rawDur = level.target_duration_secs * mult;
-                    const duration = Math.max(30, Math.min(90, Math.round(rawDur)));
+                    const duration = level.target_duration_secs;
 
                     return (
                       <div
@@ -383,94 +495,6 @@ export default function TracksTab({
                 })()}
               </div>
 
-              {isActive ? (
-                <button
-                  type="button"
-                  className={styles['deactivate-track-btn']}
-                  onClick={() => {
-                    setSettingsProgress({
-                      active_track_id: null,
-                      current_level_number: null,
-                      onboarding_tier: null,
-                      completed_sessions_count: 0,
-                      last_completed_at: null,
-                      level_started_at: null
-                    });
-                  }}
-                >
-                  Deactivate Track
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={styles['track-action-btn']}
-                  style={{ width: "100%", padding: "0.85rem 1rem", fontSize: "0.85rem" }}
-                  onClick={() => {
-                    showConfirm(
-                      `Are you sure you want to choose "${selectedTrack.name}" as your active track with ${previewTier.toUpperCase()} tier?`,
-                      () => {
-                        let startingLevel = 1;
-                        let updatedTracks = [...(appConfig?.tracks || [])];
-
-                        if (selectedTrack && selectedTrack.exercises) {
-                          const difficultyPriority = (diff) => {
-                            switch (diff.toLowerCase()) {
-                              case "beginner": return 1;
-                              case "intermediate": return 2;
-                              case "advanced": return 3;
-                              default: return 1;
-                            }
-                          };
-                          
-                          const userPriority = difficultyPriority(previewTier);
-                          const filteredExercises = selectedTrack.exercises.filter(ex => {
-                            return difficultyPriority(ex.difficulty) <= userPriority;
-                          });
-
-                          const levels = filteredExercises.map((ex, index) => ({
-                            level_number: index + 1,
-                            title: ex.name,
-                            description: `${ex.description}\n\n• Category: ${ex.category}\n• Target: ${(ex.target_muscles || ex.muscle_groups || []).join(", ")}\n• Side: ${ex.is_unilateral ? "Unilateral (Perform per side)" : "Bilateral"}\n• Equipment: ${(ex.equipment && ex.equipment.length > 0) ? ex.equipment.join(", ") : "None"}\n• Rest: ${ex.rest_secs ? ex.rest_secs + 's' : "None"}\n• Instructions: ${ex.reps ? ex.reps : ex.duration_secs + 's Hold'} (${ex.sets} Sets)`,
-                            target_duration_secs: ex.duration_secs,
-                            video_url: ex.video_url || ex.url || ex.video_link || null,
-                            image_url: ex.image_url || null,
-                            is_unilateral: ex.is_unilateral || false,
-                            equipment: ex.equipment || [],
-                            rest_secs: ex.rest_secs || 0
-                          }));
-
-                          const trackIndex = updatedTracks.findIndex(t => t.id === viewedTrackId);
-                          if (trackIndex > -1) {
-                            updatedTracks[trackIndex] = {
-                              ...selectedTrack,
-                              levels: levels.length > 0 ? levels : selectedTrack.levels
-                            };
-                          }
-                          startingLevel = 1;
-                        }
-
-                        setSettingsProgress({
-                          active_track_id: viewedTrackId,
-                          onboarding_tier: previewTier,
-                          current_level_number: startingLevel,
-                          completed_sessions_count: 0,
-                          last_completed_at: null,
-                          level_started_at: new Date().toISOString()
-                        });
-
-                        if (selectedTrack && selectedTrack.exercises) {
-                          setAppConfig({
-                            ...appConfig,
-                            tracks: updatedTracks
-                          });
-                        }
-                      }
-                    );
-                  }}
-                >
-                  Choose Track & Start
-                </button>
-              )}
             </div>
           );
         })()
@@ -618,9 +642,8 @@ export default function TracksTab({
               </h3>
               <button
                 type="button"
-                className={styles['track-delete-btn']}
+                className={parentStyles['settings-close-btn'] || styles['track-delete-btn']}
                 onClick={() => setActiveVideoUrl(null)}
-                style={{ padding: "0.25rem", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
               >
                 <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
                   <line x1="18" x2="6" y1="6" y2="18"></line>

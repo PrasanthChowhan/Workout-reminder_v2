@@ -5,6 +5,81 @@ import PromptsTab from "./PromptsTab";
 import StretchesTab from "./StretchesTab";
 import styles from "./SettingsModal.module.css";
 
+const tabs = [
+  {
+    id: "general",
+    label: "General",
+    icon: (
+      <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    )
+  },
+  {
+    id: "timers",
+    label: "Timers",
+    icon: (
+      <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    )
+  },
+  {
+    id: "tracks",
+    label: "Physical Tracks",
+    icon: (
+      <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    )
+  },
+  {
+    id: "cards",
+    label: "Recall Cards",
+    icon: (
+      <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+        <polyline points="2 17 12 22 22 17" />
+        <polyline points="2 12 12 17 22 12" />
+      </svg>
+    )
+  },
+  {
+    id: "prompts",
+    label: "Reflection Prompts",
+    icon: (
+      <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    )
+  },
+  {
+    id: "stretches",
+    label: "Stretches",
+    icon: (
+      <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="5" r="1" />
+        <path d="m9 22 2-6h2l2 6" />
+        <path d="M12 16v-6" />
+        <path d="M7 12h10" />
+      </svg>
+    )
+  },
+  {
+    id: "about",
+    label: "About & Legal",
+    icon: (
+      <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" x2="12" y1="16" y2="12" />
+        <line x1="12" x2="12.01" y1="8" y2="8" />
+      </svg>
+    )
+  }
+];
+
 /**
  * SettingsModal is the configuration modal orchestration overlay.
  * It manages local draft settings states and updates the parent configuration onSave.
@@ -16,6 +91,25 @@ import styles from "./SettingsModal.module.css";
  */
 export default function SettingsModal({ config, onSave, onCancel }) {
   const [activeTab, setActiveTab] = useState("general");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem("settings_sidebar_collapsed");
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem("settings_sidebar_collapsed", String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
   const [draftConfig, setDraftConfig] = useState(config);
 
   // Local settings drafts
@@ -70,7 +164,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
 
   return (
     <div className={styles['settings-overlay']} onClick={onCancel}>
-      <div className={styles['settings-modal']} onClick={(e) => e.stopPropagation()}>
+      <div className={`${styles['settings-modal']} ${isSidebarCollapsed ? styles['sidebar-collapsed'] : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles['settings-header']}>
           <h2 className={styles['settings-title']}>Configuration</h2>
           <button className={styles['settings-close-btn']} onClick={onCancel} title="Close Settings">
@@ -82,56 +176,37 @@ export default function SettingsModal({ config, onSave, onCancel }) {
         </div>
         
         {/* Tab navigation */}
-        <div className={styles['settings-tabs']}>
-          <button 
-            type="button" 
-            className={`${styles['settings-tab-btn']} ${activeTab === "general" ? styles['active'] : ""}`}
-            onClick={() => setActiveTab("general")}
-          >
-            General
-          </button>
-          <button 
-            type="button" 
-            className={`${styles['settings-tab-btn']} ${activeTab === "timers" ? styles['active'] : ""}`}
-            onClick={() => setActiveTab("timers")}
-          >
-            Timers
-          </button>
-          <button 
-            type="button" 
-            className={`${styles['settings-tab-btn']} ${activeTab === "tracks" ? styles['active'] : ""}`}
-            onClick={() => setActiveTab("tracks")}
-          >
-            Physical Tracks
-          </button>
-          <button 
-            type="button" 
-            className={`${styles['settings-tab-btn']} ${activeTab === "cards" ? styles['active'] : ""}`}
-            onClick={() => setActiveTab("cards")}
-          >
-            Recall Cards
-          </button>
-          <button 
-            type="button" 
-            className={`${styles['settings-tab-btn']} ${activeTab === "prompts" ? styles['active'] : ""}`}
-            onClick={() => setActiveTab("prompts")}
-          >
-            Reflection Prompts
-          </button>
-          <button 
-            type="button" 
-            className={`${styles['settings-tab-btn']} ${activeTab === "stretches" ? styles['active'] : ""}`}
-            onClick={() => setActiveTab("stretches")}
-          >
-            Stretches
-          </button>
-          <button 
-            type="button" 
-            className={`${styles['settings-tab-btn']} ${activeTab === "about" ? styles['active'] : ""}`}
-            onClick={() => setActiveTab("about")}
-          >
-            About & Legal
-          </button>
+        <div className={`${styles['settings-tabs']} ${isSidebarCollapsed ? styles['collapsed'] : ""}`}>
+          <div className={styles['sidebar-header']}>
+            <button 
+              type="button" 
+              className={styles['sidebar-toggle-btn']} 
+              onClick={toggleSidebar}
+              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isSidebarCollapsed ? (
+                <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              ) : (
+                <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              )}
+            </button>
+          </div>
+          {tabs.map((tab) => (
+            <button 
+              key={tab.id}
+              type="button" 
+              className={`${styles['settings-tab-btn']} ${activeTab === tab.id ? styles['active'] : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+              title={tab.label}
+            >
+              <span className={styles['tab-icon']}>{tab.icon}</span>
+              <span className={styles['tab-label']}>{tab.label}</span>
+            </button>
+          ))}
         </div>
 
         <form onSubmit={handleSaveSettings} className={styles['settings-form']}>

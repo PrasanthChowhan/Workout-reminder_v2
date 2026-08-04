@@ -206,18 +206,10 @@ During the first-time run, the user is presented with an onboarding screen askin
 - **Intermediate**: Start at **Level 2 (Half Split)**. Introduction to active/unilateral stretching.
 - **Advanced**: Start at **Level 3 (Frog Stretch)**. Intensive adductor stretch requiring hip control.
 
-#### Duration Multiplier
-To adjust stretch duration safely, the chosen tier applies a multiplier to the default `target_duration_secs` of the current level:
-- **Beginner**: `0.75x` multiplier. (Shorter holds to prevent cramping and tendon strains.)
-- **Intermediate**: `1.00x` multiplier. (Standard hold duration.)
-- **Advanced**: `1.25x` multiplier. (Longer holds to achieve deep plastic tissue deformation.)
+#### Static Level Durations
+To simplify timer logic and keep durations transparent, the chosen difficulty tier does not scale hold times. Stretches are held for their default `target_duration_secs` as defined statically in the track configurations (e.g. 30s, 45s, 60s, or 90s).
 
-**Custom Duration Formula**:
-```javascript
-const rawDuration = defaultTargetDurationSecs * tierMultiplier;
-const customDurationSecs = Math.max(30, Math.min(90, Math.round(rawDuration)));
-```
-*Note: This limits all customized holds strictly to a biologically safe window of 30 seconds to 90 seconds.*
+The difficulty tier (Beginner/Intermediate/Advanced) is used purely to filter which exercises are mapped into the user's progression (i.e. Intermediate users get Intermediate and Beginner exercises; Advanced users get all exercises).
 
 ---
 

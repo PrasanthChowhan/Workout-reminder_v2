@@ -43,15 +43,7 @@ pub fn get_session_data(
                 if let Some(track) = config.tracks.iter().find(|t| t.id == *track_id) {
                     // Find active level
                     if let Some(level) = track.levels.iter().find(|l| l.level_number == level_num) {
-                        // Calculate custom duration based on onboarding tier
-                        let multiplier = match config.user_progress.onboarding_tier.as_deref() {
-                            Some("beginner") => 0.75,
-                            Some("intermediate") => 1.0,
-                            Some("advanced") => 1.25,
-                            _ => 1.0,
-                        };
-                        let raw_duration = (level.target_duration_secs as f64) * multiplier;
-                        let custom_duration = (raw_duration.round() as u64).clamp(30, 90);
+                        let custom_duration = level.target_duration_secs;
 
                         let tier = config.user_progress.onboarding_tier.as_deref().unwrap_or("beginner");
                         let difficulty = match tier {
@@ -72,8 +64,8 @@ pub fn get_session_data(
                             description: level.description.clone(),
                             duration_secs: custom_duration,
                             difficulty_level: difficulty,
-                            sets: 3,
-                            reps: Some("Hold".to_string()),
+                            sets: level.sets.unwrap_or(3),
+                            reps: level.reps.clone().or_else(|| Some("Hold".to_string())),
                             video_url: level.video_url.clone(),
                             image_url: level.image_url.clone(),
                             is_unilateral: level.is_unilateral,
@@ -124,14 +116,14 @@ pub fn complete_break(
     // If action is "done", increment progress
     if action == "done" {
         let mut config = state.config.lock().unwrap();
-        if let Some(ref track_id) = config.user_progress.active_track_id {
+        if let Some(track_id) = config.user_progress.active_track_id.clone() {
             config.user_progress.completed_sessions_count += 1;
             config.user_progress.last_completed_at = Some(chrono::Utc::now().to_rfc3339());
             
             // Auto-advance level after 5 completed sessions if a next level exists
             if config.user_progress.completed_sessions_count >= 5 {
                 if let Some(current_level) = config.user_progress.current_level_number {
-                    if let Some(track) = config.tracks.iter().find(|t| t.id == *track_id) {
+                    if let Some(track) = config.tracks.iter().find(|t| t.id == track_id) {
                         let max_levels = track.levels.len() as u64;
                         if current_level < max_levels {
                             config.user_progress.current_level_number = Some(current_level + 1);

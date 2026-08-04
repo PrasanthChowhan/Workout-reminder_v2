@@ -29,6 +29,12 @@
   gap: 2rem 3rem;
   box-sizing: border-box;
   animation: slideUpFull 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: grid-template-columns 0.3s cubic-bezier(0.16, 1, 0.3, 1), gap 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-modal.sidebar-collapsed {
+  grid-template-columns: 80px 1fr;
+  gap: 2rem 2rem;
 }
 
 @keyframes slideUpFull {
@@ -58,15 +64,18 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.25rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
 }
 
 .settings-close-btn:hover {
   color: var(--color-brand-orange);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* Tabs Navigation styling */
@@ -80,6 +89,12 @@
   padding-right: 1.5rem;
   height: 100%;
   overflow-y: auto;
+  transition: padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-tabs.collapsed {
+  padding-right: 0.5rem;
+  align-items: center;
 }
 
 .settings-tab-btn {
@@ -97,6 +112,22 @@
   transition: all 0.2s ease;
   text-align: left;
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-tabs.collapsed .settings-tab-btn {
+  justify-content: center;
+  padding: 0.75rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  gap: 0;
+}
+
+.settings-tabs.collapsed .settings-tab-btn .tab-label {
+  display: none;
 }
 
 .settings-tab-btn:hover {
@@ -107,6 +138,53 @@
 .settings-tab-btn.active {
   color: var(--color-brand-orange);
   background-color: rgba(255, 92, 0, 0.15);
+}
+
+/* Sidebar header / toggle */
+.sidebar-header {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.settings-tabs.collapsed .sidebar-header {
+  justify-content: center;
+  width: 100%;
+}
+
+.sidebar-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 36px;
+  height: 36px;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--color-brand-orange);
+  background-color: rgba(255, 92, 0, 0.1);
+}
+
+.tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.tab-label {
+  white-space: nowrap;
 }
 
 .settings-form {
@@ -426,6 +504,9 @@
     gap: 1.5rem;
     padding: 1.5rem;
   }
+  .settings-modal.sidebar-collapsed {
+    grid-template-columns: 1fr !important;
+  }
   .settings-tabs {
     grid-column: 1;
     grid-row: 2;
@@ -438,10 +519,30 @@
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
   }
+  .settings-tabs.collapsed {
+    padding-right: 0 !important;
+    align-items: stretch !important;
+  }
+  .settings-tabs.collapsed .settings-tab-btn {
+    width: auto !important;
+    height: auto !important;
+    border-radius: var(--radius-full) !important;
+    padding: 0.5rem 0.85rem !important;
+    gap: 0.5rem !important;
+  }
+  .settings-tabs.collapsed .settings-tab-btn .tab-label {
+    display: inline !important;
+  }
   .settings-tab-btn {
     text-align: center;
     width: auto;
     padding: 0.5rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .sidebar-header {
+    display: none !important;
   }
   .settings-form {
     grid-column: 1;
