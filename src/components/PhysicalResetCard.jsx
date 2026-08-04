@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { openUrl } from "../utils/tauri";
+import { getYoutubeId } from "../utils/youtube";
+import { CloseIcon, PictureIcon, PlayIcon, InfoIcon, MaximizeIcon } from "./ui/Icons";
 import EmbeddedPlayer from "./EmbeddedPlayer";
 import styles from "./PhysicalResetCard.module.css";
-
-/**
- * Extracts the YouTube 11-character video ID from various YouTube URL formats.
- */
-function getYoutubeId(url) {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-}
 
 /**
  * PhysicalResetCard represents the left layout container showing stretch visuals, difficulty metadata, sets, and instructions.
@@ -102,9 +94,7 @@ export default function PhysicalResetCard({ sessionStretch }) {
               onClick={() => setShowDetails(false)}
               title="Close Details"
             >
-              <svg className={styles['close-icon']} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path d="M18 6 6 18M6 6l12 12"></path>
-              </svg>
+              <CloseIcon className={styles['close-icon']} />
             </button>
           </div>
           <div className={styles['stretch-details-body']}>
@@ -259,15 +249,9 @@ export default function PhysicalResetCard({ sessionStretch }) {
             onClick={handleWatchVideo}
           >
             {isPlayingVideo ? (
-              <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
+              <PictureIcon className={styles['action-icon']} />
             ) : (
-              <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <polygon points="6 3 20 12 6 21 6 3"></polygon>
-              </svg>
+              <PlayIcon className={styles['action-icon']} />
             )}
             {isPlayingVideo ? "Pose" : "Watch"}
           </button>
@@ -276,18 +260,12 @@ export default function PhysicalResetCard({ sessionStretch }) {
             title="Show stretch details"
             onClick={() => setShowDetails(true)}
           >
-            <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M12 16v-4"></path>
-              <path d="M12 8h.01"></path>
-              <circle cx="12" cy="12" r="10"></circle>
-            </svg>
+            <InfoIcon className={styles['action-icon']} />
             Details
           </button>
         </div>
         <button className={styles['stretch-maximize-btn']} title="Maximize">
-          <svg className={styles['action-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="m15 3 6 6M9 21l-6-6M21 3l-6 6M3 21l6-6"></path>
-          </svg>
+          <MaximizeIcon className={styles['action-icon']} />
         </button>
       </div>
     </section>

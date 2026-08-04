@@ -66,3 +66,91 @@ export const validateTrack = (track) => {
   }
   return null;
 };
+
+/**
+ * Transforms an exercise array into a schema-compliant Levels array based on a tier.
+ * @param {Array} exercises 
+ * @param {string} onboardingTier 
+ * @returns {Array}
+ */
+export const generateLevelsFromExercises = (exercises, onboardingTier) => {
+  if (!exercises) return [];
+  const filtered = exercises.filter(
+    (ex) => ex.difficulty.toLowerCase() === onboardingTier.toLowerCase()
+  );
+
+  return filtered.map((ex, index) => {
+    const repsStr = ex.reps 
+      ? ex.reps 
+      : (ex.reps_min && ex.reps_max) 
+        ? `${ex.reps_min}-${ex.reps_max} Reps` 
+        : ex.reps_min 
+          ? `${ex.reps_min} Reps` 
+          : `${ex.duration_secs}s Hold`;
+
+    return {
+      level_number: index + 1,
+      title: ex.name,
+      description: `${ex.description}\n\n• Category: ${ex.category}\n• Target: ${(ex.target_muscles || ex.muscle_groups || []).join(", ")}\n• Side: ${ex.is_unilateral ? "Unilateral (Perform per side)" : "Bilateral"}\n• Equipment: ${(ex.equipment && ex.equipment.length > 0) ? ex.equipment.join(", ") : "None"}\n• Rest: ${ex.rest_secs ? ex.rest_secs + 's' : "None"}\n• Instructions: ${repsStr} (${ex.sets} Sets)`,
+      target_duration_secs: ex.duration_secs,
+      video_url: ex.video_url || ex.url || ex.video_link || null,
+      image_url: ex.image_url || null,
+      is_unilateral: ex.is_unilateral || false,
+      equipment: ex.equipment || [],
+      rest_secs: ex.rest_secs || 0,
+      reps: repsStr,
+      sets: ex.sets || 3
+    };
+  });
+};
+
+/**
+ * Resolves current active level progress updates when toggling exercise exclusion status.
+ */
+export const resolveLevelProgressOnToggle = (
+  isActive,
+  displayLevels,
+  currentLevelNumber,
+  exerciseTitle,
+  currentExcluded,
+  updatedExcluded
+) => {
+  if (!isActive) return null;
+
+  const activeLevel = displayLevels.find(l => l.level_number === currentLevelNumber);
+  if (activeLevel && activeLevel.title === exerciseTitle && !currentExcluded.includes(exerciseTitle)) {
+    let resolvedLevelNum = null;
+    for (let num = currentLevelNumber; num <= displayLevels.length; num++) {
+      const lvl = displayLevels.find(l => l.level_number === num);
+      if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
+        resolvedLevelNum = num;
+        break;
+      }
+    }
+    if (!resolvedLevelNum) {
+      for (let num = currentLevelNumber - 1; num >= 1; num--) {
+        const lvl = displayLevels.find(l => l.level_number === num);
+        if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
+          resolvedLevelNum = num;
+          break;
+        }
+      }
+    }
+    return {
+      current_level_number: resolvedLevelNum,
+      completed_sessions_count: 0
+    };
+  } else if (currentLevelNumber === null) {
+    if (currentExcluded.includes(exerciseTitle)) {
+      const lvl = displayLevels.find(l => l.title === exerciseTitle);
+      if (lvl) {
+        return {
+          current_level_number: lvl.level_number,
+          completed_sessions_count: 0
+        };
+      }
+    }
+  }
+  return null;
+};
+

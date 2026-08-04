@@ -1,7 +1,7 @@
 [package]
-name = "tauri-app"
+name = "workout-break-reminder"
 version = "0.1.0"
-description = "A Tauri App"
+description = "Workout & Break Reminder"
 authors = ["you"]
 edition = "2021"
 

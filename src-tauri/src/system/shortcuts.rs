@@ -12,14 +12,8 @@ pub fn init_global_shortcut_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
                     && shortcut.key == Code::KeyR
                 {
                     let state = app.state::<crate::core::state::AppState>();
-                    {
-                        let mut current_state = state.current_break_state.lock().unwrap();
-                        *current_state = Some("refocus".to_string());
-                        let mut paused = state.timer_paused.lock().unwrap();
-                        *paused = true;
-                        if let Some(toggle_menu_item) = state.toggle_menu_item.lock().unwrap().as_ref() {
-                            let _ = toggle_menu_item.set_text("Resume Timer");
-                        }
+                    if let Err(e) = state.trigger_refocus_state() {
+                        eprintln!("Failed to trigger refocus state via shortcut: {}", e);
                     }
 
                     let _ = crate::system::window::start_break_overlay(app, "refocus");

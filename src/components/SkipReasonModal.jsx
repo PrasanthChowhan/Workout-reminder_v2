@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { CloseIcon } from "./ui/Icons";
 import styles from "./SkipReasonModal.module.css";
 
 /**
@@ -37,10 +38,7 @@ export default function SkipReasonModal({ onSubmit, onCancel }) {
             onClick={onCancel}
             title="Cancel skipping"
           >
-            <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
-              <line x1="18" x2="6" y1="6" y2="18"></line>
-              <line x1="6" x2="18" y1="6" y2="18"></line>
-            </svg>
+            <CloseIcon width={20} height={20} />
           </button>
         </div>
         

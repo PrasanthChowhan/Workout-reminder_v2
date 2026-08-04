@@ -1,7 +1,7 @@
-
 use tauri_plugin_opener::OpenerExt;
 
-use crate::core::state::{AppState, AppConfig};
+use crate::core::state::AppState;
+use crate::core::models::AppConfig;
 use crate::utils::fs::save_config_file;
 
 #[tauri::command]
@@ -12,7 +12,7 @@ pub fn set_active_track(
     starting_level: Option<u64>,
     state: tauri::State<'_, AppState>,
 ) -> Result<AppConfig, String> {
-    let mut config = state.config.lock().unwrap();
+    let mut config = state.config.lock().map_err(|e| e.to_string())?;
     
     config.user_progress.active_track_id = track_id;
     config.user_progress.onboarding_tier = onboarding_tier;
@@ -31,7 +31,7 @@ pub fn update_track_level(
     level_number: u64,
     state: tauri::State<'_, AppState>,
 ) -> Result<AppConfig, String> {
-    let mut config = state.config.lock().unwrap();
+    let mut config = state.config.lock().map_err(|e| e.to_string())?;
     
     config.user_progress.current_level_number = Some(level_number);
     config.user_progress.completed_sessions_count = 0;
@@ -47,8 +47,9 @@ pub fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), Strin
 }
 
 #[tauri::command]
-pub fn get_app_config(state: tauri::State<'_, AppState>) -> AppConfig {
-    state.config.lock().unwrap().clone()
+pub fn get_app_config(state: tauri::State<'_, AppState>) -> Result<AppConfig, String> {
+    let config = state.config.lock().map_err(|e| e.to_string())?;
+    Ok(config.clone())
 }
 
 #[tauri::command]
@@ -58,7 +59,7 @@ pub fn save_app_config(
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     save_config_file(&app, &new_config)?;
-    let mut config = state.config.lock().unwrap();
+    let mut config = state.config.lock().map_err(|e| e.to_string())?;
     *config = new_config;
     Ok(())
 }

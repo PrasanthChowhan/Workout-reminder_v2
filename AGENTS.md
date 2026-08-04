@@ -1,37 +1,32 @@
 # Agent Instructions
 
-Welcome to the Workout & Break Reminder repository. Below are the commands and coding standards you must follow.
+## Stack Context
+Tauri v2 · Rust 1.75+ · React 18 · Vite · Vanilla CSS Modules.
+DO NOT use Tailwind, Create React App, or Next.js patterns.
 
-## Build and Run Commands
+## Commands
+- Dev: `npm run tauri dev`
+- Install: `npm install`
+- Build: `npm run tauri build`
+- Rust check: `cd src-tauri && cargo check && cargo clippy`
 
-- **Run Dev Server**: `npm run tauri dev`
-- **Install Dependencies**: `npm install`
-- **Build Production App**: `npm run tauri build`
-- **Rust Backend Cargo Build**: `cargo build` (inside `src-tauri/`)
+## Boundary Rules (Ask First)
+- RULE-A1: **Ask before** modifying `tauri.conf.json`, `package.json`, or `Cargo.toml`. Never install dependencies autonomously.
+- RULE-A2: **Ask before** creating new top-level components or pages. Verify placement in `ARCHITECTURE.md` first.
+- RULE-A3: **Ask before** adding new root-level documentation files. Use `docs/` or update existing files.
+- RULE-A4: **Ask before** commiting the code.
 
-## Coding Guidelines
+## Shared Rules
+- RULE-D1: Never duplicate utility functions. Check `src/utils/` or existing Rust modules first.
+- RULE-D2: Never duplicate information across docs. Write once, link to it.
+- RULE-F1: Enforce strictly one responsibility per file. Use size (>250 lines for React, >300 lines for Rust) as a diagnostic signal to review for split, not a hard barrier.
+    * React: Extract nested UI (modals), static data, and complex hooks.
+    * Rust: Isolate strictly by domain (e.g., DB, network, I/O).
+    * CSS: Co-locate styles with components. Root CSS is for globals/resets only.
 
-- **Frontend Tech Stack**: React + Vite + CSS Modules (Vanilla CSS scoped via `*.module.css` files, no Tailwind CSS framework for production files). Keep `src/styles.css` minimal (global variables, resets, core active-break-screen layout, and headers/footers). All component-specific styles should go into `.module.css` files co-located with their components.
-- **Design Alignment**: Adhere strictly to the design system in [DESIGN.md](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/DESIGN.md) (Obsidian Kinetic: Ignition Orange accents, Terminal Green success states, and rounded-pill buttons).
-- **Rust Guidelines**:
-  - Keep Tauri commands clean; delegate complex timer or state logic to helper modules.
-  - Follow idiomatic Rust code styles, handling all errors gracefully (avoid `.unwrap()`).
-- **Data Schemas**:
-  - Check [docs/schemas/](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas) for existing JSON schemas (e.g. [`training-program.schema.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas/training-program.schema.json)) when editing or creating workout configs or split programs to ensure structural consistency.
-
-## Agent skills
-
-### Issue tracker
-
-Issues and PRDs for this repo live as GitHub issues. See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-Single-context repository layout. See `docs/agents/domain.md`.
-
-## Dynamic Metadata Architecture
-
-We support a type-flexible JSON metadata extension on core models (`ActiveRecallCard`, `Stretch`, `PhysicalTrack`) via `metadata: Option<serde_json::Value>` to support UI prototyping without rigid schema migrations.
-- **Merge & Persistence**: Updates are merged recursively in [`state.rs`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/src-tauri/src/core/state.rs) and persisted to disk via Tauri commands in [`data_cmds.rs`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/src-tauri/src/commands/data_cmds.rs).
-
-
+## Key Docs (read on-demand, not every turn)
+- Domain & glossary: [CONTEXT.md](CONTEXT.md)
+- Design system: [DESIGN.md](DESIGN.md)
+- Component map: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Schemas: [docs/schemas/](docs/schemas/)
+- ADRs: [docs/adr/](docs/adr/)

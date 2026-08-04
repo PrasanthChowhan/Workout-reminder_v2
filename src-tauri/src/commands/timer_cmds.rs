@@ -1,28 +1,28 @@
 use rand::prelude::IndexedRandom;
 
-
-use crate::core::state::{AppState, TimerStatePayload, SessionDataPayload, Stretch};
+use crate::core::state::AppState;
+use crate::core::models::{TimerStatePayload, SessionDataPayload, Stretch, PhysicalTrack, Level};
 use crate::system::window::{close_break_overlay, start_break_overlay};
 use crate::utils::fs::save_config_file;
 
 #[tauri::command]
-pub fn get_timer_state(state: tauri::State<'_, AppState>) -> TimerStatePayload {
-    TimerStatePayload {
-        micro_left: *state.micro_countdown.lock().unwrap(),
-        active_left: *state.active_countdown.lock().unwrap(),
-        timer_paused: *state.timer_paused.lock().unwrap(),
-        current_break_state: state.current_break_state.lock().unwrap().clone(),
-    }
+pub fn get_timer_state(state: tauri::State<'_, AppState>) -> Result<TimerStatePayload, String> {
+    Ok(TimerStatePayload {
+        micro_left: *state.micro_countdown.lock().map_err(|e| e.to_string())?,
+        active_left: *state.active_countdown.lock().map_err(|e| e.to_string())?,
+        timer_paused: *state.timer_paused.lock().map_err(|e| e.to_string())?,
+        current_break_state: state.current_break_state.lock().map_err(|e| e.to_string())?.clone(),
+    })
 }
 
 #[tauri::command]
-pub fn toggle_timer(state: tauri::State<'_, AppState>) -> bool {
-    let mut paused = state.timer_paused.lock().unwrap();
+pub fn toggle_timer(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let mut paused = state.timer_paused.lock().map_err(|e| e.to_string())?;
     *paused = !*paused;
-    *paused
+    Ok(*paused)
 }
 
-fn is_level_excluded(track: &crate::core::state::PhysicalTrack, level_title: &str) -> bool {
+fn is_level_excluded(track: &PhysicalTrack, level_title: &str) -> bool {
     if let Some(metadata) = &track.metadata {
         if let Some(excluded) = metadata.get("excluded_exercises") {
             if let Some(arr) = excluded.as_array() {
@@ -33,7 +33,7 @@ fn is_level_excluded(track: &crate::core::state::PhysicalTrack, level_title: &st
     false
 }
 
-fn find_active_level(track: &crate::core::state::PhysicalTrack, level_num: u64) -> Option<&crate::core::state::Level> {
+fn find_active_level(track: &PhysicalTrack, level_num: u64) -> Option<&Level> {
     if track.levels.is_empty() {
         return None;
     }
@@ -63,8 +63,8 @@ fn find_active_level(track: &crate::core::state::PhysicalTrack, level_num: u64) 
 pub fn get_session_data(
     state: tauri::State<'_, AppState>,
     break_type: String,
-) -> SessionDataPayload {
-    let config = state.config.lock().unwrap();
+) -> Result<SessionDataPayload, String> {
+    let config = state.config.lock().map_err(|e| e.to_string())?;
     let mut rng = rand::rng();
 
     match break_type.as_str() {
@@ -121,25 +121,25 @@ pub fn get_session_data(
                 config.stretches.choose(&mut rng).cloned()
             };
 
-            SessionDataPayload {
+            Ok(SessionDataPayload {
                 card,
                 prompt: None,
                 stretch,
-            }
+            })
         }
         "refocus" => {
             let prompt = config.reflection_prompts.choose(&mut rng).cloned();
-            SessionDataPayload {
+            Ok(SessionDataPayload {
                 card: None,
                 prompt,
                 stretch: None,
-            }
+            })
         }
-        _ => SessionDataPayload {
+        _ => Ok(SessionDataPayload {
             card: None,
             prompt: None,
             stretch: None,
-        },
+        }),
     }
 }
 
@@ -151,64 +151,9 @@ pub fn complete_break(
 ) -> Result<(), String> {
     println!("Break completed! Action logged: {}", action);
 
-    // If action is "done", increment progress
-    if action == "done" {
-        let mut config = state.config.lock().unwrap();
-        if let Some(track_id) = config.user_progress.active_track_id.clone() {
-            config.user_progress.completed_sessions_count += 1;
-            config.user_progress.last_completed_at = Some(chrono::Utc::now().to_rfc3339());
-            
-            // Auto-advance level after 5 completed sessions if a next level exists
-            if config.user_progress.completed_sessions_count >= 5 {
-                if let Some(current_level) = config.user_progress.current_level_number {
-                    if let Some(track) = config.tracks.iter().find(|t| t.id == track_id) {
-                        let mut next_level = current_level + 1;
-                        let max_levels = track.levels.len() as u64;
-                        while next_level <= max_levels {
-                            if let Some(lvl) = track.levels.iter().find(|l| l.level_number == next_level) {
-                                if is_level_excluded(track, &lvl.title) {
-                                    next_level += 1;
-                                    continue;
-                                }
-                            }
-                            break;
-                        }
-                        if next_level <= max_levels {
-                            config.user_progress.current_level_number = Some(next_level);
-                            config.user_progress.completed_sessions_count = 0;
-                        }
-                    }
-                }
-            }
-
-            if let Err(e) = save_config_file(&app, &config) {
-                eprintln!("Failed to save config on break completion: {}", e);
-            }
-        }
-    }
-
-    // Reset break state
-    {
-        let mut current_state = state.current_break_state.lock().unwrap();
-        *current_state = None;
-    }
-
-    // Reset timers based on config settings
-    {
-        let config = state.config.lock().unwrap();
-        let mut micro = state.micro_countdown.lock().unwrap();
-        let mut active = state.active_countdown.lock().unwrap();
-
-        *micro = config.settings.micro_break_interval_mins * 60;
-        *active = config.settings.active_break_interval_mins * 60;
-    }
-
-    // Resume timer tick
-    {
-        let mut paused = state.timer_paused.lock().unwrap();
-        *paused = false;
-        if let Some(toggle_menu_item) = state.toggle_menu_item.lock().unwrap().as_ref() {
-            let _ = toggle_menu_item.set_text("Pause Timer");
+    if let Some(updated_config) = state.complete_break_logic(&action)? {
+        if let Err(e) = save_config_file(&app, &updated_config) {
+            eprintln!("Failed to save config on break completion: {}", e);
         }
     }
 
@@ -223,16 +168,7 @@ pub fn trigger_refocus(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    {
-        let mut current_state = state.current_break_state.lock().unwrap();
-        *current_state = Some("refocus".to_string());
-        let mut paused = state.timer_paused.lock().unwrap();
-        *paused = true;
-        if let Some(toggle_menu_item) = state.toggle_menu_item.lock().unwrap().as_ref() {
-            let _ = toggle_menu_item.set_text("Resume Timer");
-        }
-    }
-
+    state.trigger_refocus_state()?;
     let _ = start_break_overlay(&app, "refocus");
     Ok(())
 }

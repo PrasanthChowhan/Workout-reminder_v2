@@ -15,7 +15,7 @@ pub fn start_timer_engine(app_handle: AppHandle) {
             };
 
             let is_paused = {
-                let paused = state.timer_paused.lock().unwrap();
+                let paused = state.timer_paused.lock().unwrap_or_else(|e| e.into_inner());
                 *paused
             };
 
@@ -24,8 +24,8 @@ pub fn start_timer_engine(app_handle: AppHandle) {
             }
 
             let (triggered_type, remaining_micro, remaining_active) = {
-                let mut micro = state.micro_countdown.lock().unwrap();
-                let mut active = state.active_countdown.lock().unwrap();
+                let mut micro = state.micro_countdown.lock().unwrap_or_else(|e| e.into_inner());
+                let mut active = state.active_countdown.lock().unwrap_or_else(|e| e.into_inner());
 
                 if *micro > 0 {
                     *micro -= 1;
@@ -47,9 +47,9 @@ pub fn start_timer_engine(app_handle: AppHandle) {
 
             if let Some(break_type) = triggered_type {
                 {
-                    let mut current_state = state.current_break_state.lock().unwrap();
+                    let mut current_state = state.current_break_state.lock().unwrap_or_else(|e| e.into_inner());
                     *current_state = Some(break_type.clone());
-                    let mut paused = state.timer_paused.lock().unwrap();
+                    let mut paused = state.timer_paused.lock().unwrap_or_else(|e| e.into_inner());
                     *paused = true;
                 }
 

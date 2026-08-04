@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
-use crate::core::state::AppConfig;
+use crate::core::models::AppConfig;
 
 // Retrieves path to the config file in AppData
 pub fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {

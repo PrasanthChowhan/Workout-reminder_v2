@@ -17,7 +17,7 @@ pub fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>
 
     // Store toggle_i in AppState
     let state = app.state::<crate::core::state::AppState>();
-    *state.toggle_menu_item.lock().unwrap() = Some(toggle_i.clone());
+    *state.toggle_menu_item.lock().unwrap_or_else(|e| e.into_inner()) = Some(toggle_i.clone());
 
     let toggle_i_clone = toggle_i.clone();
 
@@ -40,7 +40,7 @@ pub fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>
                     let app = app.clone();
                     tauri::async_runtime::spawn(async move {
                         let state = app.state::<crate::core::state::AppState>();
-                        let mut paused = state.timer_paused.lock().unwrap();
+                        let mut paused = state.timer_paused.lock().unwrap_or_else(|e| e.into_inner());
                         *paused = !*paused;
                         if *paused {
                             let _ = toggle_i_clone.set_text("Resume Timer");
@@ -53,14 +53,8 @@ pub fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>
                     let app = app.clone();
                     tauri::async_runtime::spawn(async move {
                         let state = app.state::<crate::core::state::AppState>();
-                        {
-                            let mut current_state = state.current_break_state.lock().unwrap();
-                            *current_state = Some("refocus".to_string());
-                            let mut paused = state.timer_paused.lock().unwrap();
-                            *paused = true;
-                            if let Some(toggle_menu_item) = state.toggle_menu_item.lock().unwrap().as_ref() {
-                                let _ = toggle_menu_item.set_text("Resume Timer");
-                            }
+                        if let Err(e) = state.trigger_refocus_state() {
+                            eprintln!("Failed to trigger refocus state via tray: {}", e);
                         }
                         let _ = crate::system::window::start_break_overlay(&app, "refocus");
                     });

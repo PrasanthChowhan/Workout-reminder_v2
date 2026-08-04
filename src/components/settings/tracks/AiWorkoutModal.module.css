@@ -1,0 +1,150 @@
+.ai-routine-info {
+  background-color: rgba(82, 196, 26, 0.03); /* subtle green tint matching Terminal Green action */
+  border: 1px solid rgba(82, 196, 26, 0.15);
+  border-radius: var(--radius-default);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ai-routine-tag {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #52c41a; /* Terminal Green matching the copy button action */
+  background-color: rgba(82, 196, 26, 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.levels-list-title {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-off-white);
+  margin-bottom: 0.35rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.ai-select {
+  width: 100%;
+  background-color: #121414;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-off-white);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  transition: border-color 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.ai-select:focus {
+  border-color: var(--color-brand-orange);
+}
+
+.ai-input {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-off-white);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  transition: border-color 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ai-input:focus {
+  border-color: var(--color-brand-orange);
+}
+
+.ai-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.track-copy-prompt-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(82, 196, 26, 0.4);
+  background-color: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #52c41a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.track-copy-prompt-btn:hover {
+  background-color: rgba(82, 196, 26, 0.1);
+  border-color: #52c41a;
+  color: #fff;
+}
+
+.json-textarea {
+  width: 100%;
+  height: 120px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  color: var(--color-off-white);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  transition: border-color 0.2s ease;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.json-textarea:focus {
+  border-color: var(--color-brand-orange);
+}
+
+.workout-overlay-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.workout-overlay-btn.primary {
+  background-color: var(--color-brand-orange);
+  color: #000;
+  border: none;
+}
+
+.workout-overlay-btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+.workout-overlay-btn.secondary {
+  background-color: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.workout-overlay-btn.secondary:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.05);
+}

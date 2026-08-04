@@ -1,5 +1,6 @@
 import React from "react";
 import { openUrl } from "../utils/tauri";
+import { ExternalLinkIcon, ArrowRightIcon, CheckIcon } from "./ui/Icons";
 import styles from "./ActiveRecallCard.module.css";
 
 /**
@@ -84,11 +85,7 @@ export default function ActiveRecallCard({
             title="Open source documentation"
           >
             View Source
-            <svg className={styles['source-icon']} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-              <polyline points="15 3 21 3 21 9"></polyline>
-              <line x1="10" x2="21" y1="14" y2="3"></line>
-            </svg>
+            <ExternalLinkIcon className={styles['source-icon']} />
           </button>
         ) : (
           <div />
@@ -101,10 +98,7 @@ export default function ActiveRecallCard({
             onClick={() => setShowAnswer(true)}
           >
             Show Answer
-            <svg className={styles['btn-arrow-icon']} fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="3" viewBox="0 0 24 24">
-              <line x1="5" x2="19" y1="12" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
+            <ArrowRightIcon className={styles['btn-arrow-icon']} />
           </button>
         ) : (
           <button 
@@ -113,9 +107,7 @@ export default function ActiveRecallCard({
             onClick={() => onCompleteBreak("done")}
           >
             Done Session
-            <svg className={styles['btn-check-icon']} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+            <CheckIcon className={styles['btn-check-icon']} />
           </button>
         )}
       </div>

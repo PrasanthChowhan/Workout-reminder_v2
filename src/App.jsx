@@ -8,6 +8,8 @@ import PhysicalResetCard from "./components/PhysicalResetCard";
 import ActiveRecallCard from "./components/ActiveRecallCard";
 import SkipReasonModal from "./components/SkipReasonModal";
 import SettingsModal from "./components/settings/SettingsModal";
+import ToastContainer from "./components/Toast";
+import { SettingsIcon, CheckIcon } from "./components/ui/Icons";
 import { DevIssueReporter } from "tauri-plugin-dev-issues";
 import { toast } from "./utils/toast";
 
@@ -177,10 +179,7 @@ export default function App() {
           onClick={() => setShowSettings(true)}
           title="Open Settings"
         >
-          <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
+          <SettingsIcon />
         </button>
       </header>
 
@@ -218,7 +217,7 @@ export default function App() {
           onClick={() => handleCompleteBreak("done")}
         >
           Done Session
-          <svg className="footer-check-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <CheckIcon className="footer-check-icon" />
         </button>
       </footer>
 
@@ -243,37 +242,10 @@ export default function App() {
       {import.meta.env.DEV && <DevIssueReporter />}
 
       {/* Toast Notification Container */}
-      <div className="toast-container">
-        {toasts.map((t) => (
-          <div 
-            key={t.id} 
-            className={`toast ${t.type}`}
-            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-          >
-            <div className="toast-body">
-              {t.type === "success" ? (
-                <svg className="toast-icon success" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              ) : t.type === "error" ? (
-                <svg className="toast-icon error" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="15" x2="9" y1="9" y2="15"></line>
-                  <line x1="9" x2="15" y1="9" y2="15"></line>
-                </svg>
-              ) : (
-                <svg className="toast-icon info" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" x2="12" y1="16" y2="12"></line>
-                  <line x1="12" x2="12.01" y1="8" y2="8"></line>
-                </svg>
-              )}
-              <span className="toast-message">{t.message}</span>
-            </div>
-            <button className="toast-close-btn">&times;</button>
-          </div>
-        ))}
-      </div>
+      <ToastContainer 
+        toasts={toasts} 
+        onCloseToast={(id) => setToasts((prev) => prev.filter((x) => x.id !== id))} 
+      />
     </div>
   );
 }

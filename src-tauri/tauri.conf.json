@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
+  "productName": "Workout & Break Reminder",
   "version": "0.1.0",
-  "identifier": "com.prash.tauri-app",
+  "identifier": "com.prash.workout-break-reminder",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "tauri-app",
+        "title": "Workout & Break Reminder",
         "width": 800,
         "height": 600
       }

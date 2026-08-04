@@ -1,4 +1,5 @@
-use crate::core::state::{AppState, AppConfig};
+use crate::core::state::AppState;
+use crate::core::models::AppConfig;
 use crate::utils::fs::save_config_file;
 use serde_json::Value;
 

@@ -1,37 +1,19 @@
 # Context: Workout & Break Reminder (Cognitive Companion)
 
-A lightweight native desktop application (**Tauri + Rust + HTML/CSS/JS**) that acts as a cognitive companion for developers. It alternates between eye-health micro-breaks, active study/stretching breaks, and provides an on-demand "Refocus" overlay.
+A lightweight native desktop application (**Tauri + Rust + React + Vanilla CSS Modules**) that acts as a cognitive companion for software engineers. It balances eye-health micro-breaks, physical stretch intervals, on-demand refocus exercises, and flashcard learning directly inside the developer's workflow.
 
-## Core Concepts & Glossary
+---
 
-### 1. Break Rhythm Cycles
-- **Micro-Break**: A short 20-second pause occurring every 20 minutes to prevent eye strain (following the 20-20-20 rule). The screen dims to absolute black with zero text or cognitive distractions, forcing the user to look away.
-- **Active Break**: A 5-minute break occurring every 50 minutes for physical stretching and cognitive reset.
-- **On-Demand "Refocus" Break**: An instant 5-minute cognitive reset overlay triggered globally via the system shortcut **`Ctrl + Alt + R`**. It provides a "rubber-ducking" prompts overlay when the user is stuck or frustrated.
+## 🔄 Core Concepts & Glossary
 
-### 2. Cognitive reset & Study tools
-- **Reflection Prompts**: High-level alignment questions (e.g. *"What is the core problem you are solving right now? Is there a simpler way?"*) designed to break hyperfocus rabbit holes.
-- **Active Recall Cards**: Flashcards displaying custom learning prompts (e.g., Rust, design patterns) backed by user-editable markdown/JSON files.
-- **Physical resets**: Guided stretching and posture adjustment cues.
+### 1. Cycle Overview & States
+- **Micro-Break**: Toggles every **20 minutes** for **20 seconds**. Dimmed, absolute-black screen overlay. Focuses on eye health (20-20-20 rule). No cognitive load.
+- **Active Break**: Toggles every **50 minutes** for **5 minutes**. Centered layout featuring two columns:
+  - **Left**: Guided stretching and posture adjustment routines (driven by track configurations).
+  - **Right**: Active Recall Flashcards (questions with toggleable answers).
+- **Refocus Break**: On-demand overlay triggered via the system-wide shortcut **`Ctrl + Alt + R`** or the system tray. A 5-minute rubber-ducking dashboard featuring reflection prompts and a markdown text log for journaling.
 
-## Technical Architecture
-
-- **Backend (Rust + Tauri)**:
-  - Manages background timers and application state.
-  - Registers global hotkeys (`Ctrl + Alt + R`).
-  - Triggers window events to show, hide, overlay, and dim screens.
-  - Reads/writes plain text markdown/JSON configuration files for prompts and cards.
-- **Frontend (HTML/CSS/JS)**:
-  - Implements the **Obsidian Kinetic** styling system (Ignition Orange accents, Obsidian charcoal background, Geist & JetBrains Mono typography).
-  - Displays overlay overlays, active timers, recall prompts, and physical stretches.
-
-## Data Structures & Schemas
-
-To ensure configuration and training data structures remain consistent and validate correctly across runs:
-- **Training Program Schema**: Located at [`docs/schemas/training-program.schema.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas/training-program.schema.json). It defines and validates the layout of training programs (e.g., [`docs/full_split.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/full_split.json)).
-- **Workout Config Schema**: Located in [`docs/reference/physical-tracks-spec.md`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/reference/physical-tracks-spec.md#L28-L124), specifying the structure of the main `workout-config.json` file.
-
-## State Machine
+### 2. State Machine Diagram
 
 ```mermaid
 stateDiagram-v2
@@ -40,12 +22,40 @@ stateDiagram-v2
     MicroBreak --> BackgroundTimer : After 20 seconds
     BackgroundTimer --> ActiveBreak : Every 50 mins
     ActiveBreak --> BackgroundTimer : After 5 mins (or user finishes)
-    BackgroundTimer --> RefocusOverlay : Ctrl + Alt + R pressed
+    BackgroundTimer --> RefocusOverlay : Ctrl + Alt + R / Tray Trigger
     RefocusOverlay --> BackgroundTimer : After 5 mins (or dismissed)
 ```
 
-## Architectural Decisions (ADRs)
+### 3. Cognitive Reset & Study Tools
+- **Reflection Prompts**: High-level alignment questions designed to break hyperfocus rabbit holes.
+- **Active Recall Cards**: Flashcards displaying custom learning prompts backed by user-editable markdown/JSON files.
+- **Physical Resets**: Guided stretching and posture adjustment cues.
 
-For detailed records of key architectural decisions, refer to:
-* [ADR 0001: Tabular Numbers for Timer Display](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/adr/0001-tabular-nums-for-timer-display.md) - Solves countdown visual layout shifting.
-* [ADR 0002: Async Window Manipulation from System Tray Events](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/adr/0002-async-window-manipulation-from-tray.md) - Prevents modal event loop deadlocks and application crashes on Windows.
+---
+
+## 🛠️ Technical Stack & Architecture
+
+- **Backend (Rust + Tauri v2)**:
+  - Tracks background timers via tokio threads so countdowns remain accurate when the window is hidden.
+  - Registers global hotkeys (`Ctrl + Alt + R`).
+  - Controls OS window states (hiding, showing, putting always-on-top, and toggling click-through).
+  - Performs local file I/O to save config/flashcard databases.
+- **Frontend (React 18 + Vite + CSS Modules)**:
+  - Single Page Application (SPA) driven by state hooks.
+  - Styled strictly with **CSS Modules** (`*.module.css`) for component-specific scoping.
+  - Communicates with the Rust backend via Tauri IPC (`invoke`).
+
+### Data & Configuration Schemas
+- **Training Program Schema**: Located at [`docs/schemas/training-program.schema.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas/training-program.schema.json).
+- **Workout Config Schema**: Spec in [`docs/reference/physical-tracks-spec.md`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/reference/physical-tracks-spec.md#L28-L124).
+- **Dynamic Metadata Extension**: Supports type-flexible JSON metadata on core models (`ActiveRecallCard`, `Stretch`, `PhysicalTrack`) via `metadata: Option<serde_json::Value>` to support UI prototyping without schema migrations.
+
+---
+
+## 📌 Developer & Issue Workflows
+
+- **Local Issue Tracker**: Issues/PRDs live in `docs/agents/issue-tracker.md`.
+- **Domain Vocabulary**: Domain glossary lives in `docs/agents/domain.md`.
+- **Architectural Decisions**:
+  - [ADR 0001: Tabular Numbers for Timer Display](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/adr/0001-tabular-nums-for-timer-display.md)
+  - [ADR 0002: Async Window Manipulation from System Tray Events](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/adr/0002-async-window-manipulation-from-tray.md)
