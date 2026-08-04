@@ -88,6 +88,7 @@ export default function TracksTab({
   const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
   const [showAiWorkoutModal, setShowAiWorkoutModal] = useState(false);
   const [pastedJson, setPastedJson] = useState("");
+  const [hideExcluded, setHideExcluded] = useState(false);
   
   // Custom AI prompt input states
   const [aiGoalSelect, setAiGoalSelect] = useState("hip mobility");
@@ -627,9 +628,6 @@ export default function TracksTab({
 
               {/* Levels / Exercises list */}
               <div className={styles['levels-list-container'] || "levels-list-container"}>
-                <h4 className={styles['levels-list-title']}>
-                  {isActive ? "Track Levels" : "Progression Preview"}
-                </h4>
                 {(() => {
                   let displayLevels = [];
                   if (isActive) {
@@ -652,77 +650,104 @@ export default function TracksTab({
                     }
                   }
 
-                  if (displayLevels.length === 0) {
-                    return <p className={parentStyles['settings-item-desc']}>No exercises available for this tier.</p>;
-                  }
+                  const excluded = selectedTrack?.metadata?.excluded_exercises || [];
+                  const excludedCount = displayLevels.filter(lvl => excluded.includes(lvl.title)).length;
+                  const visibleLevels = hideExcluded 
+                    ? displayLevels.filter(lvl => !excluded.includes(lvl.title)) 
+                    : displayLevels;
 
-                  return displayLevels.map(level => {
-                    const isActiveLevel = isActive && settingsProgress.current_level_number === level.level_number;
-                    const isCompleted = isActive && settingsProgress.current_level_number > level.level_number;
-                    const isLocked = isActive && settingsProgress.current_level_number < level.level_number;
-
-                    const duration = level.target_duration_secs;
-
-                    const excluded = selectedTrack?.metadata?.excluded_exercises || [];
-                    const isExcluded = excluded.includes(level.title);
-
-                    return (
-                      <div
-                        key={level.level_number}
-                        className={`${styles['level-item-card']} ${isActiveLevel ? styles['active'] : ""} ${isExcluded ? styles['excluded'] : ""}`}
-                        style={{ cursor: "default" }}
-                      >
-                        <div className={styles['level-item-header']}>
-                          <div className={styles['level-item-title-col']}>
-                            <span className={styles['level-item-number']}>L{level.level_number}</span>
-                            <span className={styles['level-item-title']}>{level.title}</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            {isActive && isActiveLevel && (
-                              <span className={`${styles['level-item-badge']} ${styles['active']}`}>
-                                Active
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              className={isExcluded ? styles['exclude-btn-excluded'] : styles['exclude-btn']}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleExclude(level.title);
-                              }}
-                              title={isExcluded 
-                                ? "Include this exercise back into your break and progression list." 
-                                : "Exclude this exercise. It will be skipped during breaks and automatic progression."
-                              }
-                            >
-                              {isExcluded ? "Excluded" : "Exclude"}
-                            </button>
-                          </div>
-                        </div>
-                        <p className={styles['level-item-desc']}>{level.description}</p>
-                        <div className={styles['level-item-footer']}>
-                          <span className={styles['level-item-duration']}>Target hold: {duration}s</span>
-                          {level.video_url && level.video_url !== "N/A" && (
-                            <a
-                              href={level.video_url}
-                              className={styles['level-item-video-link']}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setActiveVideoUrl(level.video_url);
-                              }}
-                            >
-                              <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" width="12" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: "0.25rem" }}>
-                                <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                                <rect height="14" rx="2" ry="2" width="15" x="1" y="5"></rect>
-                              </svg>
-                              Watch Video
-                            </a>
-                          )}
-                        </div>
+                  return (
+                    <>
+                      <div className={styles['levels-list-header-row']}>
+                        <h4 className={styles['levels-list-title']}>
+                          {isActive ? "Track Levels" : "Progression Preview"}
+                        </h4>
+                        {excludedCount > 0 && (
+                          <label className={styles['hide-excluded-label']}>
+                            <input
+                              type="checkbox"
+                              className={styles['hide-excluded-checkbox']}
+                              checked={hideExcluded}
+                              onChange={(e) => setHideExcluded(e.target.checked)}
+                            />
+                            Hide Excluded ({excludedCount})
+                          </label>
+                        )}
                       </div>
-                    );
-                  });
+
+                      {displayLevels.length === 0 ? (
+                        <p className={parentStyles['settings-item-desc']}>No exercises available for this tier.</p>
+                      ) : visibleLevels.length === 0 ? (
+                        <p className={parentStyles['settings-item-desc']}>All exercises in this tier are excluded.</p>
+                      ) : (
+                        visibleLevels.map(level => {
+                          const isActiveLevel = isActive && settingsProgress.current_level_number === level.level_number;
+                          const isCompleted = isActive && settingsProgress.current_level_number > level.level_number;
+                          const isLocked = isActive && settingsProgress.current_level_number < level.level_number;
+
+                          const duration = level.target_duration_secs;
+                          const isExcluded = excluded.includes(level.title);
+
+                          return (
+                            <div
+                              key={level.level_number}
+                              className={`${styles['level-item-card']} ${isActiveLevel ? styles['active'] : ""} ${isExcluded ? styles['excluded'] : ""}`}
+                              style={{ cursor: "default" }}
+                            >
+                              <div className={styles['level-item-header']}>
+                                <div className={styles['level-item-title-col']}>
+                                  <span className={styles['level-item-number']}>L{level.level_number}</span>
+                                  <span className={styles['level-item-title']}>{level.title}</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                  {isActive && isActiveLevel && (
+                                    <span className={`${styles['level-item-badge']} ${styles['active']}`}>
+                                      Active
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className={isExcluded ? styles['exclude-btn-excluded'] : styles['exclude-btn']}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleExclude(level.title);
+                                    }}
+                                    title={isExcluded 
+                                      ? "Include this exercise back into your break and progression list." 
+                                      : "Exclude this exercise. It will be skipped during breaks and automatic progression."
+                                    }
+                                  >
+                                    {isExcluded ? "Excluded" : "Exclude"}
+                                  </button>
+                                </div>
+                              </div>
+                              <p className={styles['level-item-desc']}>{level.description}</p>
+                              <div className={styles['level-item-footer']}>
+                                <span className={styles['level-item-duration']}>Target hold: {duration}s</span>
+                                {level.video_url && level.video_url !== "N/A" && (
+                                  <a
+                                    href={level.video_url}
+                                    className={styles['level-item-video-link']}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setActiveVideoUrl(level.video_url);
+                                    }}
+                                  >
+                                    <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" width="12" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: "0.25rem" }}>
+                                      <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                                      <rect height="14" rx="2" ry="2" width="15" x="1" y="5"></rect>
+                                    </svg>
+                                    Watch Video
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </>
+                  );
                 })()}
               </div>
 
