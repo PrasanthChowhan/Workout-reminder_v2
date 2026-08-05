@@ -52,10 +52,11 @@ export default function App() {
         const config = await invoke("get_app_config");
         setAppConfig(config);
         
-        const sessionData = await invoke("get_session_data", { break_type: "active" });
+        const sessionData = await invoke("get_session_data", { breakType: "active" });
         setSessionStretch(sessionData.stretch);
         setSessionCard(sessionData.card);
-        setBreakCountdown(config?.settings?.active_break_duration_secs || 300);
+        const duration = config?.settings?.active_break_duration_secs || 300;
+        setBreakCountdown(duration);
       } catch (e) {
         console.error("Failed to load initial config/data", e);
       }
@@ -103,7 +104,7 @@ export default function App() {
       const config = await invoke("get_app_config");
       setAppConfig(config);
       
-      const sessionData = await invoke("get_session_data", { break_type: "active" });
+      const sessionData = await invoke("get_session_data", { breakType: "active" });
       setSessionStretch(sessionData.stretch);
       setSessionCard(sessionData.card);
       setBreakCountdown(config?.settings?.active_break_duration_secs || 300);
@@ -148,7 +149,7 @@ export default function App() {
 
   const handleUpdateCardMetadata = async (cardId, newMetadata) => {
     try {
-      const updatedConfig = await invoke("update_flashcard_metadata", { card_id: cardId, metadata: newMetadata });
+      const updatedConfig = await invoke("update_flashcard_metadata", { cardId: cardId, metadata: newMetadata });
       setAppConfig(updatedConfig);
       setSessionCard(prev => {
         if (prev && prev.id === cardId) {
