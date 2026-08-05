@@ -2,11 +2,10 @@ import React, { useState } from "react";
 import TracksTab from "./TracksTab";
 import CardsTab from "./CardsTab";
 import PromptsTab from "./PromptsTab";
-import StretchesTab from "./StretchesTab";
 import GeneralTab from "./GeneralTab";
 import TimersTab from "./TimersTab";
 import AboutTab from "./AboutTab";
-import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, StretchesIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight } from "../ui/Icons";
+import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight } from "../ui/Icons";
 import styles from "./SettingsModal.module.css";
 
 const tabs = [
@@ -34,11 +33,6 @@ const tabs = [
     id: "prompts",
     label: "Reflection Prompts",
     icon: <PromptsIcon width={18} height={18} />
-  },
-  {
-    id: "stretches",
-    label: "Stretches",
-    icon: <StretchesIcon width={18} height={18} />
   },
   {
     id: "about",
@@ -200,12 +194,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
               />
             )}
 
-            {activeTab === "stretches" && (
-              <StretchesTab 
-                editableStretches={editableStretches}
-                setEditableStretches={setEditableStretches}
-              />
-            )}
+
 
             {activeTab === "about" && (
               <AboutTab parentStyles={styles} />

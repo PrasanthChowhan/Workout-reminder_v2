@@ -140,9 +140,16 @@ export default function TracksTab({
           onClose={() => setActiveVideoUrl(null)} 
           title="Exercise Video Demo"
         >
-          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: "0.75rem", overflow: "hidden", backgroundColor: "#000" }}>
-            <EmbeddedPlayer videoUrl={activeVideoUrl} style={{ borderRadius: "0.75rem", boxShadow: "none" }} />
-          </div>
+          <EmbeddedPlayer 
+            videoUrl={activeVideoUrl} 
+            style={{ 
+              width: "100%", 
+              aspectRatio: "16 / 9", 
+              height: "auto", 
+              borderRadius: "0.75rem", 
+              boxShadow: "none" 
+            }} 
+          />
         </Modal>
       )}
     </div>
