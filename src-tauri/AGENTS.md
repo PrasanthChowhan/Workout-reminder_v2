@@ -38,6 +38,8 @@ pub fn complete_break(
 ## Data & Modules
 - RULE-R3: No hardcoded exercise/card data in `.rs` files. Use `core/defaults.rs` or JSON assets.
 - RULE-R4: Never copy-paste logic across modules. Extract to `core/` or `system/` helpers.
+- RULE-R5: **Database Persistence**: Run queries asynchronously directly against `state.db_pool`. Always execute multi-table database updates transactionally (`pool.begin()`).
+- RULE-R6: **Deserialization Safety**: Annotate dynamic/optional fields or vectors with `#[serde(default)]` in `core/models.rs` to allow robust decoding from SQLite rows when fields are omitted.
 
 ## Where to Put New Code
 - New Tauri command → thin wrapper in `commands/`, logic in `core/state.rs`

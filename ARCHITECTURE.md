@@ -59,7 +59,8 @@ src-tauri/src/
 │   ├── shortcuts.rs                 # Global keyboard shortcuts
 │   └── window.rs                    # Window helpers + trigger_refocus_break()
 └── utils/
-    └── fs.rs                        # File I/O, config persistence
+    ├── fs.rs                        # File I/O, config persistence
+    └── db.rs                        # SQLite initialization, schema migrations, and queries
 ```
 
 ## Decision Guide: Where Does New Code Go?
