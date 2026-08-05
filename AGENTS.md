@@ -30,3 +30,5 @@ DO NOT use Tailwind, Create React App, or Next.js patterns.
 - Component map: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Schemas: [docs/schemas/](docs/schemas/)
 - ADRs: [docs/adr/](docs/adr/)
+- Frontend Agent Rules: [src/AGENTS.md](src/AGENTS.md)
+- Rust Backend Agent Rules: [src-tauri/AGENTS.md](src-tauri/AGENTS.md)
