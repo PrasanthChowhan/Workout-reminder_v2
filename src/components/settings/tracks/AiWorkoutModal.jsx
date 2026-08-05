@@ -66,28 +66,44 @@ export default function AiWorkoutModal({
   const [aiStyleSelect, setAiStyleSelect] = useState("general");
   const [aiStyleCustom, setAiStyleCustom] = useState("");
   const [pastedJson, setPastedJson] = useState("");
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+
+  const currentPrompt = React.useMemo(() => {
+    const getParamValue = (selectVal, customVal) => {
+      return selectVal === "custom" ? customVal : selectVal;
+    };
+
+    return generateAiPrompt(trainingProgramSchema, {
+      userGoal: getParamValue(aiGoalSelect, aiGoalCustom) || "hip mobility",
+      userLevel: aiLevel === "progression" ? "Progression (Beginner to Advanced)" : aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1),
+      availableEquipment: getParamValue(aiEquipmentSelect, aiEquipmentCustom) || "[]",
+      sessionDuration: getParamValue(aiDurationSelect, aiDurationCustom) || "15",
+      injuries: getParamValue(aiInjuriesSelect, aiInjuriesCustom) || "none",
+      preferredStyle: getParamValue(aiStyleSelect, aiStyleCustom) || "general"
+    });
+  }, [aiGoalSelect, aiGoalCustom, aiLevel, aiEquipmentSelect, aiEquipmentCustom, aiDurationSelect, aiDurationCustom, aiInjuriesSelect, aiInjuriesCustom, aiStyleSelect, aiStyleCustom]);
 
   const handleCopyPrompt = async () => {
     try {
-      const getParamValue = (selectVal, customVal) => {
-        return selectVal === "custom" ? customVal : selectVal;
-      };
-
-      const fullPrompt = generateAiPrompt(trainingProgramSchema, {
-        userGoal: getParamValue(aiGoalSelect, aiGoalCustom) || "hip mobility",
-        userLevel: aiLevel === "progression" ? "Progression (Beginner to Advanced)" : aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1),
-        availableEquipment: getParamValue(aiEquipmentSelect, aiEquipmentCustom) || "[]",
-        sessionDuration: getParamValue(aiDurationSelect, aiDurationCustom) || "15",
-        injuries: getParamValue(aiInjuriesSelect, aiInjuriesCustom) || "none",
-        preferredStyle: getParamValue(aiStyleSelect, aiStyleCustom) || "general"
-      });
-      await navigator.clipboard.writeText(fullPrompt);
+      await navigator.clipboard.writeText(currentPrompt);
       toast.success("AI Prompt copied with custom parameters!");
     } catch (e) {
       console.error(e);
       toast.error("Failed to copy prompt.");
     }
   };
+
+  const { isValidJson, jsonValidationError } = React.useMemo(() => {
+    if (!pastedJson.trim()) {
+      return { isValidJson: false, jsonValidationError: "" };
+    }
+    try {
+      JSON.parse(pastedJson);
+      return { isValidJson: true, jsonValidationError: "" };
+    } catch (e) {
+      return { isValidJson: false, jsonValidationError: e.message };
+    }
+  }, [pastedJson]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Custom AI Workout">
@@ -110,170 +126,194 @@ export default function AiWorkoutModal({
           }}
         >
           <li>Click <strong>"Copy AI Prompt"</strong> below to copy the system prompt & JSON schema.</li>
-          <li>Paste the prompt into any AI tool (Gemini, Claude, ChatGPT, etc.) to generate your custom program.</li>
+          <li>Paste the prompt into any AI tool (ChatGPT, Claude, etc.) to generate your custom program.</li>
           <li>Paste the resulting JSON block in the textarea below and click <strong>"Apply Program"</strong>.</li>
         </ol>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", marginBottom: "1.5rem" }}>
-        {/* Goal / Focus Topic & Difficulty Level */}
-        <div className={styles['ai-input-grid']}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label className={styles['levels-list-title']}>Goal / Focus Topic</label>
-            <select
-              className={styles['ai-select']}
-              value={aiGoalSelect}
-              onChange={(e) => setAiGoalSelect(e.target.value)}
-            >
-              {GOAL_PRESETS.map((preset) => (
-                <option key={preset.value} value={preset.value}>{preset.label}</option>
-              ))}
-              <option value="custom">Custom...</option>
-            </select>
-            {aiGoalSelect === "custom" && (
-              <input
-                type="text"
-                className={styles['ai-input']}
-                style={{ marginTop: "0.35rem" }}
-                value={aiGoalCustom}
-                onChange={(e) => setAiGoalCustom(e.target.value)}
-                placeholder="e.g., handstand prep, neck release"
-                autoFocus
-              />
-            )}
+      {/* Phase 1: Building the Prompt */}
+      <div className={styles['phase-panel']}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", marginBottom: "1.25rem" }}>
+          {/* Goal / Focus Topic & Difficulty Level */}
+          <div className={styles['ai-input-grid']}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label className={styles['levels-list-title']}>Goal / Focus Topic</label>
+              <select
+                className={styles['ai-select']}
+                value={aiGoalSelect}
+                onChange={(e) => setAiGoalSelect(e.target.value)}
+              >
+                {GOAL_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>{preset.label}</option>
+                ))}
+                <option value="custom">Custom...</option>
+              </select>
+              {aiGoalSelect === "custom" && (
+                <input
+                  type="text"
+                  className={styles['ai-input']}
+                  style={{ marginTop: "0.35rem" }}
+                  value={aiGoalCustom}
+                  onChange={(e) => setAiGoalCustom(e.target.value)}
+                  placeholder="e.g., handstand prep, neck release"
+                  autoFocus
+                />
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label className={styles['levels-list-title']}>Difficulty Level</label>
+              <select
+                className={styles['ai-select']}
+                value={aiLevel}
+                onChange={(e) => setAiLevel(e.target.value)}
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="progression">Progression (Beginner to Advanced)</option>
+              </select>
+            </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label className={styles['levels-list-title']}>Difficulty Level</label>
-            <select
-              className={styles['ai-select']}
-              value={aiLevel}
-              onChange={(e) => setAiLevel(e.target.value)}
-            >
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-              <option value="progression">Progression (Beginner to Advanced)</option>
-            </select>
+
+          {/* Available Equipment & Duration */}
+          <div className={styles['ai-input-grid']}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label className={styles['levels-list-title']}>Available Equipment</label>
+              <select
+                className={styles['ai-select']}
+                value={aiEquipmentSelect}
+                onChange={(e) => setAiEquipmentSelect(e.target.value)}
+              >
+                {EQUIPMENT_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>{preset.label}</option>
+                ))}
+                <option value="custom">Custom...</option>
+              </select>
+              {aiEquipmentSelect === "custom" && (
+                <input
+                  type="text"
+                  className={styles['ai-input']}
+                  style={{ marginTop: "0.35rem" }}
+                  value={aiEquipmentCustom}
+                  onChange={(e) => setAiEquipmentCustom(e.target.value)}
+                  placeholder='e.g., ["Mat", "Resistance Band"] or []'
+                  autoFocus
+                />
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label className={styles['levels-list-title']}>Duration (Minutes)</label>
+              <select
+                className={styles['ai-select']}
+                value={aiDurationSelect}
+                onChange={(e) => setAiDurationSelect(e.target.value)}
+              >
+                {DURATION_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>{preset.label}</option>
+                ))}
+                <option value="custom">Custom...</option>
+              </select>
+              {aiDurationSelect === "custom" && (
+                <input
+                  type="number"
+                  min="5"
+                  max="60"
+                  className={styles['ai-input']}
+                  style={{ marginTop: "0.35rem" }}
+                  value={aiDurationCustom}
+                  onChange={(e) => setAiDurationCustom(e.target.value)}
+                  placeholder="e.g. 15"
+                  autoFocus
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Injuries / Limitations & Preferred Style */}
+          <div className={styles['ai-input-grid']}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label className={styles['levels-list-title']}>Injuries / Limitations</label>
+              <select
+                className={styles['ai-select']}
+                value={aiInjuriesSelect}
+                onChange={(e) => setAiInjuriesSelect(e.target.value)}
+              >
+                {INJURY_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>{preset.label}</option>
+                ))}
+                <option value="custom">Custom...</option>
+              </select>
+              {aiInjuriesSelect === "custom" && (
+                <input
+                  type="text"
+                  className={styles['ai-input']}
+                  style={{ marginTop: "0.35rem" }}
+                  value={aiInjuriesCustom}
+                  onChange={(e) => setAiInjuriesCustom(e.target.value)}
+                  placeholder="e.g., knee pain, none"
+                  autoFocus
+                />
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+              <label className={styles['levels-list-title']}>Preferred Style</label>
+              <select
+                className={styles['ai-select']}
+                value={aiStyleSelect}
+                onChange={(e) => setAiStyleSelect(e.target.value)}
+              >
+                {STYLE_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>{preset.label}</option>
+                ))}
+                <option value="custom">Custom...</option>
+              </select>
+              {aiStyleSelect === "custom" && (
+                <input
+                  type="text"
+                  className={styles['ai-input']}
+                  style={{ marginTop: "0.35rem" }}
+                  value={aiStyleCustom}
+                  onChange={(e) => setAiStyleCustom(e.target.value)}
+                  placeholder="e.g., strength-focused, rehab"
+                  autoFocus
+                />
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Available Equipment & Duration */}
-        <div className={styles['ai-input-grid']}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label className={styles['levels-list-title']}>Available Equipment</label>
-            <select
-              className={styles['ai-select']}
-              value={aiEquipmentSelect}
-              onChange={(e) => setAiEquipmentSelect(e.target.value)}
-            >
-              {EQUIPMENT_PRESETS.map((preset) => (
-                <option key={preset.value} value={preset.value}>{preset.label}</option>
-              ))}
-              <option value="custom">Custom...</option>
-            </select>
-            {aiEquipmentSelect === "custom" && (
-              <input
-                type="text"
-                className={styles['ai-input']}
-                style={{ marginTop: "0.35rem" }}
-                value={aiEquipmentCustom}
-                onChange={(e) => setAiEquipmentCustom(e.target.value)}
-                placeholder='e.g., ["Mat", "Resistance Band"] or []'
-                autoFocus
-              />
-            )}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label className={styles['levels-list-title']}>Duration (Minutes)</label>
-            <select
-              className={styles['ai-select']}
-              value={aiDurationSelect}
-              onChange={(e) => setAiDurationSelect(e.target.value)}
-            >
-              {DURATION_PRESETS.map((preset) => (
-                <option key={preset.value} value={preset.value}>{preset.label}</option>
-              ))}
-              <option value="custom">Custom...</option>
-            </select>
-            {aiDurationSelect === "custom" && (
-              <input
-                type="number"
-                min="5"
-                max="60"
-                className={styles['ai-input']}
-                style={{ marginTop: "0.35rem" }}
-                value={aiDurationCustom}
-                onChange={(e) => setAiDurationCustom(e.target.value)}
-                placeholder="e.g. 15"
-                autoFocus
-              />
-            )}
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <button
+            type="button"
+            className={styles['track-copy-prompt-btn']}
+            onClick={handleCopyPrompt}
+          >
+            Copy AI Prompt
+          </button>
+          <button
+            type="button"
+            className={styles['preview-prompt-link']}
+            onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+          >
+            {isPreviewExpanded ? "Hide Preview" : "Preview Prompt"}
+          </button>
         </div>
 
-        {/* Injuries / Limitations & Preferred Style */}
-        <div className={styles['ai-input-grid']}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label className={styles['levels-list-title']}>Injuries / Limitations</label>
-            <select
-              className={styles['ai-select']}
-              value={aiInjuriesSelect}
-              onChange={(e) => setAiInjuriesSelect(e.target.value)}
-            >
-              {INJURY_PRESETS.map((preset) => (
-                <option key={preset.value} value={preset.value}>{preset.label}</option>
-              ))}
-              <option value="custom">Custom...</option>
-            </select>
-            {aiInjuriesSelect === "custom" && (
-              <input
-                type="text"
-                className={styles['ai-input']}
-                style={{ marginTop: "0.35rem" }}
-                value={aiInjuriesCustom}
-                onChange={(e) => setAiInjuriesCustom(e.target.value)}
-                placeholder="e.g., knee pain, none"
-                autoFocus
-              />
-            )}
+        {isPreviewExpanded && (
+          <div className={styles['prompt-preview-container']}>
+            <textarea
+              readOnly
+              className={styles['prompt-preview-textarea']}
+              value={currentPrompt}
+              onClick={(e) => e.target.select()}
+            />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label className={styles['levels-list-title']}>Preferred Style</label>
-            <select
-              className={styles['ai-select']}
-              value={aiStyleSelect}
-              onChange={(e) => setAiStyleSelect(e.target.value)}
-            >
-              {STYLE_PRESETS.map((preset) => (
-                <option key={preset.value} value={preset.value}>{preset.label}</option>
-              ))}
-              <option value="custom">Custom...</option>
-            </select>
-            {aiStyleSelect === "custom" && (
-              <input
-                type="text"
-                className={styles['ai-input']}
-                style={{ marginTop: "0.35rem" }}
-                value={aiStyleCustom}
-                onChange={(e) => setAiStyleCustom(e.target.value)}
-                placeholder="e.g., strength-focused, rehab"
-                autoFocus
-              />
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "1.5rem" }}>
-        <button
-          type="button"
-          className={styles['track-copy-prompt-btn']}
-          onClick={handleCopyPrompt}
-        >
-          Copy AI Prompt
-        </button>
-      </div>
+      <hr className={styles['phase-divider']} />
 
+      {/* Phase 2: Pasting the Result */}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem" }}>
         <label className={styles['levels-list-title']} style={{ display: "block" }}>
           Paste AI Response (JSON)
@@ -284,6 +324,11 @@ export default function AiWorkoutModal({
           value={pastedJson}
           onChange={(e) => setPastedJson(e.target.value)}
         />
+        {pastedJson.trim() && (
+          <div className={isValidJson ? styles['validation-valid'] : styles['validation-invalid']}>
+            {isValidJson ? "✓ Valid JSON" : "✗ Invalid JSON formatting"}
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
@@ -297,6 +342,7 @@ export default function AiWorkoutModal({
         <button
           type="button"
           className={`${styles['workout-overlay-btn']} ${styles['primary']}`}
+          disabled={!isValidJson}
           onClick={() => onApplyProgram(pastedJson)}
         >
           Apply Program
