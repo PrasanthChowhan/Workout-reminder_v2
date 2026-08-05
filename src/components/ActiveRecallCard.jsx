@@ -12,7 +12,7 @@ import styles from "./ActiveRecallCard.module.css";
  * @param {function} props.setShowAnswer Function to set the answer visibility state
  * @param {function} props.onCompleteBreak Callback to trigger when the session is successfully completed
  */
-export default function ActiveRecallCard({ 
+const ActiveRecallCard = React.memo(function ActiveRecallCard({
   sessionCard, 
   showAnswer, 
   setShowAnswer, 
@@ -113,4 +113,6 @@ export default function ActiveRecallCard({
       </div>
     </section>
   );
-}
+});
+
+export default ActiveRecallCard;

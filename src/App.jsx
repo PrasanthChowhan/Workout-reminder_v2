@@ -49,12 +49,10 @@ export default function App() {
   useEffect(() => {
     const init = async () => {
       try {
-        const config = await invoke("get_app_config");
+        const { config, session_data } = await invoke("get_initial_break_data", { breakType: "active" });
         setAppConfig(config);
-        
-        const sessionData = await invoke("get_session_data", { breakType: "active" });
-        setSessionStretch(sessionData.stretch);
-        setSessionCard(sessionData.card);
+        setSessionStretch(session_data.stretch);
+        setSessionCard(session_data.card);
         const duration = config?.settings?.active_break_duration_secs || 300;
         setBreakCountdown(duration);
       } catch (e) {
@@ -101,12 +99,10 @@ export default function App() {
   const triggerBreak = async () => {
     setShowAnswer(false);
     try {
-      const config = await invoke("get_app_config");
+      const { config, session_data } = await invoke("get_initial_break_data", { breakType: "active" });
       setAppConfig(config);
-      
-      const sessionData = await invoke("get_session_data", { breakType: "active" });
-      setSessionStretch(sessionData.stretch);
-      setSessionCard(sessionData.card);
+      setSessionStretch(session_data.stretch);
+      setSessionCard(session_data.card);
       setBreakCountdown(config?.settings?.active_break_duration_secs || 300);
     } catch (e) {
       console.error("Failed to load session details", e);
@@ -210,7 +206,7 @@ export default function App() {
           onTouchEnd={cancelHolding}
           title="Press and hold for 2 seconds to skip"
         >
-          <div className="hold-progress-bar" style={{ width: `${holdProgress}%` }}></div>
+          <div className="hold-progress-bar" style={{ transform: `scaleX(${holdProgress / 100})` }}></div>
           <span>{holdProgress > 0 ? "Holding..." : "Didn't Do"}</span>
         </button>
         <button 

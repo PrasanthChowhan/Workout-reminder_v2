@@ -6,18 +6,17 @@ pub fn init_global_shortcut_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 
     tauri_plugin_global_shortcut::Builder::new()
         .with_handler(|app, shortcut, event| {
-            if event.state() == ShortcutState::Pressed {
-                if shortcut.mods.contains(Modifiers::CONTROL)
-                    && shortcut.mods.contains(Modifiers::ALT)
-                    && shortcut.key == Code::KeyR
-                {
-                    let state = app.state::<crate::core::state::AppState>();
-                    if let Err(e) = state.trigger_refocus_state() {
-                        eprintln!("Failed to trigger refocus state via shortcut: {}", e);
-                    }
-
-                    let _ = crate::system::window::start_break_overlay(app, "refocus");
+            if event.state() == ShortcutState::Pressed
+                && shortcut.mods.contains(Modifiers::CONTROL)
+                && shortcut.mods.contains(Modifiers::ALT)
+                && shortcut.key == Code::KeyR
+            {
+                let state = app.state::<crate::core::state::AppState>();
+                if let Err(e) = state.trigger_refocus_state() {
+                    eprintln!("Failed to trigger refocus state via shortcut: {}", e);
                 }
+
+                let _ = crate::system::window::start_break_overlay(app, "refocus");
             }
         })
         .build()

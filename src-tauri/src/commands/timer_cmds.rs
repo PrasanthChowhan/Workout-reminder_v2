@@ -1,7 +1,7 @@
 use rand::prelude::IndexedRandom;
 
 use crate::core::state::AppState;
-use crate::core::models::{TimerStatePayload, SessionDataPayload, Stretch, PhysicalTrack, Level};
+use crate::core::models::{TimerStatePayload, SessionDataPayload, Stretch, PhysicalTrack, Level, InitialBreakDataPayload};
 use crate::system::window::{close_break_overlay, start_break_overlay};
 use crate::utils::db;
 
@@ -140,6 +140,23 @@ pub async fn get_session_data(
             prompt: None,
             stretch: None,
         }),
+    }
+}
+
+#[tauri::command]
+pub async fn get_initial_break_data(
+    state: tauri::State<'_, AppState>,
+    break_type: String,
+) -> Result<InitialBreakDataPayload, String> {
+    let (config_res, session_data_res) = tokio::join!(
+        db::load_app_config(&state.db_pool),
+        get_session_data(state.clone(), break_type)
+    );
+
+    match (config_res, session_data_res) {
+        (Ok(config), Ok(session_data)) => Ok(InitialBreakDataPayload { config, session_data }),
+        (Err(e), _) => Err(e),
+        (_, Err(e)) => Err(e),
     }
 }
 
