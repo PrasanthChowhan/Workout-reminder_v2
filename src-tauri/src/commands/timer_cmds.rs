@@ -3,7 +3,7 @@ use rand::prelude::IndexedRandom;
 use crate::core::state::AppState;
 use crate::core::models::{TimerStatePayload, SessionDataPayload, Stretch, PhysicalTrack, Level};
 use crate::system::window::{close_break_overlay, start_break_overlay};
-use crate::utils::fs::save_config_file;
+use crate::utils::db;
 
 #[tauri::command]
 pub fn get_timer_state(state: tauri::State<'_, AppState>) -> Result<TimerStatePayload, String> {
@@ -60,11 +60,11 @@ fn find_active_level(track: &PhysicalTrack, level_num: u64) -> Option<&Level> {
 }
 
 #[tauri::command]
-pub fn get_session_data(
+pub async fn get_session_data(
     state: tauri::State<'_, AppState>,
     break_type: String,
 ) -> Result<SessionDataPayload, String> {
-    let config = state.config.lock().map_err(|e| e.to_string())?;
+    let config = db::load_app_config(&state.db_pool).await?;
     let mut rng = rand::rng();
 
     match break_type.as_str() {
@@ -144,18 +144,14 @@ pub fn get_session_data(
 }
 
 #[tauri::command]
-pub fn complete_break(
+pub async fn complete_break(
     app: tauri::AppHandle,
     action: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     println!("Break completed! Action logged: {}", action);
 
-    if let Some(updated_config) = state.complete_break_logic(&action)? {
-        if let Err(e) = save_config_file(&app, &updated_config) {
-            eprintln!("Failed to save config on break completion: {}", e);
-        }
-    }
+    let _ = state.complete_break_logic(&action).await?;
 
     // Hide window and restore normal desktop dimensions
     let _ = close_break_overlay(&app);

@@ -135,7 +135,7 @@ export default function App() {
 
   const handleSaveSettings = async (newConfig) => {
     try {
-      await invoke("save_app_config", { new_config: newConfig });
+      await invoke("save_app_config", { newConfig: newConfig });
       setAppConfig(newConfig);
       setShowSettings(false);
       triggerBreak();

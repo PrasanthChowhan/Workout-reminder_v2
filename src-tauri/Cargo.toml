@@ -23,9 +23,10 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rand = "0.10.2"
-tokio = { version = "1.53.1", features = ["time"] }
+tokio = { version = "1.53.1", features = ["time", "macros", "rt-multi-thread"] }
 chrono = { version = "0.4.39", features = ["serde"] }
 tauri-plugin-dev-issues = { path = "../packages/tauri-plugin-dev-issues" }
+sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls", "json"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"

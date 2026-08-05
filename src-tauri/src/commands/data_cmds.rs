@@ -1,40 +1,37 @@
 use crate::core::state::AppState;
 use crate::core::models::AppConfig;
-use crate::utils::fs::save_config_file;
+use crate::utils::db;
 use serde_json::Value;
 
 #[tauri::command]
-pub fn update_flashcard_metadata(
-    app: tauri::AppHandle,
+pub async fn update_flashcard_metadata(
     card_id: String,
     metadata: Value,
     state: tauri::State<'_, AppState>,
 ) -> Result<AppConfig, String> {
-    let updated_config = state.update_flashcard_metadata(&card_id, metadata)?;
-    save_config_file(&app, &updated_config)?;
+    db::update_flashcard_meta(&state.db_pool, &card_id, metadata).await?;
+    let updated_config = db::load_app_config(&state.db_pool).await?;
     Ok(updated_config)
 }
 
 #[tauri::command]
-pub fn update_track_metadata(
-    app: tauri::AppHandle,
+pub async fn update_track_metadata(
     track_id: String,
     metadata: Value,
     state: tauri::State<'_, AppState>,
 ) -> Result<AppConfig, String> {
-    let updated_config = state.update_track_metadata(&track_id, metadata)?;
-    save_config_file(&app, &updated_config)?;
+    db::update_track_meta(&state.db_pool, &track_id, metadata).await?;
+    let updated_config = db::load_app_config(&state.db_pool).await?;
     Ok(updated_config)
 }
 
 #[tauri::command]
-pub fn update_stretch_metadata(
-    app: tauri::AppHandle,
+pub async fn update_stretch_metadata(
     stretch_name: String,
     metadata: Value,
     state: tauri::State<'_, AppState>,
 ) -> Result<AppConfig, String> {
-    let updated_config = state.update_stretch_metadata(&stretch_name, metadata)?;
-    save_config_file(&app, &updated_config)?;
+    db::update_stretch_meta(&state.db_pool, &stretch_name, metadata).await?;
+    let updated_config = db::load_app_config(&state.db_pool).await?;
     Ok(updated_config)
 }

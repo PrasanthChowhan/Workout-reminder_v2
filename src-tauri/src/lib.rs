@@ -26,13 +26,47 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            // Load app configuration
-            let app_config = utils::fs::load_config(app.handle());
-            // Save initial defaults if the file was just generated
-            let _ = utils::fs::save_config_file(app.handle(), &app_config);
+            let app_handle = app.handle();
+            let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+            if !app_data_dir.exists() {
+                std::fs::create_dir_all(&app_data_dir).map_err(|e| e.to_string())?;
+            }
+            
+            // Run async DB initialization using block_on
+            let pool = tauri::async_runtime::block_on(async {
+                utils::db::init_db(&app_data_dir).await
+            })?;
+            
+            // Check if config.json exists, and migrate it to DB
+            let json_path = utils::fs::get_config_path(app_handle)?;
+            if json_path.exists() {
+                tauri::async_runtime::block_on(async {
+                    utils::db::migrate_json_to_db(&pool, &json_path).await
+                })?;
+            }
+            
+            // Check if DB is completely fresh (no settings), and populate with defaults
+            let is_empty: i64 = tauri::async_runtime::block_on(async {
+                sqlx::query_scalar("SELECT COUNT(*) FROM settings")
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap_or(0)
+            });
+            
+            if is_empty == 0 {
+                let default_config = core::models::AppConfig::default();
+                tauri::async_runtime::block_on(async {
+                    utils::db::save_app_config(&pool, &default_config).await
+                })?;
+            }
+            
+            // Query settings from DB
+            let settings = tauri::async_runtime::block_on(async {
+                utils::db::load_settings(&pool).await
+            })?;
 
             // Manage app state
-            app.manage(core::state::AppState::new(app_config));
+            app.manage(core::state::AppState::new(pool, settings));
 
             // Set up system tray & global shortcuts on desktop
             #[cfg(desktop)]

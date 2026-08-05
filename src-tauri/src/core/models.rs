@@ -100,6 +100,7 @@ pub struct PhysicalTrack {
     pub id: String,
     pub name: String,
     pub description: String,
+    #[serde(default)]
     pub levels: Vec<Level>,
     #[serde(default)]
     pub exercises: Option<Vec<CustomExercise>>,
