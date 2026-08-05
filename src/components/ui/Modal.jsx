@@ -34,7 +34,7 @@ export const Modal = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const focusableElementsString = 'button, [href], input, select, textarea, [tabindex]:not([-1])';
+    const focusableElementsString = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     const modalElement = modalRef.current;
     
     // Find all focusable elements inside modal
