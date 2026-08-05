@@ -151,3 +151,9 @@ pub struct SessionDataPayload {
     pub prompt: Option<String>,
     pub stretch: Option<Stretch>,
 }
+
+#[derive(Serialize)]
+pub struct InitialBreakDataPayload {
+    pub config: AppConfig,
+    pub session_data: SessionDataPayload,
+}
