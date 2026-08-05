@@ -257,6 +257,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  max-width: 500px;
 }
 
 /* Custom Checkbox / Toggle Switch */
@@ -328,12 +329,18 @@
   background-color: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.5rem;
   color: var(--color-off-white);
   font-family: var(--font-mono);
   font-size: 0.9rem;
-  text-align: right;
+  text-align: center;
   transition: border-color 0.2s ease, box-shadow 0.4s var(--spring-easing, var(--fallback-spring)), scale 0.4s var(--spring-easing, var(--fallback-spring));
+}
+
+.settings-input::-webkit-inner-spin-button,
+.settings-input::-webkit-outer-spin-button {
+  opacity: 1;
+  cursor: pointer;
 }
 
 .settings-input:focus {

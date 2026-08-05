@@ -52,7 +52,7 @@ export default function App() {
         const config = await invoke("get_app_config");
         setAppConfig(config);
         
-        const sessionData = await invoke("get_session_data", { breakType: "active" });
+        const sessionData = await invoke("get_session_data", { break_type: "active" });
         setSessionStretch(sessionData.stretch);
         setSessionCard(sessionData.card);
         setBreakCountdown(config?.settings?.active_break_duration_secs || 300);
@@ -103,7 +103,7 @@ export default function App() {
       const config = await invoke("get_app_config");
       setAppConfig(config);
       
-      const sessionData = await invoke("get_session_data", { breakType: "active" });
+      const sessionData = await invoke("get_session_data", { break_type: "active" });
       setSessionStretch(sessionData.stretch);
       setSessionCard(sessionData.card);
       setBreakCountdown(config?.settings?.active_break_duration_secs || 300);
@@ -135,7 +135,7 @@ export default function App() {
 
   const handleSaveSettings = async (newConfig) => {
     try {
-      await invoke("save_app_config", { newConfig });
+      await invoke("save_app_config", { new_config: newConfig });
       setAppConfig(newConfig);
       setShowSettings(false);
       triggerBreak();
@@ -148,7 +148,7 @@ export default function App() {
 
   const handleUpdateCardMetadata = async (cardId, newMetadata) => {
     try {
-      const updatedConfig = await invoke("update_flashcard_metadata", { cardId, metadata: newMetadata });
+      const updatedConfig = await invoke("update_flashcard_metadata", { card_id: cardId, metadata: newMetadata });
       setAppConfig(updatedConfig);
       setSessionCard(prev => {
         if (prev && prev.id === cardId) {

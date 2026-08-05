@@ -43,13 +43,13 @@ export default function TimersTab({ settingsForm, setSettingsForm, parentStyles 
           />
         </div>
         <div className={parentStyles['settings-field']} style={{ marginTop: "1rem" }}>
-          <label className={parentStyles['settings-label']}>Duration (seconds)</label>
+          <label className={parentStyles['settings-label']}>Duration (minutes)</label>
           <input
             type="number"
             className={parentStyles['settings-input']}
-            value={settingsForm.active_break_duration_secs}
-            onChange={(e) => setSettingsForm({ ...settingsForm, active_break_duration_secs: e.target.value })}
-            min="10"
+            value={settingsForm.active_break_duration_mins}
+            onChange={(e) => setSettingsForm({ ...settingsForm, active_break_duration_mins: e.target.value })}
+            min="1"
             required
           />
         </div>

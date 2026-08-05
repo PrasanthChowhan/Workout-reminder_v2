@@ -72,7 +72,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
     micro_break_interval_mins: config?.settings?.micro_break_interval_mins ?? 20,
     active_break_interval_mins: config?.settings?.active_break_interval_mins ?? 50,
     micro_break_duration_secs: config?.settings?.micro_break_duration_secs ?? 20,
-    active_break_duration_secs: config?.settings?.active_break_duration_secs ?? 300,
+    active_break_duration_mins: Math.round((config?.settings?.active_break_duration_secs ?? 300) / 60),
     run_at_start: config?.settings?.run_at_start ?? false,
   });
 
@@ -96,7 +96,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
     const micro_break_interval_mins = Math.max(1, Math.round(Number(settingsForm.micro_break_interval_mins)) || 20);
     const active_break_interval_mins = Math.max(1, Math.round(Number(settingsForm.active_break_interval_mins)) || 50);
     const micro_break_duration_secs = Math.max(5, Math.round(Number(settingsForm.micro_break_duration_secs)) || 20);
-    const active_break_duration_secs = Math.max(10, Math.round(Number(settingsForm.active_break_duration_secs)) || 300);
+    const active_break_duration_secs = Math.max(10, Math.round(Number(settingsForm.active_break_duration_mins) * 60) || 300);
 
     const finalizedConfig = {
       ...draftConfig,
