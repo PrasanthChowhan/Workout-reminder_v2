@@ -58,6 +58,21 @@ pub fn run() {
                 tauri::async_runtime::block_on(async {
                     utils::db::save_app_config(&pool, &default_config).await
                 })?;
+            } else {
+                let levels_empty: i64 = tauri::async_runtime::block_on(async {
+                    sqlx::query_scalar("SELECT COUNT(*) FROM levels")
+                        .fetch_one(&pool)
+                        .await
+                        .unwrap_or(0)
+                });
+                if levels_empty == 0 {
+                    tauri::async_runtime::block_on(async {
+                        if let Ok(mut config) = utils::db::load_app_config(&pool).await {
+                            config.populate_levels();
+                            let _ = utils::db::save_app_config(&pool, &config).await;
+                        }
+                    });
+                }
             }
             
             // Query settings from DB

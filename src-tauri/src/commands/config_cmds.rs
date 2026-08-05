@@ -11,18 +11,19 @@ pub async fn set_active_track(
     starting_level: Option<u64>,
     state: tauri::State<'_, AppState>,
 ) -> Result<AppConfig, String> {
-    let mut progress = db::load_user_progress(&state.db_pool).await?;
+    let mut config = db::load_app_config(&state.db_pool).await?;
     
-    progress.active_track_id = track_id;
-    progress.onboarding_tier = onboarding_tier;
-    progress.current_level_number = starting_level;
-    progress.completed_sessions_count = 0;
-    progress.last_completed_at = None;
-    progress.level_started_at = Some(chrono::Utc::now().to_rfc3339());
+    config.user_progress.active_track_id = track_id;
+    config.user_progress.onboarding_tier = onboarding_tier;
+    config.user_progress.current_level_number = starting_level;
+    config.user_progress.completed_sessions_count = 0;
+    config.user_progress.last_completed_at = None;
+    config.user_progress.level_started_at = Some(chrono::Utc::now().to_rfc3339());
     
-    db::save_user_progress(&state.db_pool, &progress).await?;
+    config.populate_levels();
     
-    let config = db::load_app_config(&state.db_pool).await?;
+    db::save_app_config(&state.db_pool, &config).await?;
+    
     Ok(config)
 }
 
@@ -57,9 +58,10 @@ pub async fn get_app_config(state: tauri::State<'_, AppState>) -> Result<AppConf
 #[tauri::command]
 pub async fn save_app_config(
     app: tauri::AppHandle,
-    new_config: AppConfig,
+    mut new_config: AppConfig,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
+    new_config.populate_levels();
     db::save_app_config(&state.db_pool, &new_config).await?;
     
     // Update cached settings in State

@@ -146,7 +146,8 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
     }
 
     let data = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-    let config: AppConfig = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    let mut config: AppConfig = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    config.populate_levels();
 
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -342,18 +343,6 @@ pub async fn load_settings(pool: &SqlitePool) -> Result<Settings, String> {
     }
 }
 
-pub async fn save_settings(pool: &SqlitePool, settings: &Settings) -> Result<(), String> {
-    sqlx::query("INSERT OR REPLACE INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start) VALUES (1, ?, ?, ?, ?, ?)")
-        .bind(settings.micro_break_interval_mins as i64)
-        .bind(settings.active_break_interval_mins as i64)
-        .bind(settings.micro_break_duration_secs as i64)
-        .bind(settings.active_break_duration_secs as i64)
-        .bind(if settings.run_at_start { 1 } else { 0 })
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
 
 pub async fn load_user_progress(pool: &SqlitePool) -> Result<UserProgress, String> {
     let row = sqlx::query("SELECT active_track_id, current_level_number, onboarding_tier, completed_sessions_count, last_completed_at, level_started_at FROM user_progress WHERE id = 1")

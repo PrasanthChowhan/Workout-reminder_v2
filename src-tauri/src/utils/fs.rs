@@ -2,8 +2,6 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
-use crate::core::models::AppConfig;
-
 // Retrieves path to the config file in AppData
 pub fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {
     let path = app.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -14,59 +12,6 @@ pub fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(path.join("config.json"))
 }
 
-// Loads config from file, or returns default if not found
-pub fn load_config(app: &AppHandle) -> AppConfig {
-    if let Ok(path) = get_config_path(app) {
-        if path.exists() {
-            if let Ok(data) = fs::read_to_string(path) {
-                if let Ok(mut config) = serde_json::from_str::<AppConfig>(&data) {
-                    // Update default tracks to ensure they have the latest exercises/video URLs
-                    let default_config = AppConfig::default();
-                    
-                    for default_track in default_config.tracks {
-                        if let Some(existing_track) = config.tracks.iter_mut().find(|t| t.id == default_track.id) {
-                            // Only overwrite levels if the default track doesn't use the exercises schema.
-                            // For tracks with exercises (new schema), levels are dynamically generated.
-                            let has_no_exercises = default_track.exercises.is_none();
-                            existing_track.exercises = default_track.exercises;
-                            if has_no_exercises {
-                                existing_track.levels = default_track.levels;
-                            }
-                            existing_track.name = default_track.name;
-                            existing_track.description = default_track.description;
-                        } else {
-                            config.tracks.push(default_track);
-                        }
-                    }
-
-                    // Initialize default track if none is selected
-                    if config.user_progress.active_track_id.is_none() {
-                        config.user_progress.active_track_id = Some("split_training_program".to_string());
-                        config.user_progress.current_level_number = Some(1);
-                        config.user_progress.onboarding_tier = Some("beginner".to_string());
-                    }
-
-                    config.populate_levels();
-
-                    return config;
-                }
-            }
-        }
-    }
-    AppConfig::default()
-}
-
-// Saves config to file
-pub fn save_config_file(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
-    let path = get_config_path(app)?;
-    let serialized = serde_json::to_string_pretty(config).map_err(|e| e.to_string())?;
-    fs::write(path, serialized).map_err(|e| e.to_string())?;
-    
-    // Configure run at start
-    let _ = set_run_at_start(app, config.settings.run_at_start);
-    
-    Ok(())
-}
 
 // Search for the project issues folder or fallback to AppData
 pub fn find_issues_dir(app: &AppHandle) -> Result<PathBuf, String> {
