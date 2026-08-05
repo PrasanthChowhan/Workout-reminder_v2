@@ -1,11 +1,11 @@
 use sqlx::{sqlite::{SqliteConnectOptions, SqlitePoolOptions}, SqlitePool, Row};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::fs;
 use serde_json::Value;
 use crate::core::models::{AppConfig, Settings, ActiveRecallCard, Stretch, PhysicalTrack, CustomExercise, UserProgress, Level};
 
-pub async fn init_db(app_data_dir: &PathBuf) -> Result<SqlitePool, String> {
+pub async fn init_db(app_data_dir: &Path) -> Result<SqlitePool, String> {
     let db_path = app_data_dir.join("workout_data.sqlite");
     
     // Explicitly Enable Foreign Keys at the connection level

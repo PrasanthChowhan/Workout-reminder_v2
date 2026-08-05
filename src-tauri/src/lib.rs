@@ -100,6 +100,7 @@ pub fn run() {
             commands::timer_cmds::get_timer_state,
             commands::timer_cmds::toggle_timer,
             commands::timer_cmds::get_session_data,
+            commands::timer_cmds::get_initial_break_data,
             commands::timer_cmds::complete_break,
             commands::config_cmds::get_app_config,
             commands::config_cmds::save_app_config,

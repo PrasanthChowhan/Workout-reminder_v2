@@ -11,7 +11,7 @@ import styles from "./PhysicalResetCard.module.css";
  * @param {object} props
  * @param {object} props.sessionStretch Active stretch session object
  */
-export default function PhysicalResetCard({ sessionStretch }) {
+const PhysicalResetCard = React.memo(function PhysicalResetCard({ sessionStretch }) {
   const [showDetails, setShowDetails] = useState(false);
   const [isPlayingVideo, setIsPlayingVideo] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -270,4 +270,6 @@ export default function PhysicalResetCard({ sessionStretch }) {
       </div>
     </section>
   );
-}
+});
+
+export default PhysicalResetCard;

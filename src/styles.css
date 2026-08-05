@@ -279,8 +279,10 @@ body {
   top: 0;
   left: 0;
   height: 100%;
+  width: 100%;
   background-color: rgba(255, 122, 69, 0.25); /* Ignition Orange background overlay */
-  width: 0%;
+  transform: scaleX(0);
+  transform-origin: left;
   pointer-events: none;
   z-index: 1;
 }
