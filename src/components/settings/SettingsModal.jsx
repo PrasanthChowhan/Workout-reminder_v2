@@ -5,7 +5,7 @@ import PromptsTab from "./PromptsTab";
 import GeneralTab from "./GeneralTab";
 import TimersTab from "./TimersTab";
 import AboutTab from "./AboutTab";
-import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight } from "../ui/Icons";
+import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight, CheckIcon } from "../ui/Icons";
 import styles from "./SettingsModal.module.css";
 
 const tabs = [
@@ -80,6 +80,9 @@ export default function SettingsModal({ config, onSave, onCancel }) {
   const [editablePrompts, setEditablePrompts] = useState(config?.reflection_prompts || []);
   const [editableStretches, setEditableStretches] = useState(config?.stretches || []);
   
+  // Microinteraction state for the save button
+  const [saveState, setSaveState] = useState("idle");
+
   const [settingsProgress, setSettingsProgress] = useState(config?.user_progress || {
     active_track_id: null,
     current_level_number: null,
@@ -89,9 +92,11 @@ export default function SettingsModal({ config, onSave, onCancel }) {
     level_started_at: null
   });
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     if (e) e.preventDefault();
-    if (!draftConfig) return;
+    if (!draftConfig || saveState !== "idle") return;
+
+    setSaveState("saving");
 
     const micro_break_interval_mins = Math.max(1, Math.round(Number(settingsForm.micro_break_interval_mins)) || 20);
     const active_break_interval_mins = Math.max(1, Math.round(Number(settingsForm.active_break_interval_mins)) || 50);
@@ -113,7 +118,18 @@ export default function SettingsModal({ config, onSave, onCancel }) {
       user_progress: settingsProgress
     };
 
-    onSave(finalizedConfig);
+    try {
+      await onSave(finalizedConfig);
+      setSaveState("saved");
+      setTimeout(() => {
+        // Parent component typically unmounts the modal on successful save,
+        // but if it doesn't, revert to idle state.
+        setSaveState("idle");
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      setSaveState("idle");
+    }
   };
 
   return (
@@ -202,11 +218,20 @@ export default function SettingsModal({ config, onSave, onCancel }) {
           </div>
           
           <div className={styles['settings-footer']}>
-            <button type="button" className={styles['settings-cancel-btn']} onClick={onCancel}>
+            <button type="button" className={styles['settings-cancel-btn']} onClick={onCancel} disabled={saveState !== "idle"}>
               Cancel
             </button>
-            <button type="submit" className={styles['settings-save-btn']}>
-              Save Changes
+            <button type="submit" className={`${styles['settings-save-btn']} ${saveState === 'saved' ? styles['saved'] : ''}`} disabled={saveState !== "idle"}>
+              {saveState === 'saving' ? (
+                <span>Saving...</span>
+              ) : saveState === 'saved' ? (
+                <>
+                  <span>Saved</span>
+                  <CheckIcon width={14} height={14} />
+                </>
+              ) : (
+                <span>Save Changes</span>
+              )}
             </button>
           </div>
         </form>

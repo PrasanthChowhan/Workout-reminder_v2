@@ -154,18 +154,30 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--color-text-muted);
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
+  min-width: 80px; /* Prevent jitter on text change */
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
   text-transform: uppercase;
 }
 
-.diff-btn:hover {
+.diff-btn:hover:not(.loading) {
   background: rgba(255, 255, 255, 0.08);
   scale: 1.05;
 }
 
-.diff-btn:active {
+.diff-btn:active:not(.loading) {
   scale: 0.95;
   transition: scale 0.12s ease-out;
+}
+
+.diff-btn.loading {
+  cursor: default;
+  opacity: 0.8;
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
 }
 
 .diff-btn.easy.active {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CloseIcon } from "./ui/Icons";
+import { CloseIcon, CheckIcon } from "./ui/Icons";
 import styles from "./SkipReasonModal.module.css";
 
 /**
@@ -12,12 +12,21 @@ import styles from "./SkipReasonModal.module.css";
  */
 export default function SkipReasonModal({ onSubmit, onCancel }) {
   const [skipReason, setSkipReason] = useState("");
+  const [submitState, setSubmitState] = useState("idle");
 
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
-    if (!skipReason.trim()) return;
-    onSubmit(skipReason.trim());
-    setSkipReason("");
+    if (!skipReason.trim() || submitState !== "idle") return;
+
+    setSubmitState("submitting");
+
+    // Simulate slight delay for interaction feedback before closing
+    setTimeout(() => {
+      setSubmitState("submitted");
+      setTimeout(() => {
+        onSubmit(skipReason.trim());
+      }, 500); // 500ms to show the "Skipped" text before closing
+    }, 200);
   };
 
   const presetReasons = [
@@ -70,8 +79,17 @@ export default function SkipReasonModal({ onSubmit, onCancel }) {
             ))}
           </div>
           
-          <button type="submit" className={styles['skip-reason-submit-btn']}>
-            Confirm Skip & Exit
+          <button type="submit" className={`${styles['skip-reason-submit-btn']} ${submitState === 'submitted' ? styles['submitted'] : ''}`} disabled={submitState !== "idle"}>
+            {submitState === 'submitting' ? (
+              <span>Logging...</span>
+            ) : submitState === 'submitted' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                <span>Skipped</span>
+                <CheckIcon width={14} height={14} />
+              </div>
+            ) : (
+              <span>Confirm Skip & Exit</span>
+            )}
           </button>
         </form>
       </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { openUrl } from "../utils/tauri";
 import { ExternalLinkIcon, ArrowRightIcon, CheckIcon } from "./ui/Icons";
 import styles from "./ActiveRecallCard.module.css";
@@ -19,10 +19,21 @@ const ActiveRecallCard = React.memo(function ActiveRecallCard({
   onCompleteBreak,
   onUpdateMetadata
  }) {
+  const [loadingDifficulty, setLoadingDifficulty] = useState(null);
+
   const handleOpenSource = () => {
     if (sessionCard?.source) {
       openUrl(sessionCard.source);
     }
+  };
+
+  const handleDifficultyClick = (difficulty) => {
+    if (!onUpdateMetadata) return;
+    setLoadingDifficulty(difficulty);
+    onUpdateMetadata(sessionCard.id, { difficulty });
+    setTimeout(() => {
+      setLoadingDifficulty(null);
+    }, 600); // Small delay to show feedback interaction
   };
 
   return (
@@ -52,22 +63,22 @@ const ActiveRecallCard = React.memo(function ActiveRecallCard({
                 <span className={styles['difficulty-label']}>DIFFICULTY RATING:</span>
                 <div className={styles['difficulty-buttons']}>
                   <button
-                    onClick={() => onUpdateMetadata && onUpdateMetadata(sessionCard.id, { difficulty: "easy" })}
-                    className={`${styles['diff-btn']} ${styles['easy']} ${sessionCard?.metadata?.difficulty === "easy" ? styles['active'] : ""}`}
+                    onClick={() => handleDifficultyClick("easy")}
+                    className={`${styles['diff-btn']} ${styles['easy']} ${sessionCard?.metadata?.difficulty === "easy" ? styles['active'] : ""} ${loadingDifficulty === "easy" ? styles['loading'] : ""}`}
                   >
-                    Easy
+                    {loadingDifficulty === "easy" ? "Saving..." : "Easy"}
                   </button>
                   <button
-                    onClick={() => onUpdateMetadata && onUpdateMetadata(sessionCard.id, { difficulty: "medium" })}
-                    className={`${styles['diff-btn']} ${styles['medium']} ${sessionCard?.metadata?.difficulty === "medium" ? styles['active'] : ""}`}
+                    onClick={() => handleDifficultyClick("medium")}
+                    className={`${styles['diff-btn']} ${styles['medium']} ${sessionCard?.metadata?.difficulty === "medium" ? styles['active'] : ""} ${loadingDifficulty === "medium" ? styles['loading'] : ""}`}
                   >
-                    Medium
+                    {loadingDifficulty === "medium" ? "Saving..." : "Medium"}
                   </button>
                   <button
-                    onClick={() => onUpdateMetadata && onUpdateMetadata(sessionCard.id, { difficulty: "hard" })}
-                    className={`${styles['diff-btn']} ${styles['hard']} ${sessionCard?.metadata?.difficulty === "hard" ? styles['active'] : ""}`}
+                    onClick={() => handleDifficultyClick("hard")}
+                    className={`${styles['diff-btn']} ${styles['hard']} ${sessionCard?.metadata?.difficulty === "hard" ? styles['active'] : ""} ${loadingDifficulty === "hard" ? styles['loading'] : ""}`}
                   >
-                    Hard
+                    {loadingDifficulty === "hard" ? "Saving..." : "Hard"}
                   </button>
                 </div>
               </div>

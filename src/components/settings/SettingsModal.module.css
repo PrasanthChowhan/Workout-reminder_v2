@@ -537,19 +537,35 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: filter 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 140px; /* Prevent jitter on text change */
+  transition: filter 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease, background-color 0.3s ease, color 0.3s ease;
   text-transform: uppercase;
 }
 
-.settings-save-btn:hover {
+.settings-save-btn:hover:not(:disabled) {
   filter: brightness(1.15);
   scale: 1.04;
   box-shadow: 0 0 16px rgba(255, 122, 69, 0.45);
 }
 
-.settings-save-btn:active {
+.settings-save-btn:active:not(:disabled) {
   scale: 0.96;
   transition: scale 0.12s ease-out;
+}
+
+.settings-save-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.settings-save-btn.saved {
+  background-color: #00e639; /* Terminal green */
+  color: #000;
+  box-shadow: 0 0 16px rgba(0, 230, 57, 0.45);
 }
 
 /* Responsiveness for settings full screen */

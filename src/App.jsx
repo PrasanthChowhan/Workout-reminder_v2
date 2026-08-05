@@ -109,14 +109,33 @@ export default function App() {
     }
   };
 
+  const [doneState, setDoneState] = useState("idle");
+
   const handleCompleteBreak = async (action) => {
-    try {
-      await invoke("complete_break", { action });
-      setShowAnswer(false);
-      // Pre-load next break contents
-      triggerBreak();
-    } catch (e) {
-      console.error("Failed to complete break", e);
+    if (doneState !== "idle") return;
+
+    if (action === "done") {
+      setDoneState("completing");
+      try {
+        await invoke("complete_break", { action });
+        setDoneState("completed");
+        setTimeout(() => {
+          setShowAnswer(false);
+          triggerBreak();
+          setDoneState("idle");
+        }, 1500);
+      } catch (e) {
+        console.error("Failed to complete break", e);
+        setDoneState("idle");
+      }
+    } else {
+      try {
+        await invoke("complete_break", { action });
+        setShowAnswer(false);
+        triggerBreak();
+      } catch (e) {
+        console.error("Failed to complete break", e);
+      }
     }
   };
 
@@ -205,16 +224,29 @@ export default function App() {
           onTouchStart={startHolding}
           onTouchEnd={cancelHolding}
           title="Press and hold for 2 seconds to skip"
+          disabled={doneState !== "idle"}
         >
           <div className="hold-progress-bar" style={{ transform: `scaleX(${holdProgress / 100})` }}></div>
           <span>{holdProgress > 0 ? "Holding..." : "Didn't Do"}</span>
         </button>
         <button 
-          className="footer-primary-btn" 
+          className={`footer-primary-btn ${doneState === 'completed' ? 'completed' : ''}`}
           onClick={() => handleCompleteBreak("done")}
+          disabled={doneState !== "idle"}
         >
-          Done Session
-          <CheckIcon className="footer-check-icon" />
+          {doneState === 'completing' ? (
+            <span>Saving...</span>
+          ) : doneState === 'completed' ? (
+            <>
+              <span>Done!</span>
+              <CheckIcon className="footer-check-icon" />
+            </>
+          ) : (
+            <>
+              <span>Done Session</span>
+              <CheckIcon className="footer-check-icon" />
+            </>
+          )}
         </button>
       </footer>
 
