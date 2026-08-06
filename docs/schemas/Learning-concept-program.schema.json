@@ -1,0 +1,81 @@
+{
+  "name": "learning_concepts_extraction",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "metadata": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_title", "source_url"],
+        "properties": {
+          "source_title": { "type": "string" },
+          "source_url": { "type": "string" }
+        }
+      },
+      "concepts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["concept_id", "concept_title", "tags", "variants"],
+          "properties": {
+            "concept_id": { "type": "string" },
+            "concept_title": { "type": "string" },
+            "tags": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "e.g., 'networking', 'color-grading', 'deployment'"
+            },
+            "variants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "variant_id",
+                  "difficulty",
+                  "scenario_prose",
+                  "scenario_code_snippet",
+                  "hint",
+                  "target_answer_prose",
+                  "target_answer_code",
+                  "common_trap",
+                  "explanation"
+                ],
+                "properties": {
+                  "variant_id": { "type": "string" },
+                  "difficulty": {
+                    "type": "string",
+                    "enum": ["beginner", "intermediate", "advanced"]
+                  },
+                  "scenario_prose": { 
+                    "type": "string",
+                    "description": "The narrative setup of the problem."
+                  },
+                  "scenario_code_snippet": { 
+                    "type": ["string", "null"],
+                    "description": "Optional: Terminal output, code block, or error message to display."
+                  },
+                  "hint": { "type": "string" },
+                  "target_answer_prose": { 
+                    "type": "string",
+                    "description": "The conceptual answer."
+                  },
+                  "target_answer_code": { 
+                    "type": ["string", "null"],
+                    "description": "Optional: The exact syntax, command, or snippet required."
+                  },
+                  "common_trap": { "type": "string" },
+                  "explanation": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "required": ["metadata", "concepts"]
+  },
+  "strict": true
+}

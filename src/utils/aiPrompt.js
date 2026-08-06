@@ -182,19 +182,23 @@ true if the exercise is done one side at a time (e.g. lunges, single-leg bridges
 false if both sides work together or it is not side-specific (e.g. planks, squats with both legs).
 
 Category
-category must be a simple descriptive string, such as:
-
-"Mobility"
-
-"Strength"
-
-"Power"
-
-"Core"
-
-"Skill"
-
-"Stability"
+category must be exactly one of the following strings:
+- "Mobility"
+- "Strength"
+- "Power"
+- "Core"
+- "Skill"
+- "Stability"
+- "Neural Dynamics"
+- "Static Stretch"
+- "Dynamic Stretch"
+- "Active Stretch"
+- "PNF Stretch"
+- "Static / Active Stretch"
+- "Eccentric / Dynamic Mobility"
+- "Static / PNF Stretch"
+- "End-Range Static Stretch"
+- "Passive Static Stretch"
 
 Pick the category that best fits the primary purpose of the exercise.
 

@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Training Program Schema",
   "type": "object",
+  "additionalProperties": false,
   "required": [
     "id",
     "name",
@@ -25,6 +26,7 @@
       "description": "List of exercises in the program.",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": [
           "id",
           "name",
@@ -59,7 +61,25 @@
             "description": "Human-readable instructions for reps or holds."
           },
           "category": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "Mobility",
+              "Strength",
+              "Power",
+              "Core",
+              "Skill",
+              "Stability",
+              "Neural Dynamics",
+              "Static Stretch",
+              "Dynamic Stretch",
+              "Active Stretch",
+              "PNF Stretch",
+              "Static / Active Stretch",
+              "Eccentric / Dynamic Mobility",
+              "Static / PNF Stretch",
+              "End-Range Static Stretch",
+              "Passive Static Stretch"
+            ]
           },
           "muscle_groups": {
             "type": "array",
@@ -125,7 +145,10 @@
             "description": "Valid URL to a video tutorial, or null if none exists."
           },
           "image_url": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Path or URL to the thumbnail image."
           }
         }

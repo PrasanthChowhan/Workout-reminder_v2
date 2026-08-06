@@ -67,8 +67,12 @@ pub struct Level {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomExercise {
+    #[serde(default)]
+    pub id: Option<String>,
     pub name: String,
     pub description: String,
+    #[serde(default)]
+    pub execution_notes: Option<String>,
     pub category: String,
     #[serde(default)]
     pub target_muscles: Vec<String>,

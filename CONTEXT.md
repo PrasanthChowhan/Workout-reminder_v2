@@ -47,6 +47,7 @@ stateDiagram-v2
 
 ### Data & Configuration Schemas
 - **Training Program Schema**: Located at [`docs/schemas/training-program.schema.json`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/schemas/training-program.schema.json).
+- **SQLite Database Schema**: Spec in [`docs/agents/database-schema.md`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/agents/database-schema.md).
 - **Workout Config Schema**: Spec in [`docs/reference/physical-tracks-spec.md`](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/reference/physical-tracks-spec.md#L28-L124).
 - **Dynamic Metadata Extension**: Supports type-flexible JSON metadata on core models (`ActiveRecallCard`, `Stretch`, `PhysicalTrack`) via `metadata: Option<serde_json::Value>` to support UI prototyping without schema migrations.
 

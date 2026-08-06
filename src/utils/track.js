@@ -24,10 +24,32 @@ export const validateTrack = (track) => {
   }
   
   if (Array.isArray(track.exercises)) {
+    const validCategories = [
+      "Mobility", "Strength", "Power", "Core", "Skill", "Stability",
+      "Neural Dynamics", "Static Stretch", "Dynamic Stretch", "Active Stretch", "PNF Stretch",
+      "Static / Active Stretch", "Eccentric / Dynamic Mobility", "Static / PNF Stretch",
+      "End-Range Static Stretch", "Passive Static Stretch"
+    ];
+    const allowedExerciseKeys = [
+      "id", "name", "description", "execution_notes", "category", "muscle_groups",
+      "difficulty", "equipment", "duration_secs", "sets", "reps_min", "reps_max",
+      "is_unilateral", "rest_secs", "video_url", "image_url"
+    ];
+
     for (let i = 0; i < track.exercises.length; i++) {
       const ex = track.exercises[i];
       if (!ex || typeof ex !== "object") {
         return `Exercise ${i + 1}: Must be an object.`;
+      }
+      
+      // Check for hallucinated / additional properties
+      const extraKeys = Object.keys(ex).filter(key => !allowedExerciseKeys.includes(key));
+      if (extraKeys.length > 0) {
+        return `Exercise ${i + 1}: Found invalid additional properties: ${extraKeys.join(", ")}.`;
+      }
+
+      if (typeof ex.id !== "string" || !ex.id.trim()) {
+        return `Exercise ${i + 1}: Missing or invalid 'id'.`;
       }
       if (typeof ex.name !== "string" || !ex.name.trim()) {
         return `Exercise ${i + 1}: Missing or invalid 'name'.`;
@@ -35,11 +57,44 @@ export const validateTrack = (track) => {
       if (typeof ex.description !== "string" || !ex.description.trim()) {
         return `Exercise ${i + 1}: Missing or invalid 'description'.`;
       }
-      if (typeof ex.difficulty !== "string" || !ex.difficulty.trim()) {
-        return `Exercise ${i + 1}: Missing or invalid 'difficulty'.`;
+      if (typeof ex.execution_notes !== "string" || !ex.execution_notes.trim()) {
+        return `Exercise ${i + 1}: Missing or invalid 'execution_notes'.`;
+      }
+      if (typeof ex.category !== "string" || !validCategories.includes(ex.category)) {
+        return `Exercise ${i + 1}: Missing or invalid 'category' (must be one of: ${validCategories.join(", ")}).`;
+      }
+      if (!Array.isArray(ex.muscle_groups) || ex.muscle_groups.length === 0) {
+        return `Exercise ${i + 1}: Missing or invalid 'muscle_groups' (must be a non-empty array of strings).`;
+      }
+      if (typeof ex.difficulty !== "string" || !["Beginner", "Intermediate", "Advanced", "Expert"].includes(ex.difficulty)) {
+        return `Exercise ${i + 1}: Missing or invalid 'difficulty' (must be Beginner, Intermediate, Advanced, or Expert).`;
+      }
+      if (!Array.isArray(ex.equipment)) {
+        return `Exercise ${i + 1}: Missing or invalid 'equipment' (must be an array of strings).`;
       }
       if (typeof ex.duration_secs !== "number" || isNaN(ex.duration_secs) || ex.duration_secs < 0) {
         return `Exercise ${i + 1}: Missing or invalid 'duration_secs' (must be a non-negative number).`;
+      }
+      if (typeof ex.sets !== "number" || isNaN(ex.sets) || ex.sets < 1) {
+        return `Exercise ${i + 1}: Missing or invalid 'sets' (must be a number >= 1).`;
+      }
+      if (ex.reps_min !== null && (typeof ex.reps_min !== "number" || isNaN(ex.reps_min) || ex.reps_min < 1)) {
+        return `Exercise ${i + 1}: 'reps_min' must be a positive integer or null.`;
+      }
+      if (ex.reps_max !== null && (typeof ex.reps_max !== "number" || isNaN(ex.reps_max) || ex.reps_max < 1)) {
+        return `Exercise ${i + 1}: 'reps_max' must be a positive integer or null.`;
+      }
+      if (typeof ex.is_unilateral !== "boolean") {
+        return `Exercise ${i + 1}: 'is_unilateral' must be a boolean.`;
+      }
+      if (typeof ex.rest_secs !== "number" || isNaN(ex.rest_secs) || ex.rest_secs < 0) {
+        return `Exercise ${i + 1}: 'rest_secs' must be a non-negative number.`;
+      }
+      if (ex.video_url !== null && (typeof ex.video_url !== "string" || !ex.video_url.startsWith("http"))) {
+        return `Exercise ${i + 1}: 'video_url' must be a valid URL string or null.`;
+      }
+      if (ex.image_url !== null && typeof ex.image_url !== "string") {
+        return `Exercise ${i + 1}: 'image_url' must be a string or null.`;
       }
     }
   } else if (Array.isArray(track.levels)) {

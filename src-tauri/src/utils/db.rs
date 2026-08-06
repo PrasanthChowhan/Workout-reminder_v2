@@ -135,6 +135,24 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), String> {
             PRAGMA user_version = 1;"
         ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
     }
+
+    if version < 2 {
+        sqlx::query(
+            "ALTER TABLE custom_exercises ADD COLUMN id TEXT;
+             ALTER TABLE custom_exercises ADD COLUMN execution_notes TEXT;
+
+             UPDATE custom_exercises SET id = 'ex_sciatic_nerve_slider', execution_notes = 'Perform 10-15 slow, dynamic repetitions per leg. Keep movement controlled.' WHERE track_id = 'split_training_program' AND name = 'Sciatic Nerve Slider';
+             UPDATE custom_exercises SET id = 'ex_low_lunge_posterior_pelvic_tilt', execution_notes = '30-60s hold per leg. Focus on tilting the pelvis posteriorly.', reps = NULL, reps_min = NULL, reps_max = NULL WHERE track_id = 'split_training_program' AND name = 'Low Lunge with Posterior Pelvic Tilt';
+             UPDATE custom_exercises SET id = 'ex_half_split_flat_back', execution_notes = '30-60s hold per leg. Keep the back flat and hips square.', reps = NULL, reps_min = NULL, reps_max = NULL WHERE track_id = 'split_training_program' AND name = 'Half Split (Flat Back)';
+             UPDATE custom_exercises SET id = 'ex_cossack_squat', execution_notes = '8-10 reps per side. Keep the heel of the working leg flat on the floor.' WHERE track_id = 'split_training_program' AND name = 'Cossack Squat';
+             UPDATE custom_exercises SET id = 'ex_frog_stretch', execution_notes = '60-120s hold. Keep knees wide and ankles in line with knees.', reps = NULL, reps_min = NULL, reps_max = NULL WHERE track_id = 'split_training_program' AND name = 'Frog Stretch';
+             UPDATE custom_exercises SET id = 'ex_pancake_stretch', execution_notes = '60s hold. Tilt from the pelvis, keeping the spine as long as possible.', reps = NULL, reps_min = NULL, reps_max = NULL WHERE track_id = 'split_training_program' AND name = 'Pancake Stretch';
+             UPDATE custom_exercises SET id = 'ex_assisted_front_split', execution_notes = '30-60s hold per leg. Use blocks or pillows to support hips as needed.', reps = NULL, reps_min = NULL, reps_max = NULL WHERE track_id = 'split_training_program' AND name = 'Assisted Front Split (with Blocks/Pillows)';
+             UPDATE custom_exercises SET id = 'ex_wall_middle_split', execution_notes = '2-3 min hold. Relax the legs and let gravity gently increase the stretch.', reps = NULL, reps_min = NULL, reps_max = NULL WHERE track_id = 'split_training_program' AND name = 'Wall Middle Split';
+
+             PRAGMA user_version = 2;"
+        ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
     
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
@@ -673,7 +691,7 @@ pub async fn load_app_config(pool: &SqlitePool) -> Result<AppConfig, String> {
             .collect::<Vec<_>>();
 
         // Custom Exercises
-        let custom_exercises = sqlx::query("SELECT name, description, category, target_muscles, muscle_groups, difficulty, duration_secs, sets, reps, reps_min, reps_max, video_url, image_url, is_unilateral, equipment, rest_secs FROM custom_exercises WHERE track_id = ?")
+        let custom_exercises = sqlx::query("SELECT id, name, description, execution_notes, category, target_muscles, muscle_groups, difficulty, duration_secs, sets, reps, reps_min, reps_max, video_url, image_url, is_unilateral, equipment, rest_secs FROM custom_exercises WHERE track_id = ?")
             .bind(&id)
             .fetch_all(pool)
             .await
@@ -693,8 +711,10 @@ pub async fn load_app_config(pool: &SqlitePool) -> Result<AppConfig, String> {
                 let reps_min_val: Option<i64> = e_row.get("reps_min");
                 let reps_max_val: Option<i64> = e_row.get("reps_max");
                 CustomExercise {
+                    id: e_row.get("id"),
                     name: e_row.get("name"),
                     description: e_row.get("description"),
+                    execution_notes: e_row.get("execution_notes"),
                     category: e_row.get("category"),
                     target_muscles,
                     muscle_groups,
@@ -840,10 +860,12 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
                 let target_muscles_str = serde_json::to_string(&ex.target_muscles).unwrap_or_else(|_| "[]".to_string());
                 let muscle_groups_str = serde_json::to_string(&ex.muscle_groups).unwrap_or_else(|_| "[]".to_string());
                 let equipment_str = serde_json::to_string(&ex.equipment).unwrap_or_else(|_| "[]".to_string());
-                sqlx::query("INSERT INTO custom_exercises (track_id, name, description, category, target_muscles, muscle_groups, difficulty, duration_secs, sets, reps, reps_min, reps_max, video_url, image_url, is_unilateral, equipment, rest_secs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                sqlx::query("INSERT INTO custom_exercises (track_id, id, name, description, execution_notes, category, target_muscles, muscle_groups, difficulty, duration_secs, sets, reps, reps_min, reps_max, video_url, image_url, is_unilateral, equipment, rest_secs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                     .bind(&track.id)
+                    .bind(&ex.id)
                     .bind(&ex.name)
                     .bind(&ex.description)
+                    .bind(&ex.execution_notes)
                     .bind(&ex.category)
                     .bind(target_muscles_str)
                     .bind(muscle_groups_str)
