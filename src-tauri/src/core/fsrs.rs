@@ -61,7 +61,8 @@ pub fn review(mut state: FsrsState, rating: u32, now: DateTime<Utc>) -> FsrsStat
         1 => Rating::Again,
         2 => Rating::Hard,
         3 => Rating::Good,
-        4 | _ => Rating::Easy,
+        4 => Rating::Easy,
+        _ => Rating::Easy,
     };
     
     let record_log = fsrs.repeat(card, now);
