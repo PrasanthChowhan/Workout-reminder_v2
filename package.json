@@ -11,13 +11,13 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "vitest": "^4.1.10",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
     "tauri-plugin-react-issue-reporter": "file:packages/tauri-plugin-dev-issues",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@tauri-apps/plugin-global-shortcut": "^2.3.2",
