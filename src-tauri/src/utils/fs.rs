@@ -45,6 +45,36 @@ pub fn find_issues_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(issues_dir)
 }
 
+pub fn find_prompts_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let mut current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let mut prompts_dir = current_dir.join("docs").join("prompts");
+    
+    let mut found = false;
+    for _ in 0..5 {
+        if prompts_dir.exists() || current_dir.join(".git").exists() {
+            prompts_dir = current_dir.join("docs").join("prompts");
+            found = true;
+            break;
+        }
+        if let Some(parent) = current_dir.parent() {
+            current_dir = parent.to_path_buf();
+            prompts_dir = current_dir.join("docs").join("prompts");
+        } else {
+            break;
+        }
+    }
+
+    if !found {
+        prompts_dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("prompts");
+    }
+
+    if !prompts_dir.exists() {
+        fs::create_dir_all(&prompts_dir).map_err(|e| e.to_string())?;
+    }
+
+    Ok(prompts_dir)
+}
+
 #[allow(unused_variables)]
 pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
     #[cfg(target_os = "windows")]

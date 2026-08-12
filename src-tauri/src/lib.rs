@@ -108,6 +108,7 @@ pub fn run() {
             commands::config_cmds::set_active_track,
             commands::config_cmds::update_track_level,
             commands::dev_cmds::create_dev_issue,
+            commands::dev_cmds::read_prompt_file,
             commands::config_cmds::open_external_url,
             commands::data_cmds::import_recall_json,
             commands::data_cmds::export_recall_json,

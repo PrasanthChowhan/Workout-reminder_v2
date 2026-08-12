@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Modal from "../../ui/Modal";
 import { generateAiPrompt } from "../../../utils/aiPrompt";
+import { invoke } from "../../../utils/tauri";
 import trainingProgramSchema from "../../../../docs/schemas/training-program.schema.json";
 import { toast } from "../../../utils/toast";
 import styles from "./AiWorkoutModal.module.css";
@@ -67,21 +68,54 @@ export default function AiWorkoutModal({
   const [aiStyleCustom, setAiStyleCustom] = useState("");
   const [pastedJson, setPastedJson] = useState("");
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const [promptTemplate, setPromptTemplate] = useState("");
+
+  React.useEffect(() => {
+    const loadTemplate = async () => {
+      try {
+        const text = await invoke("read_prompt_file", { name: "workout-program-generation-prompt.md" });
+        setPromptTemplate(text);
+      } catch (err) {
+        console.warn("Failed to load prompt template from backend, using fallback", err);
+      }
+    };
+    if (isOpen) {
+      loadTemplate();
+    }
+  }, [isOpen]);
 
   const currentPrompt = React.useMemo(() => {
     const getParamValue = (selectVal, customVal) => {
       return selectVal === "custom" ? customVal : selectVal;
     };
 
+    const userGoal = getParamValue(aiGoalSelect, aiGoalCustom) || "hip mobility";
+    const userLevel = aiLevel === "progression" ? "Progression (Beginner to Advanced)" : aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1);
+    const availableEquipment = getParamValue(aiEquipmentSelect, aiEquipmentCustom) || "[]";
+    const sessionDuration = getParamValue(aiDurationSelect, aiDurationCustom) || "15";
+    const injuries = getParamValue(aiInjuriesSelect, aiInjuriesCustom) || "none";
+    const preferredStyle = getParamValue(aiStyleSelect, aiStyleCustom) || "general";
+
+    if (promptTemplate) {
+      return promptTemplate
+        .replace("{{userGoal}}", userGoal)
+        .replace("{{userLevel}}", userLevel)
+        .replace("{{availableEquipment}}", availableEquipment)
+        .replace("{{sessionDuration}}", sessionDuration)
+        .replace("{{injuries}}", injuries)
+        .replace("{{preferredStyle}}", preferredStyle)
+        .replace("{{schemaString}}", JSON.stringify(trainingProgramSchema, null, 2));
+    }
+
     return generateAiPrompt(trainingProgramSchema, {
-      userGoal: getParamValue(aiGoalSelect, aiGoalCustom) || "hip mobility",
-      userLevel: aiLevel === "progression" ? "Progression (Beginner to Advanced)" : aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1),
-      availableEquipment: getParamValue(aiEquipmentSelect, aiEquipmentCustom) || "[]",
-      sessionDuration: getParamValue(aiDurationSelect, aiDurationCustom) || "15",
-      injuries: getParamValue(aiInjuriesSelect, aiInjuriesCustom) || "none",
-      preferredStyle: getParamValue(aiStyleSelect, aiStyleCustom) || "general"
+      userGoal,
+      userLevel,
+      availableEquipment,
+      sessionDuration,
+      injuries,
+      preferredStyle
     });
-  }, [aiGoalSelect, aiGoalCustom, aiLevel, aiEquipmentSelect, aiEquipmentCustom, aiDurationSelect, aiDurationCustom, aiInjuriesSelect, aiInjuriesCustom, aiStyleSelect, aiStyleCustom]);
+  }, [promptTemplate, aiGoalSelect, aiGoalCustom, aiLevel, aiEquipmentSelect, aiEquipmentCustom, aiDurationSelect, aiDurationCustom, aiInjuriesSelect, aiInjuriesCustom, aiStyleSelect, aiStyleCustom]);
 
   const handleCopyPrompt = async () => {
     try {

@@ -22,7 +22,7 @@ DO NOT use Tailwind, Create React App, or Next.js patterns.
 - RULE-F1: Enforce strictly one responsibility per file. Use size (>250 lines for React, >300 lines for Rust) as a diagnostic signal to review for split, not a hard barrier.
     * React: Extract nested UI (modals), static data, and complex hooks.
     * Rust: Isolate strictly by domain (e.g., DB, network, I/O).
-    * CSS: Co-locate styles with components. Root CSS is for globals/resets only.
+    * CSS: When working with CSS, read [css_rules.md](docs/agents/css_rules.md).
 
 ## Key Docs (read on-demand, not every turn)
 - Domain & glossary: [CONTEXT.md](CONTEXT.md)

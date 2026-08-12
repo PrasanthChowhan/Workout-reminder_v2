@@ -2,14 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { invoke } from "../../utils/tauri";
 import { toast } from "../../utils/toast";
 import { Modal } from "../ui/Modal";
-import { generateRecallAiPrompt } from "../../utils/aiPrompt";
+import AiRecallModal from "./cards/AiRecallModal";
 import styles from "./CardsTab.module.css";
 
 export default function CardsTab() {
   const [concepts, setConcepts] = useState([]);
   const [activeConcept, setActiveConcept] = useState(null);
-  const [showAiPromptModal, setShowAiPromptModal] = useState(false);
-  const [promptTopic, setPromptTopic] = useState("Rust lifetimes and memory safety");
+  const [showAiRecallModal, setShowAiRecallModal] = useState(false);
   
   const fileInputRef = useRef(null);
 
@@ -69,11 +68,16 @@ export default function CardsTab() {
     }
   };
 
-  const handleCopyPrompt = () => {
-    const promptText = generateRecallAiPrompt(promptTopic);
-    navigator.clipboard.writeText(promptText)
-      .then(() => toast.success("AI Prompt copied to clipboard!"))
-      .catch((err) => toast.error("Failed to copy text: " + err));
+  const handleApplyRecallCards = async (jsonStr) => {
+    try {
+      await invoke("import_recall_json", { jsonStr });
+      toast.success("Recall cards imported and merged successfully!");
+      setShowAiRecallModal(false);
+      loadConcepts();
+    } catch (err) {
+      console.error("Import failed", err);
+      toast.error("Import failed: " + err);
+    }
   };
 
   return (
@@ -86,7 +90,7 @@ export default function CardsTab() {
           <button 
             type="button" 
             className={styles['action-btn']}
-            onClick={() => setShowAiPromptModal(true)}
+            onClick={() => setShowAiRecallModal(true)}
           >
             AI Prompt
           </button>
@@ -240,54 +244,13 @@ export default function CardsTab() {
       )}
 
       {/* AI Prompt Modal */}
-      {showAiPromptModal && (
-        <Modal 
-          isOpen={true} 
-          onClose={() => setShowAiPromptModal(false)}
-          title="Generate Recall Cards via AI"
-        >
-          <div className={styles['prompt-modal-content']}>
-            <p className={styles['prompt-info']}>
-              Type a topic below to customize the prompt, then click copy. Paste it into Claude or ChatGPT to generate cards in the exact required JSON format!
-            </p>
-            
-            <div className={styles['input-group']}>
-              <label className={styles['input-label']}>Topic / Technology:</label>
-              <input 
-                type="text" 
-                className={styles['prompt-topic-input']}
-                value={promptTopic}
-                onChange={(e) => setPromptTopic(e.target.value)}
-                placeholder="e.g., Rust lifetimes and memory safety"
-              />
-            </div>
-
-            <div className={styles['textarea-container']}>
-              <textarea 
-                className={styles['prompt-textarea']}
-                readOnly
-                value={generateRecallAiPrompt(promptTopic)}
-              />
-            </div>
-
-            <div className={styles['modal-actions']}>
-              <button 
-                type="button" 
-                className={styles['primary-btn']}
-                onClick={handleCopyPrompt}
-              >
-                Copy Prompt to Clipboard
-              </button>
-              <button 
-                type="button" 
-                className={styles['secondary-btn']}
-                onClick={() => setShowAiPromptModal(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </Modal>
+      {showAiRecallModal && (
+        <AiRecallModal
+          isOpen={showAiRecallModal}
+          onClose={() => setShowAiRecallModal(false)}
+          onApplyRecallCards={handleApplyRecallCards}
+          parentStyles={styles}
+        />
       )}
     </div>
   );
