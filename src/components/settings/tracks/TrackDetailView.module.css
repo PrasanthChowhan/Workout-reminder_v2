@@ -16,14 +16,7 @@
   margin-bottom: 0.25rem;
 }
 .active-track-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  background-color: var(--color-brand-orange);
-  color: #000;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  text-transform: uppercase;
+  composes: active-track-label from '../../../styles/badges.module.css';
 }
 .track-selection-title {
   font-family: var(--font-sans);

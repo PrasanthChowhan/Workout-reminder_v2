@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { toast } from "../../utils/toast";
 import { TrashIcon } from "../ui/Icons";
 import styles from "./PromptsTab.module.css";
+import formStyles from "../../styles/forms.module.css";
 
 /**
  * PromptsTab renders the reflection prompts CRUD list.
@@ -27,7 +28,7 @@ export default function PromptsTab({ editablePrompts, setEditablePrompts }) {
 
   return (
     <div className={styles['tab-pane']}>
-      <div className={`${styles['settings-add-form']} ${styles['flex-row']}`}>
+      <div className={`${styles['settings-add-form']} ${formStyles['flex-row']}`}>
         <input 
           type="text" 
           placeholder="New reflection prompt..." 
