@@ -144,8 +144,11 @@ export default function App() {
   };
 
   const handleRateCard = async (variantId, rating) => {
+    const ratingsMap = { 1: "Again", 2: "Hard", 3: "Good", 4: "Easy" };
+    const ratingName = ratingsMap[rating] || "Submitted";
     try {
       await invoke("update_variant_srs", { variantId, rating });
+      toast.success(`Card rated: ${ratingName}`);
       handleCompleteBreak("done");
     } catch (err) {
       console.error("Failed to rate card", err);

@@ -166,6 +166,8 @@ body {
   flex-direction: column;
   position: relative;
   box-sizing: border-box;
+  height: calc(100vh - 22rem);
+  min-height: 480px;
 }
 
 /* Bottom Actions Footer */
