@@ -19,7 +19,9 @@ export async function invoke(cmd, args) {
     }
   }
 
-  console.log(`[Browser Mock IPC] invoke: ${cmd}`, args);
+  if (import.meta.env.DEV) {
+    console.log(`[Browser Mock IPC] invoke: ${cmd}`, args);
+  }
 
   // Return realistic mock data to facilitate browser debugging
   if (cmd === "get_app_config") {
@@ -45,9 +47,13 @@ export function listen(eventName, callback) {
     return window.__TAURI__.event.listen(eventName, callback);
   }
   
-  console.log(`[Browser Mock IPC] listen registered for: ${eventName}`);
+  if (import.meta.env.DEV) {
+    console.log(`[Browser Mock IPC] listen registered for: ${eventName}`);
+  }
   return Promise.resolve(() => {
-    console.log(`[Browser Mock IPC] unlisten for: ${eventName}`);
+    if (import.meta.env.DEV) {
+      console.log(`[Browser Mock IPC] unlisten for: ${eventName}`);
+    }
   });
 }
 
@@ -93,7 +99,9 @@ export function openUrl(url) {
       console.error(`Failed to open URL '${url}' via Tauri:`, err);
     });
   } else {
-    console.log(`[Browser Mock IPC] openUrl: ${url}`);
+    if (import.meta.env.DEV) {
+      console.log(`[Browser Mock IPC] openUrl: ${url}`);
+    }
     window.open(url, "_blank");
     return Promise.resolve();
   }
