@@ -26,3 +26,6 @@ dist-ssr
 # Dev issue reports
 /issues
 
+# Local packages
+/packages/
+

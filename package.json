@@ -14,7 +14,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
-    "tauri-plugin-dev-issues": "file:packages/tauri-plugin-dev-issues",
+    "tauri-plugin-react-issue-reporter": "file:packages/tauri-plugin-dev-issues",
     "vite": "^8.2.0"
   },
   "dependencies": {

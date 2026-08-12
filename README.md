@@ -43,8 +43,13 @@ Fully integrated, tabbed settings console built into the overlay dashboard to ed
 
 ## 🛠️ Build & Development Commands
 
-Initialize node dependencies:
+This project uses a local hybrid plugin for developer issue reporting, which is git-ignored. You must clone it before installing dependencies:
+
 ```bash
+# Clone the issue reporter plugin
+git clone https://github.com/PrasanthChowhan/react-ai-issue-context.git packages/tauri-plugin-dev-issues
+
+# Initialize node dependencies
 npm install
 ```
 

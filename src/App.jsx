@@ -10,7 +10,7 @@ import SkipReasonModal from "./components/SkipReasonModal";
 import SettingsModal from "./components/settings/SettingsModal";
 import ToastContainer from "./components/Toast";
 import { SettingsIcon, CheckIcon } from "./components/ui/Icons";
-import { DevIssueReporter } from "tauri-plugin-dev-issues";
+import { DevIssueReporter } from "tauri-plugin-react-issue-reporter";
 import { toast } from "./utils/toast";
 
 /**
