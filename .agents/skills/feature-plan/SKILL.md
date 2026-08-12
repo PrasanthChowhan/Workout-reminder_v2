@@ -27,7 +27,7 @@ Produce a complete Markdown implementation plan for the requested feature using 
 Return valid GitHub-Flavored Markdown using exactly this structure:
 
 ```md
-***
+---
 title: "feat: <short feature name>"
 status: <proposed | active | blocked | done>
 created: YYYY-MM-DD
@@ -36,7 +36,7 @@ type: feat
 depth: <shallow | medium | deep>
 owner: <name or team>
 labels: [<area>, <platform>, <priority>]
-***
+---
 
 # <Feature Name>
 

@@ -1,15 +1,93 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ActiveRecallCard {
-    pub id: String,
-    pub question: String,
-    pub answer: String,
-    pub category: String,
-    pub source: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Value>,
+pub struct RecallVariant {
+    pub variant_id: String,
+    pub concept_id: String,
+    pub difficulty_level: String,
+    pub scenario_prose: String,
+    pub scenario_code_snippet: Option<String>,
+    pub hint: String,
+    pub target_answer_prose: String,
+    pub target_answer_code: Option<String>,
+    pub common_trap: String,
+    pub explanation: String,
+    // FSRS fields
+    pub due_date: DateTime<Utc>,
+    pub stability: f64,
+    pub difficulty: f64,
+    pub elapsed_days: u64,
+    pub scheduled_days: u64,
+    pub reps: u32,
+    pub lapses: u32,
+    pub state: u32,
+    pub last_review: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecallConcept {
+    pub concept_id: String,
+    pub concept_title: String,
+    pub tags: Vec<String>,
+    pub source_title: Option<String>,
+    pub source_url: Option<String>,
+    pub variants: Vec<RecallVariant>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecallSessionCard {
+    pub concept_id: String,
+    pub concept_title: String,
+    pub variant_id: String,
+    pub tags: Vec<String>,
+    pub difficulty_level: String,
+    pub scenario_prose: String,
+    pub scenario_code_snippet: Option<String>,
+    pub hint: String,
+    pub target_answer_prose: String,
+    pub target_answer_code: Option<String>,
+    pub common_trap: String,
+    pub explanation: String,
+    pub source_title: Option<String>,
+    pub source_url: Option<String>,
+    pub srs_due_date: DateTime<Utc>,
+    pub srs_state: u32,
+}
+
+// JSON Import schema models
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonMetadata {
+    pub source_title: Option<String>,
+    pub source_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonVariant {
+    pub variant_id: String,
+    pub difficulty: String,
+    pub scenario_prose: String,
+    pub scenario_code_snippet: Option<String>,
+    pub hint: String,
+    pub target_answer_prose: String,
+    pub target_answer_code: Option<String>,
+    pub common_trap: String,
+    pub explanation: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonConcept {
+    pub concept_id: String,
+    pub concept_title: String,
+    pub tags: Vec<String>,
+    pub variants: Vec<JsonVariant>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonImportSchema {
+    pub metadata: Option<JsonMetadata>,
+    pub concepts: Vec<JsonConcept>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,6 +200,7 @@ pub struct UserProgress {
     pub level_started_at: Option<String>,
 }
 
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub micro_break_interval_mins: u64,
@@ -134,7 +213,6 @@ pub struct Settings {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub settings: Settings,
-    pub active_recall_cards: Vec<ActiveRecallCard>,
     pub reflection_prompts: Vec<String>,
     pub stretches: Vec<Stretch>,
     pub tracks: Vec<PhysicalTrack>,
@@ -151,7 +229,7 @@ pub struct TimerStatePayload {
 
 #[derive(Serialize)]
 pub struct SessionDataPayload {
-    pub card: Option<ActiveRecallCard>,
+    pub card: Option<RecallSessionCard>,
     pub prompt: Option<String>,
     pub stretch: Option<Stretch>,
 }
@@ -161,3 +239,4 @@ pub struct InitialBreakDataPayload {
     pub config: AppConfig,
     pub session_data: SessionDataPayload,
 }
+

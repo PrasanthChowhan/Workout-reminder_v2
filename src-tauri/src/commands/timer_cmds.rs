@@ -65,11 +65,10 @@ pub async fn get_session_data(
     break_type: String,
 ) -> Result<SessionDataPayload, String> {
     let config = db::load_app_config(&state.db_pool).await?;
-    let mut rng = rand::rng();
-
     match break_type.as_str() {
         "active" => {
-            let card = config.active_recall_cards.choose(&mut rng).cloned();
+            let card = db::get_due_recall_card(&state.db_pool).await?;
+            let mut rng = rand::rng();
             
             // Check if there is an active track
             let stretch = if let (Some(track_id), Some(level_num)) = (
@@ -128,6 +127,7 @@ pub async fn get_session_data(
             })
         }
         "refocus" => {
+            let mut rng = rand::rng();
             let prompt = config.reflection_prompts.choose(&mut rng).cloned();
             Ok(SessionDataPayload {
                 card: None,

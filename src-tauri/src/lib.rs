@@ -109,7 +109,10 @@ pub fn run() {
             commands::config_cmds::update_track_level,
             commands::dev_cmds::create_dev_issue,
             commands::config_cmds::open_external_url,
-            commands::data_cmds::update_flashcard_metadata,
+            commands::data_cmds::import_recall_json,
+            commands::data_cmds::export_recall_json,
+            commands::data_cmds::get_recall_concepts,
+            commands::data_cmds::update_variant_srs,
             commands::data_cmds::update_track_metadata,
             commands::data_cmds::update_stretch_metadata
         ])

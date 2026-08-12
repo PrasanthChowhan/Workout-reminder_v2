@@ -3,7 +3,12 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::fs;
 use serde_json::Value;
-use crate::core::models::{AppConfig, Settings, ActiveRecallCard, Stretch, PhysicalTrack, CustomExercise, UserProgress, Level};
+use chrono::{DateTime, Utc};
+use crate::core::models::{
+    AppConfig, Settings, Stretch, PhysicalTrack, CustomExercise, UserProgress, Level,
+    JsonImportSchema, JsonConcept, JsonVariant, JsonMetadata, RecallConcept, RecallVariant, RecallSessionCard
+};
+
 
 pub async fn init_db(app_data_dir: &Path) -> Result<SqlitePool, String> {
     let db_path = app_data_dir.join("workout_data.sqlite");
@@ -153,6 +158,47 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), String> {
              PRAGMA user_version = 2;"
         ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
     }
+
+    if version < 3 {
+        sqlx::query(
+            "DROP TABLE IF EXISTS active_recall_cards;
+
+             CREATE TABLE recall_concepts (
+                 concept_id TEXT PRIMARY KEY,
+                 concept_title TEXT NOT NULL,
+                 tags TEXT NOT NULL,
+                 source_title TEXT,
+                 source_url TEXT
+             );
+
+             CREATE TABLE recall_variants (
+                 variant_id TEXT PRIMARY KEY,
+                 concept_id TEXT NOT NULL,
+                 difficulty_level TEXT NOT NULL,
+                 scenario_prose TEXT NOT NULL,
+                 scenario_code_snippet TEXT,
+                 hint TEXT NOT NULL,
+                 target_answer_prose TEXT NOT NULL,
+                 target_answer_code TEXT,
+                 common_trap TEXT NOT NULL,
+                 explanation TEXT NOT NULL,
+                 due_date TEXT NOT NULL,
+                 stability REAL NOT NULL,
+                 difficulty REAL NOT NULL,
+                 elapsed_days INTEGER NOT NULL,
+                 scheduled_days INTEGER NOT NULL,
+                 reps INTEGER NOT NULL,
+                 lapses INTEGER NOT NULL,
+                 state INTEGER NOT NULL,
+                 last_review TEXT,
+                 FOREIGN KEY(concept_id) REFERENCES recall_concepts(concept_id) ON DELETE CASCADE
+             );
+             CREATE INDEX IF NOT EXISTS idx_variants_concept_id ON recall_variants(concept_id);
+             
+             PRAGMA user_version = 3;"
+        ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
     
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
@@ -190,23 +236,6 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
         .await
         .map_err(|e| e.to_string())?;
 
-        // 2. Active Recall Cards
-        for card in config.active_recall_cards {
-            let metadata_str = card.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
-            sqlx::query(
-                "INSERT OR REPLACE INTO active_recall_cards (id, question, answer, category, source, metadata)
-                 VALUES (?, ?, ?, ?, ?, ?)"
-            )
-            .bind(&card.id)
-            .bind(&card.question)
-            .bind(&card.answer)
-            .bind(&card.category)
-            .bind(&card.source)
-            .bind(metadata_str)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
-        }
 
         // 3. Reflection Prompts
         for prompt in config.reflection_prompts {
@@ -414,33 +443,76 @@ fn deep_merge(a: &mut Value, b: Value) {
     }
 }
 
-pub async fn update_flashcard_meta(pool: &SqlitePool, card_id: &str, new_metadata: Value) -> Result<(), String> {
-    let row = sqlx::query("SELECT metadata FROM active_recall_cards WHERE id = ?")
-        .bind(card_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+pub async fn update_variant_srs(pool: &SqlitePool, variant_id: &str, rating: u32) -> Result<(), String> {
+    let row = sqlx::query(
+        "SELECT due_date, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review
+         FROM recall_variants WHERE variant_id = ?"
+    )
+    .bind(variant_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     if let Some(r) = row {
-        let metadata_str: Option<String> = r.get("metadata");
-        let mut current_meta = metadata_str
-            .and_then(|s| serde_json::from_str::<Value>(&s).ok())
-            .unwrap_or_else(|| Value::Object(serde_json::Map::new()));
-        
-        deep_merge(&mut current_meta, new_metadata);
-        
-        let new_meta_str = serde_json::to_string(&current_meta).unwrap_or_default();
-        sqlx::query("UPDATE active_recall_cards SET metadata = ? WHERE id = ?")
-            .bind(new_meta_str)
-            .bind(card_id)
-            .execute(pool)
-            .await
-            .map_err(|e| e.to_string())?;
-        Ok(())
-    } else {
-        Err(format!("Flashcard with ID {} not found", card_id))
+        let due_date_str: String = r.get("due_date");
+        let due_date = DateTime::parse_from_rfc3339(&due_date_str)
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|_| Utc::now());
+
+        let last_review_str: Option<String> = r.get("last_review");
+        let last_review = last_review_str.and_then(|s| {
+            DateTime::parse_from_rfc3339(&s)
+                .map(|dt| dt.with_timezone(&Utc))
+                .ok()
+        });
+
+        let current_state = crate::core::fsrs::FsrsState {
+            due_date,
+            stability: r.get("stability"),
+            difficulty: r.get("difficulty"),
+            elapsed_days: r.get::<i64, _>("elapsed_days") as u64,
+            scheduled_days: r.get::<i64, _>("scheduled_days") as u64,
+            reps: r.get::<i32, _>("reps") as u32,
+            lapses: r.get::<i32, _>("lapses") as u32,
+            state: r.get::<i32, _>("state") as u32,
+            last_review,
+        };
+
+        let next_state = crate::core::fsrs::review(current_state, rating, Utc::now());
+
+        let due_date_str = next_state.due_date.to_rfc3339();
+        let last_review_str = next_state.last_review.map(|dt| dt.to_rfc3339());
+
+        sqlx::query(
+            "UPDATE recall_variants SET
+                due_date = ?,
+                stability = ?,
+                difficulty = ?,
+                elapsed_days = ?,
+                scheduled_days = ?,
+                reps = ?,
+                lapses = ?,
+                state = ?,
+                last_review = ?
+             WHERE variant_id = ?"
+        )
+        .bind(&due_date_str)
+        .bind(next_state.stability)
+        .bind(next_state.difficulty)
+        .bind(next_state.elapsed_days as i64)
+        .bind(next_state.scheduled_days as i64)
+        .bind(next_state.reps as i32)
+        .bind(next_state.lapses as i32)
+        .bind(next_state.state as i32)
+        .bind(last_review_str)
+        .bind(variant_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
     }
+    Ok(())
 }
+
 
 pub async fn update_track_meta(pool: &SqlitePool, track_id: &str, new_metadata: Value) -> Result<(), String> {
     let row = sqlx::query("SELECT metadata FROM physical_tracks WHERE id = ?")
@@ -590,25 +662,6 @@ pub async fn load_app_config(pool: &SqlitePool) -> Result<AppConfig, String> {
     // 1. Settings
     let settings = load_settings(pool).await?;
 
-    // 2. Active Recall Cards
-    let active_recall_cards = sqlx::query("SELECT id, question, answer, category, source, metadata FROM active_recall_cards")
-        .fetch_all(pool)
-        .await
-        .map_err(|e| e.to_string())?
-        .into_iter()
-        .map(|row| {
-            let metadata_str: Option<String> = row.get("metadata");
-            let metadata: Option<Value> = metadata_str.and_then(|s| serde_json::from_str(&s).ok());
-            ActiveRecallCard {
-                id: row.get("id"),
-                question: row.get("question"),
-                answer: row.get("answer"),
-                category: row.get("category"),
-                source: row.get("source"),
-                metadata,
-            }
-        })
-        .collect::<Vec<_>>();
 
     // 3. Reflection Prompts
     let reflection_prompts = sqlx::query("SELECT prompt FROM reflection_prompts")
@@ -748,13 +801,13 @@ pub async fn load_app_config(pool: &SqlitePool) -> Result<AppConfig, String> {
 
     Ok(AppConfig {
         settings,
-        active_recall_cards,
         reflection_prompts,
         stretches,
         tracks,
         user_progress,
     })
 }
+
 
 pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<(), String> {
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
@@ -770,21 +823,6 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
         .await
         .map_err(|e| e.to_string())?;
 
-    // 2. Active Recall Cards
-    sqlx::query("DELETE FROM active_recall_cards").execute(&mut *tx).await.map_err(|e| e.to_string())?;
-    for card in &config.active_recall_cards {
-        let metadata_str = card.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
-        sqlx::query("INSERT INTO active_recall_cards (id, question, answer, category, source, metadata) VALUES (?, ?, ?, ?, ?, ?)")
-            .bind(&card.id)
-            .bind(&card.question)
-            .bind(&card.answer)
-            .bind(&card.category)
-            .bind(&card.source)
-            .bind(metadata_str)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
 
     // 3. Reflection Prompts
     sqlx::query("DELETE FROM reflection_prompts").execute(&mut *tx).await.map_err(|e| e.to_string())?;
@@ -903,6 +941,282 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
     Ok(())
 }
 
+pub async fn import_recall_json_to_db(pool: &SqlitePool, data: JsonImportSchema) -> Result<(), String> {
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let source_title = data.metadata.as_ref().and_then(|m| m.source_title.clone());
+    let source_url = data.metadata.as_ref().and_then(|m| m.source_url.clone());
+
+    for concept in data.concepts {
+        let tags_json = serde_json::to_string(&concept.tags).unwrap_or_else(|_| "[]".to_string());
+        
+        sqlx::query(
+            "INSERT INTO recall_concepts (concept_id, concept_title, tags, source_title, source_url)
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(concept_id) DO UPDATE SET
+                concept_title = excluded.concept_title,
+                tags = excluded.tags,
+                source_title = excluded.source_title,
+                source_url = excluded.source_url"
+        )
+        .bind(&concept.concept_id)
+        .bind(&concept.concept_title)
+        .bind(&tags_json)
+        .bind(&source_title)
+        .bind(&source_url)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        for variant in concept.variants {
+            let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM recall_variants WHERE variant_id = ?)")
+                .bind(&variant.variant_id)
+                .fetch_one(&mut *tx)
+                .await
+                .unwrap_or(false);
+
+            if exists {
+                sqlx::query(
+                    "UPDATE recall_variants SET
+                        difficulty_level = ?,
+                        scenario_prose = ?,
+                        scenario_code_snippet = ?,
+                        hint = ?,
+                        target_answer_prose = ?,
+                        target_answer_code = ?,
+                        common_trap = ?,
+                        explanation = ?
+                     WHERE variant_id = ?"
+                )
+                .bind(&variant.difficulty)
+                .bind(&variant.scenario_prose)
+                .bind(&variant.scenario_code_snippet)
+                .bind(&variant.hint)
+                .bind(&variant.target_answer_prose)
+                .bind(&variant.target_answer_code)
+                .bind(&variant.common_trap)
+                .bind(&variant.explanation)
+                .bind(&variant.variant_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+            } else {
+                let now_str = Utc::now().to_rfc3339();
+                sqlx::query(
+                    "INSERT INTO recall_variants (
+                        variant_id, concept_id, difficulty_level, scenario_prose, scenario_code_snippet,
+                        hint, target_answer_prose, target_answer_code, common_trap, explanation,
+                        due_date, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review
+                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, 0, 0, 0, 0, 0, NULL)"
+                )
+                .bind(&variant.variant_id)
+                .bind(&concept.concept_id)
+                .bind(&variant.difficulty)
+                .bind(&variant.scenario_prose)
+                .bind(&variant.scenario_code_snippet)
+                .bind(&variant.hint)
+                .bind(&variant.target_answer_prose)
+                .bind(&variant.target_answer_code)
+                .bind(&variant.common_trap)
+                .bind(&variant.explanation)
+                .bind(&now_str)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub async fn get_recall_concepts(pool: &SqlitePool) -> Result<Vec<RecallConcept>, String> {
+    let concepts_rows = sqlx::query("SELECT concept_id, concept_title, tags, source_title, source_url FROM recall_concepts")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let mut concepts = Vec::new();
+
+    for c_row in concepts_rows {
+        let concept_id: String = c_row.get("concept_id");
+        let concept_title: String = c_row.get("concept_title");
+        let tags_str: String = c_row.get("tags");
+        let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
+        let source_title: Option<String> = c_row.get("source_title");
+        let source_url: Option<String> = c_row.get("source_url");
+
+        let variants_rows = sqlx::query(
+            "SELECT variant_id, concept_id, difficulty_level, scenario_prose, scenario_code_snippet,
+                    hint, target_answer_prose, target_answer_code, common_trap, explanation,
+                    due_date, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review
+             FROM recall_variants WHERE concept_id = ?"
+        )
+        .bind(&concept_id)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let mut variants = Vec::new();
+        for v_row in variants_rows {
+            let due_date_str: String = v_row.get("due_date");
+            let due_date = DateTime::parse_from_rfc3339(&due_date_str)
+                .map(|dt| dt.with_timezone(&Utc))
+                .unwrap_or_else(|_| Utc::now());
+
+            let last_review_str: Option<String> = v_row.get("last_review");
+            let last_review = last_review_str.and_then(|s| {
+                DateTime::parse_from_rfc3339(&s)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .ok()
+            });
+
+            variants.push(RecallVariant {
+                variant_id: v_row.get("variant_id"),
+                concept_id: v_row.get("concept_id"),
+                difficulty_level: v_row.get("difficulty_level"),
+                scenario_prose: v_row.get("scenario_prose"),
+                scenario_code_snippet: v_row.get("scenario_code_snippet"),
+                hint: v_row.get("hint"),
+                target_answer_prose: v_row.get("target_answer_prose"),
+                target_answer_code: v_row.get("target_answer_code"),
+                common_trap: v_row.get("common_trap"),
+                explanation: v_row.get("explanation"),
+                due_date,
+                stability: v_row.get("stability"),
+                difficulty: v_row.get("difficulty"),
+                elapsed_days: v_row.get::<i64, _>("elapsed_days") as u64,
+                scheduled_days: v_row.get::<i64, _>("scheduled_days") as u64,
+                reps: v_row.get::<i32, _>("reps") as u32,
+                lapses: v_row.get::<i32, _>("lapses") as u32,
+                state: v_row.get::<i32, _>("state") as u32,
+                last_review,
+            });
+        }
+
+        concepts.push(RecallConcept {
+            concept_id,
+            concept_title,
+            tags,
+            source_title,
+            source_url,
+            variants,
+        });
+    }
+
+    Ok(concepts)
+}
+
+pub async fn export_recall_db_to_json(pool: &SqlitePool) -> Result<JsonImportSchema, String> {
+    let concepts = get_recall_concepts(pool).await?;
+    
+    let mut source_title = None;
+    let mut source_url = None;
+    for c in &concepts {
+        if c.source_title.is_some() || c.source_url.is_some() {
+            source_title = c.source_title.clone();
+            source_url = c.source_url.clone();
+            break;
+        }
+    }
+
+    let json_concepts = concepts.into_iter().map(|c| {
+        let json_variants = c.variants.into_iter().map(|v| {
+            JsonVariant {
+                variant_id: v.variant_id,
+                difficulty: v.difficulty_level,
+                scenario_prose: v.scenario_prose,
+                scenario_code_snippet: v.scenario_code_snippet,
+                hint: v.hint,
+                target_answer_prose: v.target_answer_prose,
+                target_answer_code: v.target_answer_code,
+                common_trap: v.common_trap,
+                explanation: v.explanation,
+            }
+        }).collect();
+
+        JsonConcept {
+            concept_id: c.concept_id,
+            concept_title: c.concept_title,
+            tags: c.tags,
+            variants: json_variants,
+        }
+    }).collect();
+
+    Ok(JsonImportSchema {
+        metadata: Some(JsonMetadata { source_title, source_url }),
+        concepts: json_concepts,
+    })
+}
+
+pub async fn get_due_recall_card(pool: &SqlitePool) -> Result<Option<RecallSessionCard>, String> {
+    let now_str = Utc::now().to_rfc3339();
+    
+    let due_row = sqlx::query(
+        "SELECT v.variant_id, v.concept_id, c.concept_title, c.tags, v.difficulty_level, 
+                v.scenario_prose, v.scenario_code_snippet, v.hint, v.target_answer_prose, 
+                v.target_answer_code, v.common_trap, v.explanation, c.source_title, c.source_url, 
+                v.due_date, v.state
+         FROM recall_variants v
+         JOIN recall_concepts c ON v.concept_id = c.concept_id
+         WHERE v.due_date <= ?
+         ORDER BY RANDOM() LIMIT 1"
+    )
+    .bind(&now_str)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let row = match due_row {
+        Some(r) => Some(r),
+        None => {
+            sqlx::query(
+                "SELECT v.variant_id, v.concept_id, c.concept_title, c.tags, v.difficulty_level, 
+                        v.scenario_prose, v.scenario_code_snippet, v.hint, v.target_answer_prose, 
+                        v.target_answer_code, v.common_trap, v.explanation, c.source_title, c.source_url, 
+                        v.due_date, v.state
+                 FROM recall_variants v
+                 JOIN recall_concepts c ON v.concept_id = c.concept_id
+                 ORDER BY RANDOM() LIMIT 1"
+            )
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?
+        }
+    };
+
+    if let Some(r) = row {
+        let tags_str: String = r.get("tags");
+        let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
+        let due_date_str: String = r.get("due_date");
+        let srs_due_date = DateTime::parse_from_rfc3339(&due_date_str)
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|_| Utc::now());
+
+        Ok(Some(RecallSessionCard {
+            concept_id: r.get("concept_id"),
+            concept_title: r.get("concept_title"),
+            variant_id: r.get("variant_id"),
+            tags,
+            difficulty_level: r.get("difficulty_level"),
+            scenario_prose: r.get("scenario_prose"),
+            scenario_code_snippet: r.get("scenario_code_snippet"),
+            hint: r.get("hint"),
+            target_answer_prose: r.get("target_answer_prose"),
+            target_answer_code: r.get("target_answer_code"),
+            common_trap: r.get("common_trap"),
+            explanation: r.get("explanation"),
+            source_title: r.get("source_title"),
+            source_url: r.get("source_url"),
+            srs_due_date,
+            srs_state: r.get::<i32, _>("state") as u32,
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -933,7 +1247,6 @@ mod tests {
         let loaded = load_app_config(&pool).await.unwrap();
         assert_eq!(loaded.settings.micro_break_interval_mins, default_config.settings.micro_break_interval_mins);
         assert_eq!(loaded.settings.active_break_interval_mins, default_config.settings.active_break_interval_mins);
-        assert_eq!(loaded.active_recall_cards.len(), default_config.active_recall_cards.len());
         assert_eq!(loaded.stretches.len(), default_config.stretches.len());
 
         // Cleanup

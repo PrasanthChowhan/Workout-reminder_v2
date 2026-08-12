@@ -159,7 +159,6 @@
 }
 
 .diff-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
   scale: 1.05;
 }
 
@@ -168,26 +167,113 @@
   transition: scale 0.12s ease-out;
 }
 
-.diff-btn.easy.active {
-  background: rgba(0, 230, 57, 0.15); /* Terminal Green */
-  border-color: #00e639;
-  color: #00e639;
-  box-shadow: 0 0 10px rgba(0, 230, 57, 0.35);
+.diff-btn.again {
+  border-color: #ff5252;
+  color: #ff5252;
+}
+.diff-btn.again:hover {
+  background: rgba(255, 82, 82, 0.1);
+  box-shadow: 0 0 10px rgba(255, 82, 82, 0.2);
 }
 
-.diff-btn.medium.active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--color-off-white);
-  color: var(--color-off-white);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
-}
-
-.diff-btn.hard.active {
-  background: rgba(255, 122, 69, 0.15); /* Ignition Orange */
+.diff-btn.hard {
   border-color: var(--color-brand-orange);
   color: var(--color-brand-orange);
-  box-shadow: 0 0 10px rgba(255, 122, 69, 0.35);
 }
+.diff-btn.hard:hover {
+  background: rgba(255, 122, 69, 0.1);
+  box-shadow: 0 0 10px rgba(255, 122, 69, 0.2);
+}
+
+.diff-btn.good {
+  border-color: #5393ff;
+  color: #5393ff;
+}
+.diff-btn.good:hover {
+  background: rgba(83, 147, 255, 0.1);
+  box-shadow: 0 0 10px rgba(83, 147, 255, 0.2);
+}
+
+.diff-btn.easy {
+  border-color: #00e639;
+  color: #00e639;
+}
+.diff-btn.easy:hover {
+  background: rgba(0, 230, 57, 0.1);
+  box-shadow: 0 0 10px rgba(0, 230, 57, 0.2);
+}
+
+/* Code block styles */
+.code-block {
+  background-color: var(--color-surface-container-lowest, #0d0e0f);
+  border: 1px solid var(--color-surface-variant, #343535);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.875rem;
+  color: var(--color-on-surface, #e3e2e2);
+}
+
+.code-block code {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Hint styles */
+.hint-section {
+  margin: 1rem 0;
+}
+
+.hint-toggle-btn {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  color: var(--color-text-muted);
+  padding: 0.4rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hint-toggle-btn:hover {
+  border-color: var(--color-brand-orange);
+  color: var(--color-brand-orange);
+}
+
+.hint-text {
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid var(--color-brand-orange);
+  padding: 0.5rem 1rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--color-on-surface, #e3e2e2);
+}
+
+/* Trap and Explanation styles */
+.trap-box {
+  background: rgba(255, 82, 82, 0.04);
+  border: 1px solid rgba(255, 82, 82, 0.25);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #ffb4ab;
+}
+
+.explanation-box {
+  background: rgba(0, 230, 57, 0.03);
+  border: 1px solid rgba(0, 230, 57, 0.2);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #e3e2e2;
+}
+
 
 /* Answer reveal transitions */
 .recall-card-answer-hint {

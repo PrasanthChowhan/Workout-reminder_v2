@@ -143,19 +143,13 @@ export default function App() {
     }
   };
 
-  const handleUpdateCardMetadata = async (cardId, newMetadata) => {
+  const handleRateCard = async (variantId, rating) => {
     try {
-      const updatedConfig = await invoke("update_flashcard_metadata", { cardId: cardId, metadata: newMetadata });
-      setAppConfig(updatedConfig);
-      setSessionCard(prev => {
-        if (prev && prev.id === cardId) {
-          const updatedCard = updatedConfig.active_recall_cards.find(c => c.id === cardId);
-          return updatedCard || { ...prev, metadata: { ...prev.metadata, ...newMetadata } };
-        }
-        return prev;
-      });
+      await invoke("update_variant_srs", { variantId, rating });
+      handleCompleteBreak("done");
     } catch (err) {
-      console.error("Failed to update card metadata", err);
+      console.error("Failed to rate card", err);
+      toast.error("Failed to update spaced repetition progress.");
     }
   };
 
@@ -190,8 +184,7 @@ export default function App() {
           sessionCard={sessionCard}
           showAnswer={showAnswer}
           setShowAnswer={setShowAnswer}
-          onCompleteBreak={handleCompleteBreak}
-          onUpdateMetadata={handleUpdateCardMetadata}
+          onRateCard={handleRateCard}
         />
       </main>
 

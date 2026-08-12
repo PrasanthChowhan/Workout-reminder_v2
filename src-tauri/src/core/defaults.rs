@@ -1,4 +1,4 @@
-use super::models::{AppConfig, Settings, ActiveRecallCard, Stretch, PhysicalTrack, CustomExercise, UserProgress, Level};
+use super::models::{AppConfig, Settings, Stretch, PhysicalTrack, CustomExercise, UserProgress, Level};
 
 impl Default for AppConfig {
     fn default() -> Self {
@@ -10,40 +10,6 @@ impl Default for AppConfig {
                 active_break_duration_secs: 300, // 5 minutes
                 run_at_start: false,
             },
-            active_recall_cards: vec![
-                ActiveRecallCard {
-                    id: "card_rust_lifetime".to_string(),
-                    question: "What is a Lifetime in Rust?".to_string(),
-                    answer: "A lifetime is a construct the compiler uses to ensure all borrows are valid and that data isn't dropped while it's still being used.".to_string(),
-                    category: "Rust".to_string(),
-                    source: Some("https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html".to_string()),
-                    metadata: None,
-                },
-                ActiveRecallCard {
-                    id: "2".to_string(),
-                    question: "String vs &str: What is the difference in Rust?".to_string(),
-                    answer: "String is an owned, growable UTF-8 buffer on the heap. &str is an immutable borrow/view of a UTF-8 string that points to stack, heap, or static memory.".to_string(),
-                    category: "Rust".to_string(),
-                    source: None,
-                    metadata: None,
-                },
-                ActiveRecallCard {
-                    id: "3".to_string(),
-                    question: "What is the CAP Theorem?".to_string(),
-                    answer: "A distributed system can guarantee at most two of: Consistency (every read gets recent data), Availability (every request gets a non-error response), and Partition Tolerance (system functions despite networking splits).".to_string(),
-                    category: "System Design".to_string(),
-                    source: None,
-                    metadata: None,
-                },
-                ActiveRecallCard {
-                    id: "4".to_string(),
-                    question: "What does deep module design mean?".to_string(),
-                    answer: "A deep module has a simple interface (few methods) but hides a large amount of complex implementation/behavior behind it, maximizing code leverage.".to_string(),
-                    category: "Software Design".to_string(),
-                    source: None,
-                    metadata: None,
-                }
-            ],
             reflection_prompts: vec![
                 "What is the core problem you are solving right now? Is there a simpler way?".to_string(),
                 "Are you stuck down a rabbit hole? Zoom out and state your goal in one sentence.".to_string(),

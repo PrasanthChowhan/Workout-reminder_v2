@@ -107,7 +107,6 @@ export default function SettingsModal({ config, onSave, onCancel }) {
         active_break_duration_secs,
         run_at_start: !!settingsForm.run_at_start,
       },
-      active_recall_cards: editableCards,
       reflection_prompts: editablePrompts,
       stretches: editableStretches,
       user_progress: settingsProgress
@@ -181,10 +180,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
             )}
 
             {activeTab === "cards" && (
-              <CardsTab 
-                editableCards={editableCards}
-                setEditableCards={setEditableCards}
-              />
+              <CardsTab />
             )}
 
             {activeTab === "prompts" && (

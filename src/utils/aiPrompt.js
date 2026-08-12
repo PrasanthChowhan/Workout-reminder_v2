@@ -275,6 +275,44 @@ Do not include any text or explanation outside of that JSON object.
 
 JSON Schema
 Paste the following schema verbatim after this line in your actual prompt:
-
 ${schemaString}`;
 };
+
+export const generateRecallAiPrompt = (topic = "Rust lifetimes and memory safety") => {
+  return `You are an expert software engineering instructor.
+
+Your task is to generate active recall cards (flashcards) in a structured JSON format for the topic: "${topic}". 
+
+The output MUST strictly follow this JSON schema:
+
+{
+  "metadata": {
+    "source_title": "Source documentation title or reference name",
+    "source_url": "URL to the official documentation or reference"
+  },
+  "concepts": [
+    {
+      "concept_id": "concept-slug (e.g., rust-lifetimes)",
+      "concept_title": "Clean, short title of the core concept",
+      "tags": ["Rust", "Memory Management"],
+      "variants": [
+        {
+          "variant_id": "concept-slug-var-1 (slug format)",
+          "difficulty": "beginner, intermediate, or advanced",
+          "scenario_prose": "A prose scenario or question targeting a specific edge-case or core understanding of this concept.",
+          "scenario_code_snippet": "Optional code snippet illustrating the scenario (set to null if not needed).",
+          "hint": "A subtle hint to prompt the correct mental model without giving away the answer.",
+          "target_answer_prose": "The direct answer in prose explaining the correct behavior or resolution.",
+          "target_answer_code": "Optional code snippet illustrating the correct answer (set to null if not needed).",
+          "common_trap": "A common misconception or trap developers fall into regarding this specific scenario.",
+          "explanation": "A deep-dive explanation of why the correct answer is what it is, covering the underlying mechanics."
+        }
+      ]
+    }
+  ]
+}
+
+Please generate high-quality concepts and variants for the topic specified.
+Output ONLY the raw JSON object. Do not wrap it in markdown code blocks, and do not output any conversational explanations outside the JSON.`;
+};
+
