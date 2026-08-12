@@ -1,4 +1,4 @@
-# Context: Workout & Break Reminder (Cognitive Companion)
+# Context: Kodon (Cognitive Companion)
 
 A lightweight native desktop application (**Tauri + Rust + React + Vanilla CSS Modules**) that acts as a cognitive companion for software engineers. It balances eye-health micro-breaks, physical stretch intervals, on-demand refocus exercises, and flashcard learning directly inside the developer's workflow.
 

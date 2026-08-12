@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Workout & Break Reminder",
+  "productName": "Kodon",
   "version": "0.1.0",
-  "identifier": "com.prash.workout-break-reminder",
+  "identifier": "com.prash.kodon",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Workout & Break Reminder",
+        "title": "Kodon",
         "width": 800,
         "height": 600
       }

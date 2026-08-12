@@ -1,7 +1,7 @@
 [package]
-name = "workout-break-reminder"
+name = "kodon"
 version = "0.1.0"
-description = "Workout & Break Reminder"
+description = "Kodon"
 authors = ["you"]
 edition = "2021"
 
