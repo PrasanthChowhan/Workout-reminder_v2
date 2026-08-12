@@ -969,61 +969,37 @@ pub async fn import_recall_json_to_db(pool: &SqlitePool, data: JsonImportSchema)
         .map_err(|e| e.to_string())?;
 
         for variant in concept.variants {
-            let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM recall_variants WHERE variant_id = ?)")
-                .bind(&variant.variant_id)
-                .fetch_one(&mut *tx)
-                .await
-                .unwrap_or(false);
-
-            if exists {
-                sqlx::query(
-                    "UPDATE recall_variants SET
-                        difficulty_level = ?,
-                        scenario_prose = ?,
-                        scenario_code_snippet = ?,
-                        hint = ?,
-                        target_answer_prose = ?,
-                        target_answer_code = ?,
-                        common_trap = ?,
-                        explanation = ?
-                     WHERE variant_id = ?"
-                )
-                .bind(&variant.difficulty)
-                .bind(&variant.scenario_prose)
-                .bind(&variant.scenario_code_snippet)
-                .bind(&variant.hint)
-                .bind(&variant.target_answer_prose)
-                .bind(&variant.target_answer_code)
-                .bind(&variant.common_trap)
-                .bind(&variant.explanation)
-                .bind(&variant.variant_id)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| e.to_string())?;
-            } else {
-                let now_str = Utc::now().to_rfc3339();
-                sqlx::query(
-                    "INSERT INTO recall_variants (
-                        variant_id, concept_id, difficulty_level, scenario_prose, scenario_code_snippet,
-                        hint, target_answer_prose, target_answer_code, common_trap, explanation,
-                        due_date, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review
-                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, 0, 0, 0, 0, 0, NULL)"
-                )
-                .bind(&variant.variant_id)
-                .bind(&concept.concept_id)
-                .bind(&variant.difficulty)
-                .bind(&variant.scenario_prose)
-                .bind(&variant.scenario_code_snippet)
-                .bind(&variant.hint)
-                .bind(&variant.target_answer_prose)
-                .bind(&variant.target_answer_code)
-                .bind(&variant.common_trap)
-                .bind(&variant.explanation)
-                .bind(&now_str)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| e.to_string())?;
-            }
+            let now_str = Utc::now().to_rfc3339();
+            sqlx::query(
+                "INSERT INTO recall_variants (
+                    variant_id, concept_id, difficulty_level, scenario_prose, scenario_code_snippet,
+                    hint, target_answer_prose, target_answer_code, common_trap, explanation,
+                    due_date, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, 0, 0, 0, 0, 0, NULL)
+                 ON CONFLICT(variant_id) DO UPDATE SET
+                    difficulty_level = excluded.difficulty_level,
+                    scenario_prose = excluded.scenario_prose,
+                    scenario_code_snippet = excluded.scenario_code_snippet,
+                    hint = excluded.hint,
+                    target_answer_prose = excluded.target_answer_prose,
+                    target_answer_code = excluded.target_answer_code,
+                    common_trap = excluded.common_trap,
+                    explanation = excluded.explanation"
+            )
+            .bind(&variant.variant_id)
+            .bind(&concept.concept_id)
+            .bind(&variant.difficulty)
+            .bind(&variant.scenario_prose)
+            .bind(&variant.scenario_code_snippet)
+            .bind(&variant.hint)
+            .bind(&variant.target_answer_prose)
+            .bind(&variant.target_answer_code)
+            .bind(&variant.common_trap)
+            .bind(&variant.explanation)
+            .bind(&now_str)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
         }
     }
 
@@ -1251,5 +1227,64 @@ mod tests {
 
         // Cleanup
         let _ = std::fs::remove_dir_all(temp_dir);
+    }
+}
+
+#[cfg(test)]
+mod bench_tests {
+    use super::*;
+    use std::time::SystemTime;
+    use std::time::Instant;
+    use crate::core::models::{JsonImportSchema, JsonConcept, JsonVariant, JsonMetadata};
+
+    #[tokio::test]
+    async fn bench_import_recall() {
+        let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+        let temp_dir = std::env::temp_dir().join(format!("workout_bench_{}", timestamp));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+
+        let pool = init_db(&temp_dir).await.unwrap();
+
+        let mut concepts = Vec::new();
+        for i in 0..100 {
+            let mut variants = Vec::new();
+            for j in 0..10 {
+                variants.push(JsonVariant {
+                    variant_id: format!("variant_{}_{}", i, j),
+                    difficulty: "easy".to_string(),
+                    scenario_prose: format!("scenario {}", j),
+                    scenario_code_snippet: Some(format!("code {}", j)),
+                    hint: format!("hint {}", j),
+                    target_answer_prose: format!("answer {}", j),
+                    target_answer_code: Some(format!("code {}", j)),
+                    common_trap: format!("trap {}", j),
+                    explanation: format!("explanation {}", j),
+                });
+            }
+            concepts.push(JsonConcept {
+                concept_id: format!("concept_{}", i),
+                concept_title: format!("Title {}", i),
+                tags: vec!["tag1".to_string(), "tag2".to_string()],
+                variants,
+            });
+        }
+
+        let data = JsonImportSchema {
+            metadata: Some(JsonMetadata {
+                source_title: Some("Bench".to_string()),
+                source_url: Some("http://bench".to_string()),
+            }),
+            concepts: concepts.clone(),
+        };
+
+        let start = Instant::now();
+        import_recall_json_to_db(&pool, data.clone()).await.unwrap();
+        let duration1 = start.elapsed();
+        println!("BASELINE - First import (inserts): {:?}", duration1);
+
+        let start2 = Instant::now();
+        import_recall_json_to_db(&pool, data).await.unwrap();
+        let duration2 = start2.elapsed();
+        println!("BASELINE - Second import (updates): {:?}", duration2);
     }
 }
