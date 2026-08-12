@@ -1,83 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
-import { invoke } from "../../utils/tauri";
-import { toast } from "../../utils/toast";
+import React, { useState, useRef } from "react";
 import { Modal } from "../ui/Modal";
 import AiRecallModal from "./cards/AiRecallModal";
 import styles from "./CardsTab.module.css";
+import useRecallConcepts from "../../hooks/useRecallConcepts";
 
 export default function CardsTab() {
-  const [concepts, setConcepts] = useState([]);
   const [activeConcept, setActiveConcept] = useState(null);
   const [showAiRecallModal, setShowAiRecallModal] = useState(false);
   
   const fileInputRef = useRef(null);
 
-  const loadConcepts = async () => {
-    try {
-      const list = await invoke("get_recall_concepts");
-      setConcepts(list || []);
-    } catch (err) {
-      console.error("Failed to load recall concepts", err);
-      toast.error("Failed to load recall concepts.");
-    }
-  };
+  const {
+    concepts,
+    handleImportJson,
+    handleExportJson,
+    handleApplyRecallCards
+  } = useRecallConcepts();
 
-  useEffect(() => {
-    loadConcepts();
-  }, []);
-
-  const handleImportJson = (e) => {
+  const onFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const jsonContent = event.target.result;
-        await invoke("import_recall_json", { jsonStr: jsonContent });
-        toast.success("Recall cards imported and merged successfully!");
-        loadConcepts();
-      } catch (err) {
-        console.error("Import failed", err);
-        toast.error("Import failed: " + err);
-      } finally {
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
+    handleImportJson(file, () => {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleExportJson = async () => {
-    try {
-      const data = await invoke("export_recall_json");
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `active_recall_export_${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Recall cards exported successfully!");
-    } catch (err) {
-      console.error("Export failed", err);
-      toast.error("Export failed: " + err);
-    }
-  };
-
-  const handleApplyRecallCards = async (jsonStr) => {
-    try {
-      await invoke("import_recall_json", { jsonStr });
-      toast.success("Recall cards imported and merged successfully!");
-      setShowAiRecallModal(false);
-      loadConcepts();
-    } catch (err) {
-      console.error("Import failed", err);
-      toast.error("Import failed: " + err);
-    }
+    });
   };
 
   return (
@@ -111,7 +57,7 @@ export default function CardsTab() {
           <input 
             type="file" 
             ref={fileInputRef} 
-            onChange={handleImportJson} 
+            onChange={onFileChange}
             accept=".json" 
             style={{ display: "none" }} 
           />
@@ -248,7 +194,7 @@ export default function CardsTab() {
         <AiRecallModal
           isOpen={showAiRecallModal}
           onClose={() => setShowAiRecallModal(false)}
-          onApplyRecallCards={handleApplyRecallCards}
+          onApplyRecallCards={(jsonStr) => handleApplyRecallCards(jsonStr, () => setShowAiRecallModal(false))}
           parentStyles={styles}
         />
       )}
