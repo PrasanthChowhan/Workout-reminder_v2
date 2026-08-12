@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { openUrl } from "../utils/tauri";
 import { getYoutubeId } from "../utils/youtube";
-import { CloseIcon, PictureIcon, PlayIcon, InfoIcon, MaximizeIcon } from "./ui/Icons";
+import { CloseIcon, PlayIcon, InfoIcon } from "./ui/Icons";
 import EmbeddedPlayer from "./EmbeddedPlayer";
 import styles from "./PhysicalResetCard.module.css";
 
@@ -84,6 +84,24 @@ const PhysicalResetCard = React.memo(function PhysicalResetCard({ sessionStretch
 
   return (
     <section className={`active-break-card ${styles['stretch-card']}`} style={{ position: "relative", overflow: "hidden" }} data-purpose="side-card">
+      {/* Video Overlay covering the full card */}
+      {isPlayingVideo && sessionStretch?.video_url && sessionStretch.video_url !== "N/A" && (
+        <div className={styles['video-overlay-container']}>
+          <EmbeddedPlayer
+            videoUrl={sessionStretch.video_url}
+            title={sessionStretch.name || "Physical Reset"}
+            style={{ width: "100%", height: "100%" }}
+          />
+          <button 
+            className={styles['video-close-btn']}
+            onClick={() => setIsPlayingVideo(false)}
+            title="Close Video"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+
       {/* Details Overlay */}
       {showDetails && Object.keys(displayMetadata).length > 0 && (
         <div className={styles['stretch-details-overlay']}>
@@ -130,17 +148,10 @@ const PhysicalResetCard = React.memo(function PhysicalResetCard({ sessionStretch
         </div>
       )}
 
+      {/* Thumbnail/Image covering the full card area */}
       <div className={styles['stretch-image-container']}>
         <div className={styles['stretch-image-wrapper']}>
-          {isPlayingVideo && sessionStretch?.video_url && sessionStretch.video_url !== "N/A" ? (
-            <EmbeddedPlayer
-              videoUrl={sessionStretch.video_url}
-              title={sessionStretch.name || "Physical Reset"}
-              subtitle={`${sessionStretch.difficulty_level || "All Levels"} · ${sessionStretch.reps || `${sessionStretch.duration_secs ?? 30}s Hold`}`}
-              durationSecs={sessionStretch.duration_secs || 60}
-              onClose={() => setIsPlayingVideo(false)}
-            />
-          ) : (() => {
+          {(() => {
             const hasImageUrl = sessionStretch?.image_url && 
                                sessionStretch.image_url !== "N/A" && 
                                sessionStretch.image_url.trim() !== "";
@@ -210,6 +221,7 @@ const PhysicalResetCard = React.memo(function PhysicalResetCard({ sessionStretch
           })()}
         </div>
       </div>
+
       <div className={styles['stretch-text-content']}>
         <div className={styles['stretch-meta-badges']}>
           <span className={`${styles['stretch-badge']} ${styles['difficulty']}`}>
@@ -228,44 +240,32 @@ const PhysicalResetCard = React.memo(function PhysicalResetCard({ sessionStretch
         <p className={styles['stretch-description']}>
           {mainDesc || "Quick desk-side mobility routine to realign posture and improve blood flow."}
         </p>
-        {isPlayingVideo && (
-          <p className={styles['youtube-disclaimer']}>
-            Video streamed via YouTube. All intellectual property belongs strictly to the respective owner.
-          </p>
-        )}
       </div>
+
       <div className={styles['stretch-card-footer']}>
-        <div className={styles['stretch-actions']}>
-          <button 
-            className={`${styles['stretch-action-btn']} ${styles['stretch-toggle-btn']}`} 
-            title={sessionStretch?.video_url && sessionStretch.video_url !== "N/A" 
-              ? (isPlayingVideo ? "Show pose illustration" : `Watch: ${sessionStretch.video_url}`) 
-              : "Watch demo video"}
-            disabled={!sessionStretch?.video_url || sessionStretch.video_url === "N/A"}
-            style={{ 
-              opacity: (sessionStretch?.video_url && sessionStretch.video_url !== "N/A") ? 1 : 0.5, 
-              cursor: (sessionStretch?.video_url && sessionStretch.video_url !== "N/A") ? "pointer" : "not-allowed" 
-            }}
-            onClick={handleWatchVideo}
-          >
-            {isPlayingVideo ? (
-              <PictureIcon className={styles['action-icon']} />
-            ) : (
-              <PlayIcon className={styles['action-icon']} />
-            )}
-            {isPlayingVideo ? "Pose" : "Watch"}
-          </button>
-          <button 
-            className={`${styles['stretch-action-btn']} ${showDetails ? styles['active'] : ""}`}
-            title="Show stretch details"
-            onClick={() => setShowDetails(true)}
-          >
-            <InfoIcon className={styles['action-icon']} />
-            Details
-          </button>
-        </div>
-        <button className={styles['stretch-maximize-btn']} title="Maximize">
-          <MaximizeIcon className={styles['action-icon']} />
+        <button 
+          className={styles['stretch-secondary-btn']}
+          title="Show stretch details"
+          onClick={() => setShowDetails(true)}
+        >
+          Details
+          <InfoIcon className={styles['btn-icon']} />
+        </button>
+
+        <button 
+          className={styles['stretch-primary-btn']}
+          title={sessionStretch?.video_url && sessionStretch.video_url !== "N/A" 
+            ? `Watch: ${sessionStretch.video_url}` 
+            : "Watch demo video"}
+          disabled={!sessionStretch?.video_url || sessionStretch.video_url === "N/A"}
+          style={{ 
+            opacity: (sessionStretch?.video_url && sessionStretch.video_url !== "N/A") ? 1 : 0.5, 
+            cursor: (sessionStretch?.video_url && sessionStretch.video_url !== "N/A") ? "pointer" : "not-allowed" 
+          }}
+          onClick={handleWatchVideo}
+        >
+          Watch
+          <PlayIcon className={styles['btn-icon']} />
         </button>
       </div>
     </section>

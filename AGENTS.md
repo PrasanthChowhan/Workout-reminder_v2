@@ -1,4 +1,6 @@
 # Agent Instructions
+This App will one day be used by consumers. So keep in mind about security, perfomance, scalability and most importantaly,  maintainability.
+If you are confident that there is a better way to implement something suggest the dev.
 
 ## Stack Context
 Tauri v2 · Rust 1.75+ · React 18 · Vite · Vanilla CSS Modules.

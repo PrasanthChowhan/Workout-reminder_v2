@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "vitest run"
+    "test": "vitest run",
+    "update-plugin": "git -C packages/tauri-plugin-dev-issues pull origin main && npm --prefix packages/tauri-plugin-dev-issues install && npm --prefix packages/tauri-plugin-dev-issues run build && npm install"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

@@ -85,7 +85,6 @@ export default function App() {
         setBreakCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
-            handleCompleteBreak("skipped");
             return 0;
           }
           return prev - 1;
@@ -150,7 +149,6 @@ export default function App() {
     try {
       await invoke("update_variant_srs", { variantId, rating });
       toast.success(`Card rated: ${ratingName}`);
-      handleCompleteBreak("done");
     } catch (err) {
       console.error("Failed to rate card", err);
       toast.error("Failed to update spaced repetition progress.");
