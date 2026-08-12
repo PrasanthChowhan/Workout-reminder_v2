@@ -1,0 +1,53 @@
+.settings-add-form {
+  background-color: rgba(255, 92, 0, 0.03);
+  border: 1px dashed rgba(255, 92, 0, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.settings-add-form.flex-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings-input-text {
+  flex-grow: 1;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-off-white);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  transition: border-color 0.2s ease;
+}
+
+.settings-input-text:focus {
+  outline: none;
+  border-color: var(--color-brand-orange);
+}
+
+.settings-input-text.duration {
+  width: 90px;
+  flex-grow: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.settings-items-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background-color: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
