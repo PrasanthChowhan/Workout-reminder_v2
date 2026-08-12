@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getYoutubeId } from './youtube.js';
+import { getYoutubeId, getYoutubeStart } from './youtube.js';
 
 describe('getYoutubeId', () => {
   it('extracts ID from standard watch URL', () => {
@@ -38,7 +38,6 @@ describe('getYoutubeId', () => {
       expect(getYoutubeId('https://www.youtube.com/u/w/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
   });
 
-
   it('returns null for invalid domains but matching patterns (edge case of regex)', () => {
      // The regex provided actually allows non-youtube domains if they have the right path structure.
      // e.g. https://example.com/watch?v=12345678901
@@ -60,5 +59,44 @@ describe('getYoutubeId', () => {
     expect(getYoutubeId('')).toBeNull();
     expect(getYoutubeId(null)).toBeNull();
     expect(getYoutubeId(undefined)).toBeNull();
+  });
+});
+
+describe('getYoutubeStart', () => {
+  it('returns null for empty or null input', () => {
+    expect(getYoutubeStart(null)).toBeNull();
+    expect(getYoutubeStart('')).toBeNull();
+    expect(getYoutubeStart(undefined)).toBeNull();
+  });
+
+  it('returns null if no start or t parameter is present', () => {
+    expect(getYoutubeStart('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBeNull();
+    expect(getYoutubeStart('https://youtu.be/dQw4w9WgXcQ')).toBeNull();
+    expect(getYoutubeStart('https://youtube.com/watch?v=dQw4w9WgXcQ&abc=123')).toBeNull();
+  });
+
+  it('extracts simple seconds without s suffix', () => {
+    expect(getYoutubeStart('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=45')).toBe(45);
+    expect(getYoutubeStart('https://youtu.be/dQw4w9WgXcQ?t=120')).toBe(120);
+    expect(getYoutubeStart('https://youtube.com/watch?v=dQw4w9WgXcQ&start=15')).toBe(15);
+  });
+
+  it('extracts simple seconds with s suffix', () => {
+    expect(getYoutubeStart('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=45s')).toBe(45);
+    expect(getYoutubeStart('https://youtu.be/dQw4w9WgXcQ?t=120s')).toBe(120);
+    expect(getYoutubeStart('https://youtube.com/watch?v=dQw4w9WgXcQ&start=15s')).toBe(15);
+  });
+
+  it('extracts formatted times (h/m/s)', () => {
+    expect(getYoutubeStart('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=1m30s')).toBe(90);
+    expect(getYoutubeStart('https://youtu.be/dQw4w9WgXcQ?t=1h2m3s')).toBe(3723);
+    expect(getYoutubeStart('https://youtube.com/watch?v=dQw4w9WgXcQ&t=2m')).toBe(120);
+    expect(getYoutubeStart('https://youtube.com/watch?v=dQw4w9WgXcQ&t=3h')).toBe(10800);
+    expect(getYoutubeStart('https://youtube.com/watch?v=dQw4w9WgXcQ&t=1h30s')).toBe(3630);
+  });
+
+  it('handles parameter at different positions', () => {
+    expect(getYoutubeStart('https://www.youtube.com/watch?t=45&v=dQw4w9WgXcQ')).toBe(45);
+    expect(getYoutubeStart('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=45&index=1')).toBe(45);
   });
 });

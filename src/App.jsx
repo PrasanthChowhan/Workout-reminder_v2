@@ -12,6 +12,7 @@ import ToastContainer from "./components/Toast";
 import { SettingsIcon, CheckIcon } from "./components/ui/Icons";
 import { DevIssueReporter } from "tauri-plugin-react-issue-reporter";
 import { toast } from "./utils/toast";
+import buttonStyles from "./styles/buttons.module.css";
 
 /**
  * App is the high-level orchestrator component.
@@ -206,7 +207,7 @@ export default function App() {
           <span>{holdProgress > 0 ? "Holding..." : "Didn't Do"}</span>
         </button>
         <button 
-          className="footer-primary-btn" 
+          className={buttonStyles["footer-primary-btn"]}
           onClick={() => handleCompleteBreak("done")}
         >
           Done Session

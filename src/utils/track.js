@@ -175,17 +175,24 @@ export const resolveLevelProgressOnToggle = (
   const activeLevel = displayLevels.find(l => l.level_number === currentLevelNumber);
   if (activeLevel && activeLevel.title === exerciseTitle && !currentExcluded.includes(exerciseTitle)) {
     let resolvedLevelNum = null;
+
+    const levelsMap = new Map();
+    for (let i = 0; i < displayLevels.length; i++) {
+      levelsMap.set(displayLevels[i].level_number, displayLevels[i]);
+    }
+    const updatedExcludedSet = new Set(updatedExcluded);
+
     for (let num = currentLevelNumber; num <= displayLevels.length; num++) {
-      const lvl = displayLevels.find(l => l.level_number === num);
-      if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
+      const lvl = levelsMap.get(num);
+      if (lvl && lvl.title !== exerciseTitle && !updatedExcludedSet.has(lvl.title)) {
         resolvedLevelNum = num;
         break;
       }
     }
     if (!resolvedLevelNum) {
       for (let num = currentLevelNumber - 1; num >= 1; num--) {
-        const lvl = displayLevels.find(l => l.level_number === num);
-        if (lvl && lvl.title !== exerciseTitle && !updatedExcluded.includes(lvl.title)) {
+        const lvl = levelsMap.get(num);
+        if (lvl && lvl.title !== exerciseTitle && !updatedExcludedSet.has(lvl.title)) {
           resolvedLevelNum = num;
           break;
         }

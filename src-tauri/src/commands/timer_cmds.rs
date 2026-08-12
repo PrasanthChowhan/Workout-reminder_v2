@@ -22,41 +22,52 @@ pub fn toggle_timer(state: tauri::State<'_, AppState>) -> Result<bool, String> {
     Ok(*paused)
 }
 
-fn is_level_excluded(track: &PhysicalTrack, level_title: &str) -> bool {
-    if let Some(metadata) = &track.metadata {
-        if let Some(excluded) = metadata.get("excluded_exercises") {
-            if let Some(arr) = excluded.as_array() {
-                return arr.iter().any(|val| val.as_str() == Some(level_title));
-            }
-        }
-    }
-    false
-}
-
 fn find_active_level(track: &PhysicalTrack, level_num: u64) -> Option<&Level> {
     if track.levels.is_empty() {
         return None;
     }
 
-    // First search upwards from level_num to max
-    for num in level_num..=(track.levels.len() as u64) {
-        if let Some(level) = track.levels.iter().find(|l| l.level_number == num) {
-            if !is_level_excluded(track, &level.title) {
-                return Some(level);
+    let mut excluded_titles = Vec::new();
+    if let Some(metadata) = &track.metadata {
+        if let Some(excluded) = metadata.get("excluded_exercises") {
+            if let Some(arr) = excluded.as_array() {
+                for val in arr {
+                    if let Some(s) = val.as_str() {
+                        excluded_titles.push(s);
+                    }
+                }
             }
         }
     }
 
-    // Then search downwards from level_num - 1 to 1
-    for num in (1..level_num).rev() {
-        if let Some(level) = track.levels.iter().find(|l| l.level_number == num) {
-            if !is_level_excluded(track, &level.title) {
-                return Some(level);
+    let mut best_up = None;
+    let mut best_down = None;
+    let mut min_diff_up = u64::MAX;
+    let mut min_diff_down = u64::MAX;
+
+    for level in &track.levels {
+        let n = level.level_number;
+
+        if excluded_titles.contains(&level.title.as_str()) {
+            continue;
+        }
+
+        if n >= level_num {
+            let diff = n - level_num;
+            if diff < min_diff_up && n <= track.levels.len() as u64 {
+                min_diff_up = diff;
+                best_up = Some(level);
+            }
+        } else {
+            let diff = level_num - n;
+            if diff < min_diff_down {
+                min_diff_down = diff;
+                best_down = Some(level);
             }
         }
     }
 
-    None
+    best_up.or(best_down)
 }
 
 #[tauri::command]

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { toast } from "../../utils/toast";
 import { TrashIcon } from "../ui/Icons";
 import styles from "./StretchesTab.module.css";
+import formStyles from "../../styles/forms.module.css";
 
 /**
  * StretchesTab renders the custom stretches CRUD list.
@@ -51,7 +52,7 @@ export default function StretchesTab({ editableStretches, setEditableStretches }
           <input 
             type="number" 
             placeholder="Secs" 
-            className={`${styles['settings-input-text']} ${styles['duration']}`} 
+            className={`${styles['settings-input-text']} ${formStyles['duration']}`}
             value={newStretch.duration_secs}
             onChange={(e) => setNewStretch({ ...newStretch, duration_secs: e.target.value })}
             min="5"

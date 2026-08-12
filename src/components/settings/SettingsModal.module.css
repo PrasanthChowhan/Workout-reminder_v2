@@ -352,20 +352,11 @@
 
 /* Category lists styling */
 .settings-items-list {
-  display: flex;
-  flex-direction: column;
+  composes: settings-items-list from '../../styles/forms.module.css';
 }
 
 .settings-list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  background-color: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-sm);
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.75rem;
+  composes: settings-list-item from '../../styles/forms.module.css';
 }
 
 .settings-item-info {
@@ -428,16 +419,7 @@
 
 /* Forms to add items */
 .settings-add-form {
-  background-color: rgba(255, 92, 0, 0.03);
-  border: 1px dashed rgba(255, 92, 0, 0.2);
-  border-radius: var(--radius-sm);
-  padding: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.settings-add-form.flex-row {
-  display: flex;
-  gap: 0.5rem;
+  composes: settings-add-form from '../../styles/forms.module.css';
 }
 
 .add-form-row {
@@ -446,48 +428,11 @@
 }
 
 .settings-input-text {
-  flex-grow: 1;
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem;
-  color: var(--color-off-white);
-  font-family: var(--font-sans);
-  font-size: 0.8rem;
-  transition: border-color 0.2s ease;
-}
-
-.settings-input-text:focus {
-  outline: none;
-  border-color: var(--color-brand-orange);
-}
-
-.settings-input-text.duration {
-  width: 90px;
-  flex-grow: 0;
-  text-align: right;
-  font-family: var(--font-mono);
+  composes: settings-input-text from '../../styles/forms.module.css';
 }
 
 .settings-add-btn {
-  background-color: transparent;
-  border: 1px solid var(--color-brand-orange);
-  color: var(--color-brand-orange);
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 0.7rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.settings-add-btn:hover {
-  background-color: var(--color-brand-orange);
-  color: #000;
+  composes: settings-add-btn from '../../styles/buttons.module.css';
 }
 
 .settings-footer {
@@ -527,29 +472,7 @@
 }
 
 .settings-save-btn {
-  padding: 0.75rem 2rem;
-  background-color: var(--color-brand-orange);
-  color: #000;
-  border-radius: var(--radius-full);
-  border: none;
-  font-size: 11px;
-  font-family: var(--font-sans);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition: filter 0.2s ease, scale 0.5s var(--spring-easing, var(--fallback-spring)), box-shadow 0.2s ease;
-  text-transform: uppercase;
-}
-
-.settings-save-btn:hover {
-  filter: brightness(1.15);
-  scale: 1.04;
-  box-shadow: 0 0 16px rgba(255, 122, 69, 0.45);
-}
-
-.settings-save-btn:active {
-  scale: 0.96;
-  transition: scale 0.12s ease-out;
+  composes: settings-save-btn from '../../styles/buttons.module.css';
 }
 
 /* Responsiveness for settings full screen */
