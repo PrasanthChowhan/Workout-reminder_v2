@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { invoke } from "../../utils/tauri";
 import { toast } from "../../utils/toast";
 import { Modal } from "../ui/Modal";
+import { ArrowLeftIcon } from "../ui/Icons";
 import AiRecallModal from "./cards/AiRecallModal";
 import styles from "./CardsTab.module.css";
 
 export default function CardsTab() {
   const [concepts, setConcepts] = useState([]);
   const [activeConcept, setActiveConcept] = useState(null);
+  const [selectedSource, setSelectedSource] = useState(null);
   const [showAiRecallModal, setShowAiRecallModal] = useState(false);
   
   const fileInputRef = useRef(null);
@@ -80,6 +82,22 @@ export default function CardsTab() {
     }
   };
 
+  const groupedConcepts = concepts.reduce((groups, concept) => {
+    const sourceKey = concept.source_title || "General / Uncategorized";
+    if (!groups[sourceKey]) {
+      groups[sourceKey] = {
+        sourceTitle: concept.source_title,
+        sourceUrl: concept.source_url,
+        items: []
+      };
+    }
+    if (concept.source_url && !groups[sourceKey].sourceUrl) {
+      groups[sourceKey].sourceUrl = concept.source_url;
+    }
+    groups[sourceKey].items.push(concept);
+    return groups;
+  }, {});
+
   return (
     <div className={styles['tab-pane']}>
       <div className={styles['header-row']}>
@@ -122,32 +140,83 @@ export default function CardsTab() {
         <div className={styles['empty-state']}>
           <p>No recall cards found. Use the AI Prompt to generate some cards, then import them!</p>
         </div>
+      ) : selectedSource === null ? (
+        <div className={styles['source-cards-grid']}>
+          {Object.entries(groupedConcepts).map(([sourceName, group]) => {
+            const totalVariants = group.items.reduce((sum, item) => sum + (item.variants?.length || 0), 0);
+            return (
+              <div 
+                key={sourceName} 
+                className={styles['source-card']}
+                onDoubleClick={() => setSelectedSource(sourceName)}
+                title="Double click to inspect topics"
+              >
+                <h4 className={styles['source-card-title']}>{sourceName}</h4>
+                {group.sourceUrl && (
+                  <span className={styles['source-card-url']}>
+                    {group.sourceUrl}
+                  </span>
+                )}
+                <div className={styles['source-card-footer']}>
+                  <span className={styles['source-topics-count']}>
+                    {group.items.length} {group.items.length === 1 ? 'topic' : 'topics'}
+                  </span>
+                  <span className={styles['source-cards-count']}>
+                    {totalVariants} {totalVariants === 1 ? 'card' : 'cards'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
-        <div className={styles['concepts-grid']}>
-          {concepts.map((concept) => (
-            <div 
-              key={concept.concept_id} 
-              className={styles['concept-card']}
-              onClick={() => setActiveConcept(concept)}
-            >
-              <h4 className={styles['concept-title']}>{concept.concept_title}</h4>
-              {concept.source_title && (
-                <span className={styles['concept-source']}>
-                  Source: {concept.source_title}
-                </span>
-              )}
-              <div className={styles['concept-tags']}>
-                {concept.tags.map((tag, idx) => (
-                  <span key={idx} className={styles['tag-badge']}>{tag}</span>
-                ))}
+        <div className={styles['selected-source-view']}>
+          <button 
+            type="button" 
+            className={styles['back-btn']} 
+            onClick={() => setSelectedSource(null)}
+          >
+            <ArrowLeftIcon width={14} height={14} style={{ marginRight: "0.25rem" }} />
+            Back to Sources
+          </button>
+          
+          <div className={styles['source-header-inline']}>
+            <h4 className={styles['selected-source-title']}>
+              Source: {selectedSource}
+            </h4>
+            {groupedConcepts[selectedSource]?.sourceUrl && (
+              <a 
+                href={groupedConcepts[selectedSource].sourceUrl} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className={styles['source-header-link']}
+              >
+                Open Documentation
+              </a>
+            )}
+          </div>
+
+          <div className={styles['concepts-grid']}>
+            {groupedConcepts[selectedSource]?.items.map((concept) => (
+              <div 
+                key={concept.concept_id} 
+                className={styles['concept-card']}
+                onClick={() => setActiveConcept(concept)}
+              >
+                <h4 className={styles['concept-title']}>{concept.concept_title}</h4>
+                <div className={styles['concept-tags']}>
+                  {concept.tags.map((tag, idx) => (
+                    <span key={idx} className={styles['tag-badge']}>{tag}</span>
+                  ))}
+                </div>
+                <div className={styles['concept-footer']}>
+                  <span className={styles['card-count']}>
+                    {concept.variants?.length || 0} {concept.variants?.length === 1 ? 'card' : 'cards'}
+                  </span>
+                </div>
               </div>
-              <div className={styles['concept-footer']}>
-                <span className={styles['card-count']}>
-                  {concept.variants?.length || 0} {concept.variants?.length === 1 ? 'card' : 'cards'}
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
