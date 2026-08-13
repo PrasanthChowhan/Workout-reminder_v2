@@ -12,14 +12,128 @@ pub fn get_timer_state(state: tauri::State<'_, AppState>) -> Result<TimerStatePa
         active_left: *state.active_countdown.lock().map_err(|e| e.to_string())?,
         timer_paused: *state.timer_paused.lock().map_err(|e| e.to_string())?,
         current_break_state: state.current_break_state.lock().map_err(|e| e.to_string())?.clone(),
+        reminder_state: *state.reminder_state.lock().map_err(|e| e.to_string())?,
     })
 }
 
 #[tauri::command]
-pub fn toggle_timer(state: tauri::State<'_, AppState>) -> Result<bool, String> {
-    let mut paused = state.timer_paused.lock().map_err(|e| e.to_string())?;
-    *paused = !*paused;
-    Ok(*paused)
+pub async fn toggle_timer(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let (new_state, is_paused) = {
+        let mut reminder_state = state.reminder_state.lock().map_err(|e| e.to_string())?;
+        let mut paused = state.timer_paused.lock().map_err(|e| e.to_string())?;
+        
+        if *reminder_state == crate::core::models::ReminderState::Active {
+            *reminder_state = crate::core::models::ReminderState::PausedManual;
+            *paused = true;
+            (crate::core::models::ReminderState::PausedManual, true)
+        } else {
+            *reminder_state = crate::core::models::ReminderState::Active;
+            *paused = false;
+            (crate::core::models::ReminderState::Active, false)
+        }
+    };
+    
+    crate::utils::db::save_reminder_state(&state.db_pool, &new_state).await?;
+    
+    if let Some(toggle_menu_item) = state.toggle_menu_item.lock().map_err(|e| e.to_string())?.as_ref() {
+        if is_paused {
+            let _ = toggle_menu_item.set_text("Resume Timer");
+        } else {
+            let _ = toggle_menu_item.set_text("Pause Timer");
+        }
+    }
+    
+    Ok(is_paused)
+}
+
+#[tauri::command]
+pub async fn snooze_for(minutes: u64, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let until = chrono::Utc::now() + chrono::Duration::minutes(minutes as i64);
+    let new_state = crate::core::models::ReminderState::PausedUntil(until);
+    
+    {
+        let mut rs = state.reminder_state.lock().map_err(|e| e.to_string())?;
+        *rs = new_state;
+    }
+    {
+        let mut paused = state.timer_paused.lock().map_err(|e| e.to_string())?;
+        *paused = true;
+    }
+    
+    crate::utils::db::save_reminder_state(&state.db_pool, &new_state).await?;
+    
+    if let Some(toggle_menu_item) = state.toggle_menu_item.lock().map_err(|e| e.to_string())?.as_ref() {
+        let local_time = until.with_timezone(&chrono::Local);
+        let _ = toggle_menu_item.set_text(format!("Snoozed until {}", local_time.format("%I:%M %p")));
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn snooze_until_restart(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let new_state = crate::core::models::ReminderState::PausedUntilRestart;
+    
+    {
+        let mut rs = state.reminder_state.lock().map_err(|e| e.to_string())?;
+        *rs = new_state;
+    }
+    {
+        let mut paused = state.timer_paused.lock().map_err(|e| e.to_string())?;
+        *paused = true;
+    }
+    
+    crate::utils::db::save_reminder_state(&state.db_pool, &new_state).await?;
+    
+    if let Some(toggle_menu_item) = state.toggle_menu_item.lock().map_err(|e| e.to_string())?.as_ref() {
+        let _ = toggle_menu_item.set_text("Snoozed until restart");
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn pause_indefinitely(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let new_state = crate::core::models::ReminderState::PausedManual;
+    
+    {
+        let mut rs = state.reminder_state.lock().map_err(|e| e.to_string())?;
+        *rs = new_state;
+    }
+    {
+        let mut paused = state.timer_paused.lock().map_err(|e| e.to_string())?;
+        *paused = true;
+    }
+    
+    crate::utils::db::save_reminder_state(&state.db_pool, &new_state).await?;
+    
+    if let Some(toggle_menu_item) = state.toggle_menu_item.lock().map_err(|e| e.to_string())?.as_ref() {
+        let _ = toggle_menu_item.set_text("Resume Timer");
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn resume_reminders(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let new_state = crate::core::models::ReminderState::Active;
+    
+    {
+        let mut rs = state.reminder_state.lock().map_err(|e| e.to_string())?;
+        *rs = new_state;
+    }
+    {
+        let mut paused = state.timer_paused.lock().map_err(|e| e.to_string())?;
+        *paused = false;
+    }
+    
+    crate::utils::db::save_reminder_state(&state.db_pool, &new_state).await?;
+    
+    if let Some(toggle_menu_item) = state.toggle_menu_item.lock().map_err(|e| e.to_string())?.as_ref() {
+        let _ = toggle_menu_item.set_text("Pause Timer");
+    }
+    
+    Ok(())
 }
 
 fn find_active_level(track: &PhysicalTrack, level_num: u64) -> Option<&Level> {
@@ -175,11 +289,13 @@ pub async fn get_initial_break_data(
 pub async fn complete_break(
     app: tauri::AppHandle,
     action: String,
+    reference_id: Option<String>,
+    exercise_id: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     println!("Break completed! Action logged: {}", action);
 
-    let _ = state.complete_break_logic(&action).await?;
+    let _ = state.complete_break_logic(&action, reference_id.as_deref(), exercise_id.as_deref()).await?;
 
     // Hide window and restore normal desktop dimensions
     let _ = close_break_overlay(&app);

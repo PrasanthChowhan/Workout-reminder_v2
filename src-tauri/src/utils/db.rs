@@ -6,7 +6,8 @@ use serde_json::Value;
 use chrono::{DateTime, Utc};
 use crate::core::models::{
     AppConfig, Settings, Stretch, PhysicalTrack, CustomExercise, UserProgress, Level,
-    JsonImportSchema, JsonConcept, JsonVariant, JsonMetadata, RecallConcept, RecallVariant, RecallSessionCard
+    JsonImportSchema, JsonConcept, JsonVariant, JsonMetadata, RecallConcept, RecallVariant, RecallSessionCard,
+    ReminderState
 };
 
 
@@ -199,7 +200,42 @@ async fn run_migrations(pool: &SqlitePool) -> Result<(), String> {
         ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
     }
 
-    
+    if version < 4 {
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_type TEXT NOT NULL,
+                occurred_at INTEGER NOT NULL,        -- Unix epoch milliseconds
+                local_date TEXT NOT NULL,            -- YYYY-MM-DD in user local timezone
+                reference_id TEXT,
+                fsrs_grade INTEGER,
+                metadata TEXT,
+                UNIQUE(event_type, reference_id)     -- Enforces strict idempotency
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_activity_time ON activity_log(occurred_at);
+            CREATE INDEX IF NOT EXISTS idx_activity_local_date ON activity_log(local_date);
+
+            PRAGMA user_version = 4;"
+        ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    if version < 5 {
+        sqlx::query(
+            "ALTER TABLE settings ADD COLUMN reminder_state_type TEXT NOT NULL DEFAULT 'Active';
+             ALTER TABLE settings ADD COLUMN paused_until TEXT;
+             PRAGMA user_version = 5;"
+        ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    if version < 6 {
+        sqlx::query(
+            "ALTER TABLE settings ADD COLUMN daily_prompt TEXT NOT NULL DEFAULT 'Have you read the book of king?';
+             ALTER TABLE settings ADD COLUMN daily_prompt_enabled INTEGER NOT NULL DEFAULT 0;
+             PRAGMA user_version = 6;"
+        ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -222,16 +258,17 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
         .unwrap_or(0);
 
     if count == 0 {
-        // 1. Settings
         sqlx::query(
-            "INSERT INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start)
-             VALUES (1, ?, ?, ?, ?, ?)"
+            "INSERT INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled)
+             VALUES (1, ?, ?, ?, ?, ?, ?, ?)"
         )
         .bind(config.settings.micro_break_interval_mins as i64)
         .bind(config.settings.active_break_interval_mins as i64)
         .bind(config.settings.micro_break_duration_secs as i64)
         .bind(config.settings.active_break_duration_secs as i64)
         .bind(if config.settings.run_at_start { 1 } else { 0 })
+        .bind(&config.settings.daily_prompt)
+        .bind(if config.settings.daily_prompt_enabled { 1 } else { 0 })
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
@@ -371,23 +408,74 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
 }
 
 pub async fn load_settings(pool: &SqlitePool) -> Result<Settings, String> {
-    let row = sqlx::query("SELECT micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start FROM settings WHERE id = 1")
+    let row = sqlx::query("SELECT micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled FROM settings WHERE id = 1")
         .fetch_optional(pool)
         .await
         .map_err(|e| e.to_string())?;
 
     if let Some(r) = row {
         let run_at_start_int: i32 = r.get("run_at_start");
+        let daily_prompt_enabled_int: i32 = r.get("daily_prompt_enabled");
         Ok(Settings {
             micro_break_interval_mins: r.get::<i64, _>("micro_break_interval_mins") as u64,
             active_break_interval_mins: r.get::<i64, _>("active_break_interval_mins") as u64,
             micro_break_duration_secs: r.get::<i64, _>("micro_break_duration_secs") as u64,
             active_break_duration_secs: r.get::<i64, _>("active_break_duration_secs") as u64,
             run_at_start: run_at_start_int != 0,
+            daily_prompt: r.get::<String, _>("daily_prompt"),
+            daily_prompt_enabled: daily_prompt_enabled_int != 0,
         })
     } else {
         Ok(AppConfig::default().settings)
     }
+}
+
+pub async fn load_reminder_state(pool: &SqlitePool) -> Result<ReminderState, String> {
+    let row = sqlx::query("SELECT reminder_state_type, paused_until FROM settings WHERE id = 1")
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(r) = row {
+        let state_type: String = r.get("reminder_state_type");
+        match state_type.as_str() {
+            "Active" => Ok(ReminderState::Active),
+            "PausedManual" => Ok(ReminderState::PausedManual),
+            "PausedUntil" => {
+                let paused_until_str: Option<String> = r.get("paused_until");
+                if let Some(s) = paused_until_str {
+                    if let Ok(dt) = DateTime::parse_from_rfc3339(&s) {
+                        return Ok(ReminderState::PausedUntil(dt.with_timezone(&Utc)));
+                    }
+                }
+                Ok(ReminderState::Active)
+            }
+            "PausedUntilRestart" => {
+                Ok(ReminderState::Active)
+            }
+            _ => Ok(ReminderState::Active),
+        }
+    } else {
+        Ok(ReminderState::Active)
+    }
+}
+
+pub async fn save_reminder_state(pool: &SqlitePool, state: &ReminderState) -> Result<(), String> {
+    let (state_type, paused_until) = match state {
+        ReminderState::Active => ("Active", None),
+        ReminderState::PausedManual => ("PausedManual", None),
+        ReminderState::PausedUntil(dt) => ("PausedUntil", Some(dt.to_rfc3339())),
+        ReminderState::PausedUntilRestart => ("PausedUntilRestart", None),
+    };
+
+    sqlx::query("UPDATE settings SET reminder_state_type = ?, paused_until = ? WHERE id = 1")
+        .bind(state_type)
+        .bind(paused_until)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 
@@ -443,7 +531,7 @@ fn deep_merge(a: &mut Value, b: Value) {
     }
 }
 
-pub async fn update_variant_srs(pool: &SqlitePool, variant_id: &str, rating: u32) -> Result<(), String> {
+pub async fn update_variant_srs(pool: &SqlitePool, variant_id: &str, rating: u32, reference_id: Option<&str>) -> Result<(), String> {
     let row = sqlx::query(
         "SELECT due_date, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review
          FROM recall_variants WHERE variant_id = ?"
@@ -509,6 +597,17 @@ pub async fn update_variant_srs(pool: &SqlitePool, variant_id: &str, rating: u32
         .execute(pool)
         .await
         .map_err(|e| e.to_string())?;
+
+        // Log FSRS review event
+        let ref_id_str;
+        let ref_id = match reference_id {
+            Some(id) => id,
+            None => {
+                ref_id_str = format!("fsrs-{}-{}", variant_id, chrono::Utc::now().timestamp_millis());
+                &ref_id_str
+            }
+        };
+        log_event(pool, "fsrs_review", Some(ref_id), Some(rating as i32), Some(variant_id)).await?;
     }
     Ok(())
 }
@@ -813,12 +912,14 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // 1. Settings
-    sqlx::query("INSERT OR REPLACE INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start) VALUES (1, ?, ?, ?, ?, ?)")
+    sqlx::query("INSERT OR REPLACE INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled) VALUES (1, ?, ?, ?, ?, ?, ?, ?)")
         .bind(config.settings.micro_break_interval_mins as i64)
         .bind(config.settings.active_break_interval_mins as i64)
         .bind(config.settings.micro_break_duration_secs as i64)
         .bind(config.settings.active_break_duration_secs as i64)
         .bind(if config.settings.run_at_start { 1 } else { 0 })
+        .bind(&config.settings.daily_prompt)
+        .bind(if config.settings.daily_prompt_enabled { 1 } else { 0 })
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
@@ -1215,6 +1316,235 @@ pub async fn get_due_recall_card(pool: &SqlitePool) -> Result<Option<RecallSessi
     }
 }
 
+pub async fn log_event(
+    pool: &SqlitePool,
+    event_type: &str,
+    reference_id: Option<&str>,
+    fsrs_grade: Option<i32>,
+    metadata: Option<&str>,
+) -> Result<(), String> {
+    let occurred_at = chrono::Utc::now().timestamp_millis();
+    let local_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    sqlx::query(
+        "INSERT OR IGNORE INTO activity_log (event_type, occurred_at, local_date, reference_id, fsrs_grade, metadata)
+         VALUES (?, ?, ?, ?, ?, ?)"
+    )
+    .bind(event_type)
+    .bind(occurred_at)
+    .bind(&local_date)
+    .bind(reference_id)
+    .bind(fsrs_grade)
+    .bind(metadata)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+fn calculate_streaks(dates: &[String], today: chrono::NaiveDate) -> (i64, i64) {
+    if dates.is_empty() {
+        return (0, 0);
+    }
+
+    use chrono::NaiveDate;
+    let mut parsed_dates: Vec<NaiveDate> = dates
+        .iter()
+        .filter_map(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+        .collect();
+    
+    parsed_dates.sort();
+    parsed_dates.dedup();
+
+    if parsed_dates.is_empty() {
+        return (0, 0);
+    }
+
+    let mut longest_streak = 1;
+    let mut temp_streak = 1;
+
+    for i in 1..parsed_dates.len() {
+        let prev = parsed_dates[i - 1];
+        let curr = parsed_dates[i];
+        let diff = (curr - prev).num_days();
+
+        if diff == 1 {
+            temp_streak += 1;
+        } else if diff > 1 {
+            temp_streak = 1;
+        }
+        if temp_streak > longest_streak {
+            longest_streak = temp_streak;
+        }
+    }
+
+    let last_date = parsed_dates.last().unwrap();
+    let diff_from_today = (today - *last_date).num_days();
+
+    let current_streak = if diff_from_today == 0 || diff_from_today == 1 {
+        let mut streak = 1;
+        for i in (1..parsed_dates.len()).rev() {
+            let prev = parsed_dates[i - 1];
+            let curr = parsed_dates[i];
+            if (curr - prev).num_days() == 1 {
+                streak += 1;
+            } else {
+                break;
+            }
+        }
+        streak
+    } else {
+        0
+    };
+
+    (current_streak, longest_streak)
+}
+
+pub async fn get_statistics(pool: &SqlitePool) -> Result<crate::core::models::StatisticsPayload, String> {
+    use crate::core::models::{StatisticsPayload, StatCounters, HeatmapDay, FsrsBreakdown, RecentExercise, RecentCheckin};
+
+    let total_sessions: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM activity_log WHERE event_type = 'session_completed'"
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let total_notes_recalled: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM activity_log WHERE event_type = 'fsrs_review'"
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let current_year = chrono::Local::now().format("%Y").to_string();
+    let year_pattern = format!("{}-%", current_year);
+    let active_days_this_year: i64 = sqlx::query_scalar(
+        "SELECT COUNT(DISTINCT local_date) FROM activity_log WHERE local_date LIKE ?"
+    )
+    .bind(&year_pattern)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let rows = sqlx::query("SELECT DISTINCT local_date FROM activity_log ORDER BY local_date ASC")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    let dates: Vec<String> = rows.iter().map(|r| r.get::<String, _>("local_date")).collect();
+    let today = chrono::Local::now().date_naive();
+    let (current_streak, longest_streak) = calculate_streaks(&dates, today);
+
+    let heatmap_rows = sqlx::query(
+        "SELECT local_date, COUNT(*) as count FROM activity_log GROUP BY local_date ORDER BY local_date ASC"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let heatmap: Vec<HeatmapDay> = heatmap_rows.iter().map(|r| {
+        HeatmapDay {
+            date: r.get("local_date"),
+            count: r.get::<i64, _>("count"),
+        }
+    }).collect();
+
+    let again_cnt: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM activity_log WHERE event_type = 'fsrs_review' AND fsrs_grade = 1")
+        .fetch_one(pool).await.map_err(|e| e.to_string())?;
+    let hard_cnt: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM activity_log WHERE event_type = 'fsrs_review' AND fsrs_grade = 2")
+        .fetch_one(pool).await.map_err(|e| e.to_string())?;
+    let good_cnt: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM activity_log WHERE event_type = 'fsrs_review' AND fsrs_grade = 3")
+        .fetch_one(pool).await.map_err(|e| e.to_string())?;
+    let easy_cnt: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM activity_log WHERE event_type = 'fsrs_review' AND fsrs_grade = 4")
+        .fetch_one(pool).await.map_err(|e| e.to_string())?;
+
+    let fsrs_breakdown = FsrsBreakdown {
+        again: again_cnt,
+        hard: hard_cnt,
+        good: good_cnt,
+        easy: easy_cnt,
+    };
+
+    let exercise_rows = sqlx::query(
+        "SELECT metadata as exercise_id, occurred_at FROM activity_log 
+         WHERE event_type = 'exercise_completed' AND metadata IS NOT NULL 
+         ORDER BY occurred_at DESC LIMIT 20"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let recent_exercises: Vec<RecentExercise> = exercise_rows.iter().map(|r| {
+        RecentExercise {
+            exercise_id: r.get("exercise_id"),
+            completed_at: r.get("occurred_at"),
+        }
+    }).collect();
+
+    let checkin_rows = sqlx::query(
+        "SELECT local_date, metadata FROM activity_log 
+         WHERE event_type = 'daily_question' 
+         ORDER BY occurred_at DESC LIMIT 10"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let recent_checkins: Vec<RecentCheckin> = checkin_rows.iter().map(|r| {
+        let metadata_str: String = r.get("metadata");
+        let val: serde_json::Value = serde_json::from_str(&metadata_str).unwrap_or(serde_json::Value::Null);
+        let response = val.get("response").and_then(|v| v.as_str()).unwrap_or("unknown").to_string();
+        RecentCheckin {
+            local_date: r.get("local_date"),
+            response,
+        }
+    }).collect();
+
+    Ok(StatisticsPayload {
+        counters: StatCounters {
+            total_sessions,
+            total_notes_recalled,
+            current_streak,
+            longest_streak,
+            active_days_this_year,
+        },
+        heatmap,
+        fsrs_breakdown,
+        recent_exercises,
+        recent_checkins,
+    })
+}
+
+pub async fn check_daily_question_answered(pool: &SqlitePool, local_date: &str) -> Result<bool, String> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM activity_log WHERE event_type = 'daily_question' AND reference_id = ?")
+        .bind(local_date)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(count > 0)
+}
+
+pub async fn insert_daily_question_response(pool: &SqlitePool, local_date: &str, response: &str) -> Result<(), String> {
+    let occurred_at = chrono::Utc::now().timestamp_millis();
+    let metadata = serde_json::json!({ "response": response }).to_string();
+    
+    sqlx::query(
+        "INSERT OR IGNORE INTO activity_log (event_type, occurred_at, local_date, reference_id, metadata)
+         VALUES ('daily_question', ?, ?, ?, ?)"
+    )
+    .bind(occurred_at)
+    .bind(local_date)
+    .bind(local_date)
+    .bind(metadata)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1246,6 +1576,110 @@ mod tests {
         assert_eq!(loaded.settings.micro_break_interval_mins, default_config.settings.micro_break_interval_mins);
         assert_eq!(loaded.settings.active_break_interval_mins, default_config.settings.active_break_interval_mins);
         assert_eq!(loaded.stretches.len(), default_config.stretches.len());
+
+        // Cleanup
+        let _ = std::fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn test_calculate_streaks_logic() {
+        use chrono::NaiveDate;
+        
+        let today = NaiveDate::from_ymd_opt(2026, 8, 14).unwrap();
+        
+        // Case 1: Empty
+        assert_eq!(calculate_streaks(&[], today), (0, 0));
+        
+        // Case 2: Consecutive days including today
+        let dates1 = vec![
+            "2026-08-12".to_string(),
+            "2026-08-13".to_string(),
+            "2026-08-14".to_string(),
+        ];
+        assert_eq!(calculate_streaks(&dates1, today), (3, 3));
+        
+        // Case 3: Consecutive days ending yesterday
+        let dates2 = vec![
+            "2026-08-12".to_string(),
+            "2026-08-13".to_string(),
+        ];
+        assert_eq!(calculate_streaks(&dates2, today), (2, 2));
+
+        // Case 4: Gap and island
+        let dates3 = vec![
+            "2026-08-08".to_string(),
+            "2026-08-09".to_string(),
+            "2026-08-10".to_string(),
+            "2026-08-13".to_string(),
+            "2026-08-14".to_string(),
+        ];
+        assert_eq!(calculate_streaks(&dates3, today), (2, 3));
+
+        // Case 5: Month/year boundary
+        let today_new_year = NaiveDate::from_ymd_opt(2027, 1, 1).unwrap();
+        let dates4 = vec![
+            "2026-12-30".to_string(),
+            "2026-12-31".to_string(),
+            "2027-01-01".to_string(),
+        ];
+        assert_eq!(calculate_streaks(&dates4, today_new_year), (3, 3));
+    }
+
+    #[tokio::test]
+    async fn test_event_logging_and_deduplication() {
+        let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+        let temp_dir = std::env::temp_dir().join(format!("workout_test_log_{}", timestamp));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        
+        let pool = init_db(&temp_dir).await.unwrap();
+
+        // Log one event
+        log_event(&pool, "session_completed", Some("session-1"), None, None).await.unwrap();
+
+        // Log the same event again (should be ignored by UNIQUE constraint)
+        log_event(&pool, "session_completed", Some("session-1"), None, None).await.unwrap();
+
+        // Check count of session_completed in DB
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM activity_log WHERE event_type = 'session_completed'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(count, 1);
+
+        // Cleanup
+        let _ = std::fs::remove_dir_all(temp_dir);
+    }
+
+    #[tokio::test]
+    async fn test_statistics_aggregation() {
+        let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+        let temp_dir = std::env::temp_dir().join(format!("workout_test_stats_{}", timestamp));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        
+        let pool = init_db(&temp_dir).await.unwrap();
+
+        // Log session
+        log_event(&pool, "session_completed", Some("s-1"), None, None).await.unwrap();
+
+        // Log exercise
+        log_event(&pool, "exercise_completed", Some("s-1-ex"), None, Some("Hamstring Stretch")).await.unwrap();
+
+        // Log FSRS review with grades
+        log_event(&pool, "fsrs_review", Some("f-1"), Some(3), Some("card-1")).await.unwrap(); // Good
+        log_event(&pool, "fsrs_review", Some("f-2"), Some(4), Some("card-1")).await.unwrap(); // Easy
+        log_event(&pool, "fsrs_review", Some("f-3"), Some(1), Some("card-2")).await.unwrap(); // Again
+
+        let stats = get_statistics(&pool).await.unwrap();
+
+        assert_eq!(stats.counters.total_sessions, 1);
+        assert_eq!(stats.counters.total_notes_recalled, 3);
+        assert_eq!(stats.fsrs_breakdown.good, 1);
+        assert_eq!(stats.fsrs_breakdown.easy, 1);
+        assert_eq!(stats.fsrs_breakdown.again, 1);
+        assert_eq!(stats.fsrs_breakdown.hard, 0);
+
+        assert_eq!(stats.recent_exercises.len(), 1);
+        assert_eq!(stats.recent_exercises[0].exercise_id, "Hamstring Stretch");
 
         // Cleanup
         let _ = std::fs::remove_dir_all(temp_dir);

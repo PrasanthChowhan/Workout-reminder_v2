@@ -8,6 +8,7 @@ import PhysicalResetCard from "./components/PhysicalResetCard";
 import ActiveRecallCard from "./components/ActiveRecallCard";
 import SkipReasonModal from "./components/SkipReasonModal";
 import SettingsModal from "./components/settings/SettingsModal";
+import DailyAccountabilityModal from "./components/DailyAccountabilityModal";
 import ToastContainer from "./components/Toast";
 import { SettingsIcon, CheckIcon } from "./components/ui/Icons";
 import { DevIssueReporter } from "tauri-plugin-react-issue-reporter";
@@ -25,10 +26,16 @@ export default function App() {
   const [sessionCard, setSessionCard] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [appConfig, setAppConfig] = useState(null);
+  const [breakId, setBreakId] = useState("");
 
   // Modal visibility states
   const [showSkipReasonModal, setShowSkipReasonModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [dailyCheckin, setDailyCheckin] = useState({
+    enabled: false,
+    answeredToday: false,
+    question: ""
+  });
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
@@ -46,9 +53,19 @@ export default function App() {
     return () => window.removeEventListener("app-toast", handleToastEvent);
   }, []);
 
+  const checkDailyQuestion = async () => {
+    try {
+      const status = await invoke("check_daily_question_status");
+      setDailyCheckin(status);
+    } catch (e) {
+      console.error("Failed to check daily question status", e);
+    }
+  };
+
   // Load configuration and default first break data on mount
   useEffect(() => {
     const init = async () => {
+      setBreakId(crypto.randomUUID());
       try {
         const { config, session_data } = await invoke("get_initial_break_data", { breakType: "active" });
         setAppConfig(config);
@@ -59,6 +76,7 @@ export default function App() {
       } catch (e) {
         console.error("Failed to load initial config/data", e);
       }
+      await checkDailyQuestion();
     };
 
     init();
@@ -71,9 +89,17 @@ export default function App() {
       setShowSettings(true);
     });
 
+    const handleFocus = () => {
+      checkDailyQuestion();
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
     return () => {
       unlistenStartBreak();
       unlistenOpenSettings();
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, []);
 
@@ -98,6 +124,7 @@ export default function App() {
 
   const triggerBreak = async () => {
     setShowAnswer(false);
+    setBreakId(crypto.randomUUID());
     try {
       const { config, session_data } = await invoke("get_initial_break_data", { breakType: "active" });
       setAppConfig(config);
@@ -111,7 +138,11 @@ export default function App() {
 
   const handleCompleteBreak = async (action) => {
     try {
-      await invoke("complete_break", { action });
+      await invoke("complete_break", { 
+        action, 
+        referenceId: breakId, 
+        exerciseId: action === "done" ? sessionStretch?.name : null 
+      });
       setShowAnswer(false);
       // Pre-load next break contents
       triggerBreak();
@@ -147,7 +178,7 @@ export default function App() {
     const ratingsMap = { 1: "Again", 2: "Hard", 3: "Good", 4: "Easy" };
     const ratingName = ratingsMap[rating] || "Submitted";
     try {
-      await invoke("update_variant_srs", { variantId, rating });
+      await invoke("update_variant_srs", { variantId, rating, referenceId: `${breakId}-card` });
       toast.success(`Card rated: ${ratingName}`);
     } catch (err) {
       console.error("Failed to rate card", err);
@@ -221,6 +252,15 @@ export default function App() {
           onCancel={() => setShowSettings(false)}
         />
       )}
+
+      {/* Daily Accountability Check-in Modal */}
+      <DailyAccountabilityModal 
+        isOpen={dailyCheckin.enabled && !dailyCheckin.answeredToday}
+        questionText={dailyCheckin.question}
+        onAnswered={() => {
+          setDailyCheckin((prev) => ({ ...prev, answeredToday: true }));
+        }}
+      />
 
       {/* Skip Reason Modal Popup */}
       {showSkipReasonModal && (

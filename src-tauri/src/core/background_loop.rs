@@ -19,7 +19,50 @@ pub fn start_timer_engine(app_handle: AppHandle) {
                 *paused
             };
 
-            if is_paused {
+            let mut reminder_state = {
+                let rs = state.reminder_state.lock().unwrap_or_else(|e| e.into_inner());
+                *rs
+            };
+
+            let mut just_expired = false;
+
+            if let crate::core::models::ReminderState::PausedUntil(until) = reminder_state {
+                if chrono::Utc::now() >= until {
+                    reminder_state = crate::core::models::ReminderState::Active;
+                    just_expired = true;
+                    
+                    {
+                        let mut rs = state.reminder_state.lock().unwrap_or_else(|e| e.into_inner());
+                        *rs = reminder_state;
+                    }
+                    {
+                        let mut paused = state.timer_paused.lock().unwrap_or_else(|e| e.into_inner());
+                        *paused = false;
+                    }
+                    {
+                        let mut micro = state.micro_countdown.lock().unwrap_or_else(|e| e.into_inner());
+                        let mut active = state.active_countdown.lock().unwrap_or_else(|e| e.into_inner());
+                        *micro = 0;
+                        *active = 0;
+                    }
+
+                    let pool_clone = state.db_pool.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let _ = crate::utils::db::save_reminder_state(&pool_clone, &crate::core::models::ReminderState::Active).await;
+                    });
+                }
+            }
+
+            let is_currently_paused = if just_expired {
+                false
+            } else {
+                match reminder_state {
+                    crate::core::models::ReminderState::Active => is_paused,
+                    _ => true,
+                }
+            };
+
+            if is_currently_paused {
                 continue;
             }
 

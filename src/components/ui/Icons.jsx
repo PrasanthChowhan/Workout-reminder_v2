@@ -139,3 +139,10 @@ export const StretchesIcon = ({ className, width = 18, height = 18, strokeWidth 
     <path d="M7 12h10" />
   </svg>
 );
+
+export const ProfileIcon = ({ className, width = 24, height = 24, strokeWidth = 2, ...props }) => (
+  <svg fill="none" height={height} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} viewBox="0 0 24 24" width={width} xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+    <circle cx="12" cy="7" r="4"></circle>
+  </svg>
+);

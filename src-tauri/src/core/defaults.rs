@@ -9,6 +9,8 @@ impl Default for AppConfig {
                 micro_break_duration_secs: 20,
                 active_break_duration_secs: 300, // 5 minutes
                 run_at_start: false,
+                daily_prompt: "Have you read the book of king?".to_string(),
+                daily_prompt_enabled: false,
             },
             reflection_prompts: vec![
                 "What is the core problem you are solving right now? Is there a simpler way?".to_string(),
@@ -328,3 +330,132 @@ impl AppConfig {
         }
     }
 }
+
+pub const DEFAULT_RECALL_TRACK: &str = r#"{
+  "metadata": {
+    "source_title": "What I Learned From Being Around The Top 0.01%",
+    "source_url": "https://youtu.be/fymfTFftN-g"
+  },
+  "concepts": [
+    {
+      "concept_id": "alternative-currencies",
+      "concept_title": "Creating Alternative Currencies",
+      "tags": ["Resource Acquisition", "Negotiation", "Leverage"],
+      "variants": [
+        {
+          "variant_id": "alt-curr-beginner",
+          "difficulty": "beginner",
+          "scenario_prose": "You are building a complex SaaS tool and your bank account just hit zero. You desperately need a senior full-stack developer to finish the MVP for launch next month, but they normally charge $150k/year. You have no cash.",
+          "scenario_code_snippet": null,
+          "hint": "What digital asset do you own that could be highly valuable to them if the company succeeds?",
+          "target_answer_prose": "Company equity or shares",
+          "target_answer_code": null,
+          "common_trap": "Taking out high-interest personal loans.",
+          "explanation": "Billionaires financialize the value of their company and use shares as a currency to acquire resources when cash is low."
+        },
+        {
+          "variant_id": "alt-curr-intermediate",
+          "difficulty": "intermediate",
+          "scenario_prose": "Your industry newsletter has 250,000 highly engaged enterprise tech subscribers. You want to acquire a struggling but functional analytics tool valued at $50,000 to offer your readers. Your business is currently cash-poor, but the tool's creator desperately wants user adoption.",
+          "scenario_code_snippet": null,
+          "hint": "You possess a distribution channel that the creator lacks.",
+          "target_answer_prose": "Email list distribution access",
+          "target_answer_code": null,
+          "common_trap": "Offering to pay them back in installments from future revenue.",
+          "explanation": "A massive, targeted distribution channel (like a large email list) acts as an alternative currency to acquire assets from those who need exposure."
+        },
+        {
+          "variant_id": "alt-curr-advanced",
+          "difficulty": "advanced",
+          "scenario_prose": "A rising clean-tech startup is struggling to close their Series A funding round because venture capitalists do not trust their young, unproven leadership team. You have a 20-year flawless, highly respected track record in clean-tech. You want a 5% stake in their company without investing your own capital.",
+          "scenario_code_snippet": null,
+          "hint": "Your mere presence on their roster provides them with something they lack to secure the VC funding.",
+          "target_answer_prose": "Reputation and brand credibility",
+          "target_answer_code": null,
+          "common_trap": "Waiting until they get funded and asking for a high salary.",
+          "explanation": "A powerful personal brand and reputation can be traded as currency for equity, as it fundamentally de-risks the venture for other investors."
+        }
+      ]
+    },
+    {
+      "concept_id": "reverse-engineering-future",
+      "concept_title": "Reverse Engineering the Future",
+      "tags": ["Strategic Planning", "Vision", "Goal Setting"],
+      "variants": [
+        {
+          "variant_id": "rev-eng-beginner",
+          "difficulty": "beginner",
+          "scenario_prose": "Your marketing agency wants to hit $2M ARR in three years targeting enterprise clients. To build the strategic plan, your co-founder suggests taking last year's $500k small-business client roster, projecting a 20% growth rate, and brainstorming three new lead-gen tactics to try next week.",
+          "scenario_code_snippet": null,
+          "hint": "Your co-founder is dragging the limitations of yesterday into the plans for tomorrow.",
+          "target_answer_prose": "Reverse engineer the future",
+          "target_answer_code": null,
+          "common_trap": "Forward engineering the past (iterating on last year).",
+          "explanation": "To achieve exponential leaps, you must define the exact future state (e.g., the $2M enterprise model) and work backward, rather than building incrementally from past results."
+        },
+        {
+          "variant_id": "rev-eng-intermediate",
+          "difficulty": "intermediate",
+          "scenario_prose": "Your logistics startup secured funding to expand nationally over the next 24 months. The current warehouse manager is overwhelmed by local volume. You sit down to write a job description for a warehouse assistant to help him survive next month's order spike.",
+          "scenario_code_snippet": null,
+          "hint": "Does an assistant for a local warehouse manager align with a national operation 24 months from now?",
+          "target_answer_prose": "Hire for the future vision",
+          "target_answer_code": null,
+          "common_trap": "Hiring a patch for today's immediate pain point.",
+          "explanation": "Planning backwards from the future state dictates that you should be hiring the executive who can run the national network, not a band-aid for today's local bottleneck."
+        },
+        {
+          "variant_id": "rev-eng-advanced",
+          "difficulty": "advanced",
+          "scenario_prose": "You are pitching venture capitalists for a $5M seed round. Your deck highlights your current tech stack, lists your 4 local customers, and details how the $5M will let you hire two more developers to slowly expand to a second city. The investors look incredibly bored and are checking their phones.",
+          "scenario_code_snippet": null,
+          "hint": "Investors don't fund where you are; they fund where you are going.",
+          "target_answer_prose": "Pitch the end-state vision",
+          "target_answer_code": null,
+          "common_trap": "Over-explaining current operational metrics.",
+          "explanation": "Top performers enroll people (investors, talent) by vividly storytelling the massive future state they are reverse-engineering, ignoring current constraints."
+        }
+      ]
+    },
+    {
+      "concept_id": "creating-an-enemy",
+      "concept_title": "Leveraging the Enemy for Alignment",
+      "tags": ["Leadership", "Motivation", "Team Building"],
+      "variants": [
+        {
+          "variant_id": "enemy-beginner",
+          "difficulty": "beginner",
+          "scenario_prose": "You run a high-end independent gym. Morale is dipping, and trainers are doing the bare minimum. You've tried giving bonuses and putting up 'employee of the month' plaques, but nothing has changed the lethargic culture. A massive, soulless commercial gym chain just opened across the street.",
+          "scenario_code_snippet": null,
+          "hint": "Positive reinforcement isn't working; try tapping into the darker side of human motivation.",
+          "target_answer_prose": "Make the chain the enemy",
+          "target_answer_code": null,
+          "common_trap": "Increasing the financial bonuses for trainers.",
+          "explanation": "Humans are highly motivated by the desire to vanquish an enemy; defining a clear external threat unites the team and drives urgency."
+        },
+        {
+          "variant_id": "enemy-intermediate",
+          "difficulty": "intermediate",
+          "scenario_prose": "Your engineering team is building a new decentralized messaging protocol. They believe in the mission of 'connecting the world securely,' but feature delivery has slowed to a crawl. They are comfortable and lack urgency. A heavily funded, highly arrogant rival company just announced a beta launch for a competing protocol.",
+          "scenario_code_snippet": null,
+          "hint": "The 'carrot' of a secure world isn't enough to make them code faster.",
+          "target_answer_prose": "Villainize the rival company",
+          "target_answer_code": null,
+          "common_trap": "Reiterating the positive mission statement in an all-hands meeting.",
+          "explanation": "Moving towards a positive vision uses about 30% of human motivation; running away from or fighting a tangible enemy activates the other 70%."
+        },
+        {
+          "variant_id": "enemy-advanced",
+          "difficulty": "advanced",
+          "scenario_prose": "You are launching an agile software initiative within a massive, slow-moving corporate bank. The executives verbally support the idea, but middle management is passively resisting by delaying approvals and citing 'standard operating procedures.' There is no direct external competitor to point to in this specific internal context.",
+          "scenario_code_snippet": null,
+          "hint": "If you don't have a literal corporate rival, what abstract concept is killing your initiative?",
+          "target_answer_prose": "Make bureaucracy the enemy",
+          "target_answer_code": null,
+          "common_trap": "Trying to appease middle management by slowing down your timeline.",
+          "explanation": "When an external rival doesn't exist, highly effective leaders personify the status-quo, systemic inefficiency, or a broken system as the 'villain' to unite their team against."
+        }
+      ]
+    }
+  ]
+}"#;

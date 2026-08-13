@@ -5,7 +5,8 @@ import PromptsTab from "./PromptsTab";
 import GeneralTab from "./GeneralTab";
 import TimersTab from "./TimersTab";
 import AboutTab from "./AboutTab";
-import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight } from "../ui/Icons";
+import Progress from "../../pages/Progress";
+import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight, ProfileIcon } from "../ui/Icons";
 import styles from "./SettingsModal.module.css";
 
 const tabs = [
@@ -18,6 +19,11 @@ const tabs = [
     id: "timers",
     label: "Timers",
     icon: <TimersIcon width={18} height={18} />
+  },
+  {
+    id: "progress",
+    label: "Progress Tracker",
+    icon: <ProfileIcon width={18} height={18} />
   },
   {
     id: "tracks",
@@ -74,6 +80,8 @@ export default function SettingsModal({ config, onSave, onCancel }) {
     micro_break_duration_secs: config?.settings?.micro_break_duration_secs ?? 20,
     active_break_duration_mins: Math.round((config?.settings?.active_break_duration_secs ?? 300) / 60),
     run_at_start: config?.settings?.run_at_start ?? false,
+    daily_prompt: config?.settings?.daily_prompt ?? "Have you read the book of king?",
+    daily_prompt_enabled: config?.settings?.daily_prompt_enabled ?? false,
   });
 
   const [editableCards, setEditableCards] = useState(config?.active_recall_cards || []);
@@ -106,6 +114,8 @@ export default function SettingsModal({ config, onSave, onCancel }) {
         micro_break_duration_secs,
         active_break_duration_secs,
         run_at_start: !!settingsForm.run_at_start,
+        daily_prompt: settingsForm.daily_prompt,
+        daily_prompt_enabled: !!settingsForm.daily_prompt_enabled,
       },
       reflection_prompts: editablePrompts,
       stretches: editableStretches,
@@ -161,12 +171,16 @@ export default function SettingsModal({ config, onSave, onCancel }) {
               />
             )}
 
-            {activeTab === "timers" && (
+             {activeTab === "timers" && (
               <TimersTab
                 settingsForm={settingsForm}
                 setSettingsForm={setSettingsForm}
                 parentStyles={styles}
               />
+            )}
+
+            {activeTab === "progress" && (
+              <Progress />
             )}
 
             {activeTab === "tracks" && (
@@ -197,14 +211,16 @@ export default function SettingsModal({ config, onSave, onCancel }) {
             )}
           </div>
           
-          <div className={styles['settings-footer']}>
-            <button type="button" className={styles['settings-cancel-btn']} onClick={onCancel}>
-              Cancel
-            </button>
-            <button type="submit" className={styles['settings-save-btn']}>
-              Save Changes
-            </button>
-          </div>
+          {activeTab !== "progress" && (
+            <div className={styles['settings-footer']}>
+              <button type="button" className={styles['settings-cancel-btn']} onClick={onCancel}>
+                Cancel
+              </button>
+              <button type="submit" className={styles['settings-save-btn']}>
+                Save Changes
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

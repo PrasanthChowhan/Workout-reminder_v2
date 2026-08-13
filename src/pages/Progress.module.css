@@ -1,0 +1,164 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0.5rem 0;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-off-white);
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.topRow {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.bottomRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .topRow, .bottomRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statBox {
+  display: flex;
+  width: 100%;
+}
+
+.streakBox {
+  display: flex;
+  width: 100%;
+}
+
+.heatmapBox {
+  width: 100%;
+}
+
+.halfBox {
+  display: flex;
+  width: 100%;
+}
+
+/* Loading & Error States */
+.loadingContainer, .errorContainer, .emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: var(--color-card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-default);
+  margin: auto;
+  max-width: 600px;
+  text-align: center;
+  margin-top: 4rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 122, 69, 0.1);
+  border-top-color: var(--color-brand-orange);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingText {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.errorText {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  color: #ffb4ab;
+  margin-bottom: 1.5rem;
+}
+
+.retryBtn {
+  background-color: var(--color-brand-orange);
+  color: #000;
+  border: none;
+  padding: 8px 24px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.retryBtn:hover {
+  opacity: 0.9;
+}
+
+/* Empty State */
+.emptyIllustration {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-off-white);
+  margin-bottom: 0.5rem;
+}
+
+.emptyText {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.emptyTip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #00e639;
+  background-color: rgba(0, 230, 57, 0.05);
+  border: 1px solid rgba(0, 230, 57, 0.15);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+}

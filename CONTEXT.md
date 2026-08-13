@@ -12,6 +12,7 @@ A lightweight native desktop application (**Tauri + Rust + React + Vanilla CSS M
   - **Left**: Guided stretching and posture adjustment routines (driven by track configurations).
   - **Right**: Active Recall Flashcards (questions with toggleable answers).
 - **Refocus Break**: On-demand overlay triggered via the system-wide shortcut **`Ctrl + Alt + R`** or the system tray. A 5-minute rubber-ducking dashboard featuring reflection prompts and a markdown text log for journaling.
+- **Daily Accountability Check-in**: An optional, user-enabled daily check-in that blocks application access upon startup/rollover until a customizable Yes/No question is answered. Spec details are documented in [Daily Accountability Check-in](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/behind-the-scenes/daily-accountability.md).
 
 ### 2. State Machine Diagram
 

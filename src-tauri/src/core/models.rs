@@ -201,6 +201,15 @@ pub struct UserProgress {
 }
 
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", content = "until")]
+pub enum ReminderState {
+    Active,
+    PausedManual,
+    PausedUntil(DateTime<Utc>),
+    PausedUntilRestart,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub micro_break_interval_mins: u64,
@@ -208,6 +217,8 @@ pub struct Settings {
     pub micro_break_duration_secs: u64,
     pub active_break_duration_secs: u64,
     pub run_at_start: bool,
+    pub daily_prompt: String,
+    pub daily_prompt_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -225,6 +236,7 @@ pub struct TimerStatePayload {
     pub active_left: u64,
     pub timer_paused: bool,
     pub current_break_state: Option<String>,
+    pub reminder_state: ReminderState,
 }
 
 #[derive(Serialize)]
@@ -238,5 +250,63 @@ pub struct SessionDataPayload {
 pub struct InitialBreakDataPayload {
     pub config: AppConfig,
     pub session_data: SessionDataPayload,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StatCounters {
+    pub total_sessions: i64,
+    pub total_notes_recalled: i64,
+    pub current_streak: i64,
+    pub longest_streak: i64,
+    pub active_days_this_year: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HeatmapDay {
+    pub date: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FsrsBreakdown {
+    pub again: i64,
+    pub hard: i64,
+    pub good: i64,
+    pub easy: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentExercise {
+    pub exercise_id: String,
+    pub completed_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentCheckin {
+    pub local_date: String,
+    pub response: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StatisticsPayload {
+    pub counters: StatCounters,
+    pub heatmap: Vec<HeatmapDay>,
+    pub fsrs_breakdown: FsrsBreakdown,
+    pub recent_exercises: Vec<RecentExercise>,
+    pub recent_checkins: Vec<RecentCheckin>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DailyQuestionStatus {
+    pub enabled: bool,
+    pub answered_today: bool,
+    pub question: String,
 }
 

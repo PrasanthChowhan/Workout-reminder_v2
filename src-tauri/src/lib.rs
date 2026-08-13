@@ -58,6 +58,21 @@ pub fn run() {
                 tauri::async_runtime::block_on(async {
                     utils::db::save_app_config(&pool, &default_config).await
                 })?;
+            }
+
+            // Check if recall concepts are empty, and seed the default track
+            let is_recall_empty: i64 = tauri::async_runtime::block_on(async {
+                sqlx::query_scalar("SELECT COUNT(*) FROM recall_concepts")
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap_or(0)
+            });
+
+            if is_recall_empty == 0 {
+                let default_track: crate::core::models::JsonImportSchema = serde_json::from_str(crate::core::defaults::DEFAULT_RECALL_TRACK).unwrap();
+                tauri::async_runtime::block_on(async {
+                    utils::db::import_recall_json_to_db(&pool, default_track).await
+                })?;
             } else {
                 let levels_empty: i64 = tauri::async_runtime::block_on(async {
                     sqlx::query_scalar("SELECT COUNT(*) FROM levels")
@@ -76,12 +91,32 @@ pub fn run() {
             }
             
             // Query settings from DB
-            let settings = tauri::async_runtime::block_on(async {
-                utils::db::load_settings(&pool).await
+            let (settings, reminder_state) = tauri::async_runtime::block_on(async {
+                let s = utils::db::load_settings(&pool).await?;
+                let r = utils::db::load_reminder_state(&pool).await.unwrap_or(core::models::ReminderState::Active);
+                Ok::<(core::models::Settings, core::models::ReminderState), String>((s, r))
             })?;
 
+            // Check daily question status and show window if enabled and unanswered
+            let show_on_startup = tauri::async_runtime::block_on(async {
+                if settings.daily_prompt_enabled {
+                    let local_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+                    if let Ok(answered) = utils::db::check_daily_question_answered(&pool, &local_date).await {
+                        return !answered;
+                    }
+                }
+                false
+            });
+
+            if show_on_startup {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+
             // Manage app state
-            app.manage(core::state::AppState::new(pool, settings));
+            app.manage(core::state::AppState::new(pool, settings, reminder_state));
 
             // Set up system tray & global shortcuts on desktop
             #[cfg(desktop)]
@@ -115,7 +150,14 @@ pub fn run() {
             commands::data_cmds::get_recall_concepts,
             commands::data_cmds::update_variant_srs,
             commands::data_cmds::update_track_metadata,
-            commands::data_cmds::update_stretch_metadata
+            commands::data_cmds::update_stretch_metadata,
+            commands::data_cmds::get_statistics,
+            commands::data_cmds::check_daily_question_status,
+            commands::data_cmds::submit_daily_question_response,
+            commands::timer_cmds::snooze_for,
+            commands::timer_cmds::snooze_until_restart,
+            commands::timer_cmds::pause_indefinitely,
+            commands::timer_cmds::resume_reminders
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
