@@ -39,6 +39,8 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Kodon ${{ github.ref_name }}'
           releaseBody: 'The latest release of Kodon: The Cognitive Companion.'
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
           # Create a draft only for stable releases. Publish beta/pre-releases immediately.
           releaseDraft: ${{ !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') }}
           # Mark as prerelease if the tag contains 'beta' or 'rc'
