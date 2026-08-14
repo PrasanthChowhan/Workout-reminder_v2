@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri:dev": "tauri dev --config src-tauri/tauri.conf.dev.json",
+    "tauri:dev": "tauri dev --config src-tauri/tauri.conf.dev.json --features dev",
     "test": "vitest run",
     "update-plugin": "git -C packages/tauri-plugin-dev-issues pull origin main && npm --prefix packages/tauri-plugin-dev-issues install && npm --prefix packages/tauri-plugin-dev-issues run build && npm install"
   },

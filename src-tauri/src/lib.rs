@@ -12,7 +12,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build());
 
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "dev")]
     let builder = builder.plugin(tauri_plugin_dev_issues::init());
 
     #[cfg(desktop)]
