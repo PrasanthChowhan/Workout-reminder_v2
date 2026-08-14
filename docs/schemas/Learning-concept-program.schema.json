@@ -1,26 +1,29 @@
 {
- "metadata": {
-  "source_title": "String",
-  "source_url": "String"
- },
- "concepts": [
-  {
-   "concept_id": "String (slug format)",
-   "concept_title": "String",
-   "tags": ["String"],
-   "variants": [
+  "metadata": {
+    "source_title": "String",
+    "source_url": "String"
+  },
+  "concepts": [
     {
-     "variant_id": "String",
-     "difficulty": "String (Must be 'beginner', 'intermediate', or 'advanced')",
-     "scenario_prose": "String",
-     "scenario_code_snippet": "String or null",
-     "hint": "String",
-     "target_answer_prose": "String",
-     "target_answer_code": "String or null",
-     "common_trap": "String",
-     "explanation": "String"
+      "concept_id": "canonical lowercase kebab-case (e.g. 'reverse-engineering')",
+      "concept_title": "String (Title Case)",
+      "tags": [
+        "String"
+      ],
+      "variants": [
+        {
+          "variant_id": "<concept-id>-beginner | <concept-id>-intermediate | <concept-id>-advanced",
+          "difficulty": "beginner | intermediate | advanced",
+          "scenario_prose": "String",
+          "scenario_code_snippet": "String or null",
+          "hint": "String",
+          "target_answer_prose": "String",
+          "target_answer_code": "String or null",
+          "common_trap": "String",
+          "explanation": "String"
+        }
+      ]
     }
-   ]
-  }
- ]
+  ]
 }
+

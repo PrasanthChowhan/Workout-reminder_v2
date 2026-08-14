@@ -5,9 +5,11 @@ Your input topic/content source is: {{targetText}}
 Your primary goal is to force active problem-solving and completely eliminate "pattern matching" (where a user memorizes the wording of a question rather than the concept).
 
 ### Processing the Input:
-1. Ignore all sponsor reads, intro/outro fluff, channel promotions, and personal anecdotes.
-2. Isolate ALL fundamental, functional concepts taught in the text. 
-3. Identify the core "metadata" (e.g., Video Title and URL) if provided.
+1. Ignore sponsor reads, intro/outro fluff, channel promotions, and personal anecdotes.
+2. Identify every distinct fundamental, functional concept taught in the source.
+3. Do not merge unrelated concepts. If the source teaches 4, 7, or 12 independent concepts, generate 4, 7, or 12 concept entries accordingly.
+4. Prioritize concepts that are actionable, transferable, and useful in real-world situations.
+5. Identify the source metadata (video title and URL) when available.
 
 ### Generation Rules:
 For each concept, generate radically different "Scenario Variants" following these constraints:
