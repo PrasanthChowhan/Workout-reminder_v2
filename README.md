@@ -43,6 +43,8 @@ Fully integrated, tabbed settings console built into the overlay dashboard to ed
 
 ## 🛠️ Build & Development Commands
 
+For automated cloud builds and releases, see the [GitHub Actions Workflows Documentation](file:///E:/00_HeadQuaters/50_Projects/Workout%20reminder_v2/docs/workflows.md).
+
 This project uses a local hybrid plugin for developer issue reporting, which is git-ignored. You must clone it before installing dependencies:
 
 ```bash

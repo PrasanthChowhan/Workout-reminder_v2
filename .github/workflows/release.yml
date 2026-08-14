@@ -41,9 +41,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
-          releaseName: 'Kodon v__VERSION__'
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Kodon ${{ github.ref_name }}'
           releaseBody: 'The latest release of Kodon: The Cognitive Companion.'
-          releaseDraft: true
-          prerelease: true
+          # Create a draft only for stable releases. Publish beta/pre-releases immediately.
+          releaseDraft: ${{ !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc') }}
+          # Mark as prerelease if the tag contains 'beta' or 'rc'
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           args: ${{ matrix.platform == 'macos-latest' && '--target aarch64-apple-darwin --target x86_64-apple-darwin' || '' }}
