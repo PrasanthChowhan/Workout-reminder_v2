@@ -8,6 +8,11 @@
       "icons-dev/128x128@2x.png",
       "icons-dev/icon.icns",
       "icons-dev/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons-dev/icon.ico"
+      }
+    }
   }
 }
