@@ -75,3 +75,9 @@ pub async fn save_app_config(
     
     Ok(())
 }
+
+#[tauri::command]
+pub fn relaunch_app(app: tauri::AppHandle) {
+    app.restart();
+}
+

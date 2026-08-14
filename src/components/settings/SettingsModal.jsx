@@ -5,6 +5,7 @@ import PromptsTab from "./PromptsTab";
 import GeneralTab from "./GeneralTab";
 import TimersTab from "./TimersTab";
 import AboutTab from "./AboutTab";
+import UpdateTab from "./UpdateTab";
 import Progress from "../../pages/Progress";
 import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight, ProfileIcon } from "../ui/Icons";
 import styles from "./SettingsModal.module.css";
@@ -44,6 +45,15 @@ const tabs = [
     id: "about",
     label: "About & Legal",
     icon: <InfoIcon width={18} height={18} />
+  },
+  {
+    id: "update",
+    label: "Updates",
+    icon: (
+      <svg fill="none" height={18} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" width={18} xmlns="http://www.w3.org/2000/svg">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+      </svg>
+    )
   }
 ];
 
@@ -209,9 +219,13 @@ export default function SettingsModal({ config, onSave, onCancel }) {
             {activeTab === "about" && (
               <AboutTab parentStyles={styles} />
             )}
+
+            {activeTab === "update" && (
+              <UpdateTab parentStyles={styles} />
+            )}
           </div>
           
-          {activeTab !== "progress" && (
+          {activeTab !== "progress" && activeTab !== "update" && (
             <div className={styles['settings-footer']}>
               <button type="button" className={styles['settings-cancel-btn']} onClick={onCancel}>
                 Cancel

@@ -1,5 +1,6 @@
 mod commands;
 mod core;
+mod db;
 mod system;
 mod utils;
 
@@ -8,7 +9,8 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build());
 
     #[cfg(debug_assertions)]
     let builder = builder.plugin(tauri_plugin_dev_issues::init());
@@ -139,6 +141,7 @@ pub fn run() {
             commands::timer_cmds::complete_break,
             commands::config_cmds::get_app_config,
             commands::config_cmds::save_app_config,
+            commands::config_cmds::relaunch_app,
             commands::timer_cmds::trigger_refocus,
             commands::config_cmds::set_active_track,
             commands::config_cmds::update_track_level,

@@ -32,5 +32,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRDNDIyNTQ0Q0U2NEMxNTcKUldSWHdXVE9SQ1ZDVEFiUm1kR05QZWhPbzVFblEvQU5hVnlabUtoUEtQSDFzbHVqQzBuVExuV24K",
+      "endpoints": [
+        "https://github.com/PrasanthChowhan/Workout-reminder_v2/releases/latest/download/updater.json"
+      ]
+    }
   }
 }

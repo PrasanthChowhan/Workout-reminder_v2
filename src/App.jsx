@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { formatTime } from "./utils/time";
 import { invoke, registerListener } from "./utils/tauri";
 import { useHoldToConfirm } from "./hooks/useHoldToConfirm";
+import { checkForUpdates } from "./utils/updater";
 
 // UI Components
 import PhysicalResetCard from "./components/PhysicalResetCard";
@@ -36,6 +37,7 @@ export default function App() {
     answeredToday: false,
     question: ""
   });
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
@@ -77,6 +79,17 @@ export default function App() {
         console.error("Failed to load initial config/data", e);
       }
       await checkDailyQuestion();
+
+      // Background update check
+      try {
+        const result = await checkForUpdates(false);
+        if (result && result.available) {
+          setUpdateAvailable(true);
+          toast.success("A new software update is available! Go to Settings -> Updates to install.");
+        }
+      } catch (err) {
+        console.error("Background update check failed", err);
+      }
     };
 
     init();
@@ -201,9 +214,22 @@ export default function App() {
           className="active-break-settings-btn" 
           data-purpose="settings-trigger"
           onClick={() => setShowSettings(true)}
-          title="Open Settings"
+          title={updateAvailable ? "Open Settings (Update Available)" : "Open Settings"}
+          style={{ position: "relative" }}
         >
           <SettingsIcon />
+          {updateAvailable && (
+            <span style={{
+              position: "absolute",
+              top: "-2px",
+              right: "-2px",
+              width: "8px",
+              height: "8px",
+              background: "var(--color-brand-orange)",
+              borderRadius: "50%",
+              boxShadow: "0 0 6px var(--color-brand-orange)"
+            }} />
+          )}
         </button>
       </header>
 
