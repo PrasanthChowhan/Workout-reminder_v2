@@ -28,6 +28,21 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            #[cfg(debug_assertions)]
+            {
+                let identifier = app.config().identifier.as_str();
+                if identifier == "com.prash.kodon" {
+                    eprintln!(
+                        "\n======================================================================\n\
+                         ⚠️  WARNING: Running development build with production configuration!\n\
+                         Identifier: com.prash.kodon\n\
+                         This WILL overwrite/corrupt your personal production SQLite database.\n\
+                         Please use 'npm run tauri:dev' for isolated development.\n\
+                         ======================================================================\n"
+                    );
+                }
+            }
+
             let app_handle = app.handle();
             let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
             if !app_data_dir.exists() {

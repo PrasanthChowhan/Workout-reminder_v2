@@ -92,14 +92,19 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
         
         let path_str = current_exe.to_string_lossy().into_owned();
 
+        #[cfg(debug_assertions)]
+        let registry_key = "WorkoutReminderDev";
+        #[cfg(not(debug_assertions))]
+        let registry_key = "WorkoutReminder";
+
         if enabled {
             let formatted_path = format!("\"{}\"", path_str);
             match Command::new("reg")
-                .args(&[
+                .args([
                     "add",
                     "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
                     "/v",
-                    "WorkoutReminder",
+                    registry_key,
                     "/t",
                     "REG_SZ",
                     "/d",
@@ -120,11 +125,11 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
         } else {
             // Run reg delete; ignore error if entry already did not exist
             let _ = Command::new("reg")
-                .args(&[
+                .args([
                     "delete",
                     "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
                     "/v",
-                    "WorkoutReminder",
+                    registry_key,
                     "/f",
                 ])
                 .status();
@@ -153,8 +158,14 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
                 return Ok(());
             }
         };
+
+        #[cfg(debug_assertions)]
+        let plist_name = "com.workoutreminder.app.dev";
+        #[cfg(not(debug_assertions))]
+        let plist_name = "com.workoutreminder.app";
+
         let plist_dir = home.join("Library").join("LaunchAgents");
-        let plist_path = plist_dir.join("com.workoutreminder.app.plist");
+        let plist_path = plist_dir.join(format!("{}.plist", plist_name));
 
         if enabled {
             if !plist_dir.exists() {
@@ -170,7 +181,7 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.workoutreminder.app</string>
+    <string>{}</string>
     <key>ProgramArguments</key>
     <array>
         <string>{}</string>
@@ -179,6 +190,7 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
     <true/>
 </dict>
 </plist>"#,
+                plist_name,
                 path_str
             );
             
@@ -214,8 +226,14 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
                 return Ok(());
             }
         };
+
+        #[cfg(debug_assertions)]
+        let (app_name, desktop_filename) = ("Workout Reminder Dev", "workout-reminder-dev.desktop");
+        #[cfg(not(debug_assertions))]
+        let (app_name, desktop_filename) = ("Workout Reminder", "workout-reminder.desktop");
+
         let autostart_dir = config_dir.join("autostart");
-        let desktop_path = autostart_dir.join("workout-reminder.desktop");
+        let desktop_path = autostart_dir.join(desktop_filename);
 
         if enabled {
             if !autostart_dir.exists() {
@@ -228,13 +246,14 @@ pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
             let desktop_content = format!(
                 r#"[Desktop Entry]
 Type=Application
-Name=Workout Reminder
+Name={}
 Exec={}
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 Comment=Workout & Break Reminder
 "#,
+                app_name,
                 path_str
             );
             

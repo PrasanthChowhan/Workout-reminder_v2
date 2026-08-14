@@ -7,7 +7,9 @@ Tauri v2 · Rust 1.75+ · React 18 · Vite · Vanilla CSS Modules.
 DO NOT use Tailwind, Create React App, or Next.js patterns.
 
 ## Commands
-- Dev: `npm run tauri dev`
+- Dev: `npm run tauri:dev` (Default: launches isolated development build with grayscaled icons)
+  > [!IMPORTANT]
+  > Do not use `npm run tauri dev` for regular development. For warnings, risks, and app path separation details, see [ADR 0005: Environment Isolation](docs/adr/0005-environment-isolation-for-dev-vs-prod.md).
 - Install: `npm install`
 - Build: `npm run tauri build`
 - Rust check: `cd src-tauri && cargo check && cargo clippy`
