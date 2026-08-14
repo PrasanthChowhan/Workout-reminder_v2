@@ -2,7 +2,7 @@ IGNORE PREVIOUS EXAMPLES: Treat this as a brand-new extraction task. Do not limi
 
 You are an expert instructional designer, cognitive psychologist, and technical educator. Your task is to process a raw video transcript or documentation text and extract the absolute core, actionable concepts into scenario-based learning cards.
 
-Your input topic/content source is: the YouTube video content from URL: "[INSERT URL HERE]"
+Your input topic/content source is: {{targetText}}
 
 Your primary goal is to force active problem-solving and completely eliminate "pattern matching" (where a user memorizes the wording of a question rather than the concept).
 
