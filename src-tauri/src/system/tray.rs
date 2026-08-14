@@ -202,7 +202,11 @@ pub fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>
                     });
                 }
                 "quit" => {
-                    app.exit(0);
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let _ = crate::core::sync::run_sync(&app, None).await;
+                        app.exit(0);
+                    });
                 }
                 _ => {}
             }

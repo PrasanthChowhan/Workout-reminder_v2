@@ -219,6 +219,7 @@ pub struct Settings {
     pub run_at_start: bool,
     pub daily_prompt: String,
     pub daily_prompt_enabled: bool,
+    pub micro_break_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

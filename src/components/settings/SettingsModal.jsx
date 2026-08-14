@@ -6,6 +6,7 @@ import GeneralTab from "./GeneralTab";
 import TimersTab from "./TimersTab";
 import AboutTab from "./AboutTab";
 import UpdateTab from "./UpdateTab";
+import SyncTab from "./SyncTab";
 import Progress from "../../pages/Progress";
 import { SettingsIcon, TimersIcon, TracksIcon, CardsIcon, PromptsIcon, InfoIcon, CloseIcon, ChevronLeft, ChevronRight, ProfileIcon } from "../ui/Icons";
 import styles from "./SettingsModal.module.css";
@@ -40,6 +41,17 @@ const tabs = [
     id: "prompts",
     label: "Reflection Prompts",
     icon: <PromptsIcon width={18} height={18} />
+  },
+  {
+    id: "sync",
+    label: "Google Sync",
+    icon: (
+      <svg fill="none" height={18} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" width={18} xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.5 19A5.5 5.5 0 0 0 22 13.5a5.5 5.5 0 0 0-4.5-5.4 7.5 7.5 0 0 0-14.5 2.4A5.5 5.5 0 0 0 2 15.5 5.5 5.5 0 0 0 7.5 21h10" />
+        <polyline points="12 12 12 17" />
+        <polyline points="9 15 12 12 15 15" />
+      </svg>
+    )
   },
   {
     id: "about",
@@ -92,6 +104,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
     run_at_start: config?.settings?.run_at_start ?? false,
     daily_prompt: config?.settings?.daily_prompt ?? "Have you read the book of king?",
     daily_prompt_enabled: config?.settings?.daily_prompt_enabled ?? false,
+    micro_break_enabled: config?.settings?.micro_break_enabled ?? true,
   });
 
   const [editableCards, setEditableCards] = useState(config?.active_recall_cards || []);
@@ -126,6 +139,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
         run_at_start: !!settingsForm.run_at_start,
         daily_prompt: settingsForm.daily_prompt,
         daily_prompt_enabled: !!settingsForm.daily_prompt_enabled,
+        micro_break_enabled: !!settingsForm.micro_break_enabled,
       },
       reflection_prompts: editablePrompts,
       stretches: editableStretches,
@@ -223,9 +237,13 @@ export default function SettingsModal({ config, onSave, onCancel }) {
             {activeTab === "update" && (
               <UpdateTab parentStyles={styles} />
             )}
+
+            {activeTab === "sync" && (
+              <SyncTab />
+            )}
           </div>
           
-          {activeTab !== "progress" && activeTab !== "update" && (
+          {activeTab !== "progress" && activeTab !== "update" && activeTab !== "sync" && (
             <div className={styles['settings-footer']}>
               <button type="button" className={styles['settings-cancel-btn']} onClick={onCancel}>
                 Cancel

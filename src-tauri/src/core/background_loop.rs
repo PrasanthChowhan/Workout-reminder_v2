@@ -69,8 +69,9 @@ pub fn start_timer_engine(app_handle: AppHandle) {
             let (triggered_type, remaining_micro, remaining_active) = {
                 let mut micro = state.micro_countdown.lock().unwrap_or_else(|e| e.into_inner());
                 let mut active = state.active_countdown.lock().unwrap_or_else(|e| e.into_inner());
+                let settings = state.cached_settings.lock().unwrap_or_else(|e| e.into_inner());
 
-                if *micro > 0 {
+                if settings.micro_break_enabled && *micro > 0 {
                     *micro -= 1;
                 }
                 if *active > 0 {
@@ -79,7 +80,7 @@ pub fn start_timer_engine(app_handle: AppHandle) {
 
                 let triggered = if *active == 0 {
                     Some("active".to_string())
-                } else if *micro == 0 {
+                } else if settings.micro_break_enabled && *micro == 0 {
                     Some("micro".to_string())
                 } else {
                     None

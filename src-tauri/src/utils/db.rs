@@ -50,8 +50,8 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
 
     if count == 0 {
         sqlx::query(
-            "INSERT INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled)
-             VALUES (1, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled, micro_break_enabled)
+             VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         .bind(config.settings.micro_break_interval_mins as i64)
         .bind(config.settings.active_break_interval_mins as i64)
@@ -60,6 +60,7 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
         .bind(if config.settings.run_at_start { 1 } else { 0 })
         .bind(&config.settings.daily_prompt)
         .bind(if config.settings.daily_prompt_enabled { 1 } else { 0 })
+        .bind(if config.settings.micro_break_enabled { 1 } else { 0 })
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
@@ -199,7 +200,7 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
 }
 
 pub async fn load_settings(pool: &SqlitePool) -> Result<Settings, String> {
-    let row = sqlx::query("SELECT micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled FROM settings WHERE id = 1")
+    let row = sqlx::query("SELECT micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled, micro_break_enabled FROM settings WHERE id = 1")
         .fetch_optional(pool)
         .await
         .map_err(|e| e.to_string())?;
@@ -207,6 +208,7 @@ pub async fn load_settings(pool: &SqlitePool) -> Result<Settings, String> {
     if let Some(r) = row {
         let run_at_start_int: i32 = r.get("run_at_start");
         let daily_prompt_enabled_int: i32 = r.get("daily_prompt_enabled");
+        let micro_break_enabled_int: i32 = r.get("micro_break_enabled");
         Ok(Settings {
             micro_break_interval_mins: r.get::<i64, _>("micro_break_interval_mins") as u64,
             active_break_interval_mins: r.get::<i64, _>("active_break_interval_mins") as u64,
@@ -215,6 +217,7 @@ pub async fn load_settings(pool: &SqlitePool) -> Result<Settings, String> {
             run_at_start: run_at_start_int != 0,
             daily_prompt: r.get::<String, _>("daily_prompt"),
             daily_prompt_enabled: daily_prompt_enabled_int != 0,
+            micro_break_enabled: micro_break_enabled_int != 0,
         })
     } else {
         Ok(AppConfig::default().settings)
@@ -703,7 +706,7 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // 1. Settings
-    sqlx::query("INSERT OR REPLACE INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled) VALUES (1, ?, ?, ?, ?, ?, ?, ?)")
+    sqlx::query("INSERT OR REPLACE INTO settings (id, micro_break_interval_mins, active_break_interval_mins, micro_break_duration_secs, active_break_duration_secs, run_at_start, daily_prompt, daily_prompt_enabled, micro_break_enabled) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(config.settings.micro_break_interval_mins as i64)
         .bind(config.settings.active_break_interval_mins as i64)
         .bind(config.settings.micro_break_duration_secs as i64)
@@ -711,6 +714,7 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
         .bind(if config.settings.run_at_start { 1 } else { 0 })
         .bind(&config.settings.daily_prompt)
         .bind(if config.settings.daily_prompt_enabled { 1 } else { 0 })
+        .bind(if config.settings.micro_break_enabled { 1 } else { 0 })
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

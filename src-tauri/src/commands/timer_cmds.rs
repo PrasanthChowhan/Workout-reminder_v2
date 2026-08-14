@@ -4,6 +4,7 @@ use crate::core::state::AppState;
 use crate::core::models::{TimerStatePayload, SessionDataPayload, Stretch, PhysicalTrack, Level, InitialBreakDataPayload};
 use crate::system::window::{close_break_overlay, start_break_overlay};
 use crate::utils::db;
+use tauri::Manager;
 
 #[tauri::command]
 pub fn get_timer_state(state: tauri::State<'_, AppState>) -> Result<TimerStatePayload, String> {
@@ -296,6 +297,12 @@ pub async fn complete_break(
     println!("Break completed! Action logged: {}", action);
 
     let _ = state.complete_break_logic(&action, reference_id.as_deref(), exercise_id.as_deref()).await?;
+
+    if action == "done" {
+        if let Ok(dir) = app.path().app_data_dir() {
+            let _ = crate::core::sync::mark_local_state_dirty(&dir);
+        }
+    }
 
     // Hide window and restore normal desktop dimensions
     let _ = close_break_overlay(&app);

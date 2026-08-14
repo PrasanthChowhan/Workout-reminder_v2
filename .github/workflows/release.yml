@@ -45,5 +45,5 @@ jobs:
           releaseName: 'Kodon v__VERSION__'
           releaseBody: 'The latest release of Kodon: The Cognitive Companion.'
           releaseDraft: true
-          prerelease: false
+          prerelease: true
           args: ${{ matrix.platform == 'macos-latest' && '--target aarch64-apple-darwin --target x86_64-apple-darwin' || '' }}

@@ -205,6 +205,13 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), String> {
         ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
     }
 
+    if version < 7 {
+        sqlx::query(
+            "ALTER TABLE settings ADD COLUMN micro_break_enabled INTEGER NOT NULL DEFAULT 1;
+             PRAGMA user_version = 7;"
+        ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
 }

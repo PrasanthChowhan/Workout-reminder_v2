@@ -2,15 +2,22 @@ use crate::core::state::AppState;
 use crate::core::models::{JsonImportSchema, RecallConcept, DailyQuestionStatus};
 use crate::utils::db;
 use serde_json::Value;
+use tauri::Manager;
 
 #[tauri::command]
 pub async fn import_recall_json(
+    app: tauri::AppHandle,
     json_str: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     let data: JsonImportSchema = serde_json::from_str(&json_str)
         .map_err(|e| format!("Invalid JSON format: {}", e))?;
     db::import_recall_json_to_db(&state.db_pool, data).await?;
+    
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = crate::core::sync::mark_local_state_dirty(&dir);
+    }
+    
     Ok(())
 }
 
@@ -30,32 +37,51 @@ pub async fn get_recall_concepts(
 
 #[tauri::command]
 pub async fn update_variant_srs(
+    app: tauri::AppHandle,
     variant_id: String,
     rating: u32,
     reference_id: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    db::update_variant_srs(&state.db_pool, &variant_id, rating, reference_id.as_deref()).await
+    db::update_variant_srs(&state.db_pool, &variant_id, rating, reference_id.as_deref()).await?;
+    
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = crate::core::sync::mark_local_state_dirty(&dir);
+    }
+    
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn update_track_metadata(
+    app: tauri::AppHandle,
     track_id: String,
     metadata: Value,
     state: tauri::State<'_, AppState>,
 ) -> Result<crate::core::models::AppConfig, String> {
     db::update_track_meta(&state.db_pool, &track_id, metadata).await?;
+    
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = crate::core::sync::mark_local_state_dirty(&dir);
+    }
+    
     let updated_config = db::load_app_config(&state.db_pool).await?;
     Ok(updated_config)
 }
 
 #[tauri::command]
 pub async fn update_stretch_metadata(
+    app: tauri::AppHandle,
     stretch_name: String,
     metadata: Value,
     state: tauri::State<'_, AppState>,
 ) -> Result<crate::core::models::AppConfig, String> {
     db::update_stretch_meta(&state.db_pool, &stretch_name, metadata).await?;
+    
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = crate::core::sync::mark_local_state_dirty(&dir);
+    }
+    
     let updated_config = db::load_app_config(&state.db_pool).await?;
     Ok(updated_config)
 }
@@ -84,10 +110,16 @@ pub async fn check_daily_question_status(
 
 #[tauri::command]
 pub async fn submit_daily_question_response(
+    app: tauri::AppHandle,
     response: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     let local_date = chrono::Local::now().format("%Y-%m-%d").to_string();
     db::insert_daily_question_response(&state.db_pool, &local_date, &response).await?;
+    
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = crate::core::sync::mark_local_state_dirty(&dir);
+    }
+    
     Ok(())
 }

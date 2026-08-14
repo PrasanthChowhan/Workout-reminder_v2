@@ -130,6 +130,12 @@ pub fn run() {
             // Spawn the tokio background timer engine
             core::background_loop::start_timer_engine(app.handle().clone());
 
+            // Spawn Google Sync in the background on startup
+            let app_handle_clone = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = crate::core::sync::run_sync(&app_handle_clone, None).await;
+            });
+
             Ok(())
         })
 
@@ -160,7 +166,11 @@ pub fn run() {
             commands::timer_cmds::snooze_for,
             commands::timer_cmds::snooze_until_restart,
             commands::timer_cmds::pause_indefinitely,
-            commands::timer_cmds::resume_reminders
+            commands::timer_cmds::resume_reminders,
+            commands::sync_cmds::get_sync_status,
+            commands::sync_cmds::login_google,
+            commands::sync_cmds::logout_google,
+            commands::sync_cmds::sync_now
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
