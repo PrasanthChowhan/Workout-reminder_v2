@@ -132,6 +132,19 @@ pub fn run() {
                 }
             }
 
+            // In production builds, disable right-click context menu and reload shortcuts
+            #[cfg(not(debug_assertions))]
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.eval(r#"
+                    document.addEventListener('contextmenu', e => e.preventDefault());
+                    document.addEventListener('keydown', e => {
+                        if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
+                            e.preventDefault();
+                        }
+                    });
+                "#);
+            }
+
             // Manage app state
             app.manage(core::state::AppState::new(pool, settings, reminder_state));
 
