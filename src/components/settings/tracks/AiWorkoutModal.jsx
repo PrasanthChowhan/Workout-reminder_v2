@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import Modal from "../../ui/Modal";
-import { generateAiPrompt } from "../../../utils/aiPrompt";
 import { invoke } from "../../../utils/tauri";
 import trainingProgramSchema from "../../../../docs/schemas/training-program.schema.json";
 import { toast } from "../../../utils/toast";
@@ -76,7 +75,8 @@ export default function AiWorkoutModal({
         const text = await invoke("read_prompt_file", { name: "workout-program-generation-prompt.md" });
         setPromptTemplate(text);
       } catch (err) {
-        console.warn("Failed to load prompt template from backend, using fallback", err);
+        console.error("Failed to load prompt template from backend", err);
+        toast.error("Failed to load prompt template. Check console.");
       }
     };
     if (isOpen) {
@@ -107,14 +107,7 @@ export default function AiWorkoutModal({
         .replace("{{schemaString}}", JSON.stringify(trainingProgramSchema, null, 2));
     }
 
-    return generateAiPrompt(trainingProgramSchema, {
-      userGoal,
-      userLevel,
-      availableEquipment,
-      sessionDuration,
-      injuries,
-      preferredStyle
-    });
+    return "Loading prompt from backend... (If this persists, ensure prompts are bundled in Tauri resources)";
   }, [promptTemplate, aiGoalSelect, aiGoalCustom, aiLevel, aiEquipmentSelect, aiEquipmentCustom, aiDurationSelect, aiDurationCustom, aiInjuriesSelect, aiInjuriesCustom, aiStyleSelect, aiStyleCustom]);
 
   const handleCopyPrompt = async () => {

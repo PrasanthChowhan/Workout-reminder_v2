@@ -37,6 +37,9 @@
       "nsis": {
         "installerIcon": "icons/icon.ico"
       }
+    },
+    "resources": {
+      "../docs/prompts": "docs/prompts"
     }
   },
   "plugins": {

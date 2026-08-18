@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Modal from "../../ui/Modal";
-import { generateRecallAiPrompt } from "../../../utils/aiPrompt";
 import { invoke } from "../../../utils/tauri";
 import learningConceptSchema from "../../../../docs/schemas/Learning-concept-program.schema.json";
 import { toast } from "../../../utils/toast";
@@ -25,7 +24,8 @@ export default function AiRecallModal({
         const text = await invoke("read_prompt_file", { name: "active-recall-card-generation-prompt.md" });
         setPromptTemplate(text);
       } catch (err) {
-        console.warn("Failed to load prompt template from backend, using fallback", err);
+        console.error("Failed to load prompt template from backend", err);
+        toast.error("Failed to load prompt template. Check console.");
       }
     };
     if (isOpen) {
@@ -48,9 +48,7 @@ export default function AiRecallModal({
         .replace("{{schemaString}}", JSON.stringify(learningConceptSchema, null, 2));
     }
 
-    return generateRecallAiPrompt(currentTopicOrUrl || "Rust lifetimes and memory safety", learningConceptSchema, {
-      isYoutube: sourceType === "youtube"
-    });
+    return "Loading prompt from backend... (If this persists, ensure prompts are bundled in Tauri resources)";
   }, [promptTemplate, currentTopicOrUrl, sourceType]);
 
   const handleCopyPrompt = async () => {
