@@ -220,6 +220,7 @@ pub struct Settings {
     pub daily_prompt: String,
     pub daily_prompt_enabled: bool,
     pub micro_break_enabled: bool,
+    pub day_start_time: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

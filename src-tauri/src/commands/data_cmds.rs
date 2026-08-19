@@ -98,7 +98,9 @@ pub async fn check_daily_question_status(
     state: tauri::State<'_, AppState>,
 ) -> Result<DailyQuestionStatus, String> {
     let settings = db::load_settings(&state.db_pool).await?;
-    let local_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let local_date = crate::utils::time::logical_date(chrono::Local::now(), settings.day_start_time)
+        .format("%Y-%m-%d")
+        .to_string();
     let answered_today = db::check_daily_question_answered(&state.db_pool, &local_date).await?;
     
     Ok(DailyQuestionStatus {
@@ -114,7 +116,10 @@ pub async fn submit_daily_question_response(
     response: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    let local_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let settings = db::load_settings(&state.db_pool).await?;
+    let local_date = crate::utils::time::logical_date(chrono::Local::now(), settings.day_start_time)
+        .format("%Y-%m-%d")
+        .to_string();
     db::insert_daily_question_response(&state.db_pool, &local_date, &response).await?;
     
     if let Ok(dir) = app.path().app_data_dir() {

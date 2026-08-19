@@ -12,6 +12,7 @@ impl Default for AppConfig {
                 daily_prompt: "Have you read the book of king?".to_string(),
                 daily_prompt_enabled: false,
                 micro_break_enabled: true,
+                day_start_time: 240,
             },
             reflection_prompts: vec![
                 "What is the core problem you are solving right now? Is there a simpler way?".to_string(),

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { invoke } from "../utils/tauri";
+import { SettingsIcon } from "./ui/Icons";
 import styles from "./DailyAccountabilityModal.module.css";
 
-export default function DailyAccountabilityModal({ isOpen, questionText, onAnswered }) {
+export default function DailyAccountabilityModal({ isOpen, questionText, onAnswered, onOpenSettings }) {
   const modalRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -87,6 +88,16 @@ export default function DailyAccountabilityModal({ isOpen, questionText, onAnswe
         className={styles.container}
         tabIndex="-1"
       >
+        {onOpenSettings && (
+          <button 
+            type="button" 
+            className={styles.settingsBtn} 
+            onClick={onOpenSettings} 
+            title="Open Settings"
+          >
+            <SettingsIcon width={18} height={18} />
+          </button>
+        )}
         <div id="daily-checkin-title" className={styles.title}>
           Daily Accountability Check-in
         </div>

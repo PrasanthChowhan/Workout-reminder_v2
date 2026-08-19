@@ -281,11 +281,12 @@ export default function App() {
 
       {/* Daily Accountability Check-in Modal */}
       <DailyAccountabilityModal 
-        isOpen={dailyCheckin.enabled && !dailyCheckin.answeredToday}
+        isOpen={dailyCheckin.enabled && !dailyCheckin.answeredToday && !showSettings}
         questionText={dailyCheckin.question}
         onAnswered={() => {
           setDailyCheckin((prev) => ({ ...prev, answeredToday: true }));
         }}
+        onOpenSettings={() => setShowSettings(true)}
       />
 
       {/* Skip Reason Modal Popup */}

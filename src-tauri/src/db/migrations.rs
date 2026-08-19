@@ -212,6 +212,13 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), String> {
         ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
     }
 
+    if version < 8 {
+        sqlx::query(
+            "ALTER TABLE settings ADD COLUMN day_start_time INTEGER NOT NULL DEFAULT 240;
+             PRAGMA user_version = 8;"
+        ).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
 }

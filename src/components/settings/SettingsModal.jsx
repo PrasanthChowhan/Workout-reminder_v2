@@ -105,6 +105,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
     daily_prompt: config?.settings?.daily_prompt ?? "Have you read the book of king?",
     daily_prompt_enabled: config?.settings?.daily_prompt_enabled ?? false,
     micro_break_enabled: config?.settings?.micro_break_enabled ?? true,
+    day_start_time: config?.settings?.day_start_time ?? 240,
   });
 
   const [editableCards, setEditableCards] = useState(config?.active_recall_cards || []);
@@ -140,6 +141,7 @@ export default function SettingsModal({ config, onSave, onCancel }) {
         daily_prompt: settingsForm.daily_prompt,
         daily_prompt_enabled: !!settingsForm.daily_prompt_enabled,
         micro_break_enabled: !!settingsForm.micro_break_enabled,
+        day_start_time: Number(settingsForm.day_start_time) ?? 240,
       },
       reflection_prompts: editablePrompts,
       stretches: editableStretches,

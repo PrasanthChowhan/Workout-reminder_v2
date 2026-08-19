@@ -117,7 +117,9 @@ pub fn run() {
             // Check daily question status and show window if enabled and unanswered
             let show_on_startup = tauri::async_runtime::block_on(async {
                 if settings.daily_prompt_enabled {
-                    let local_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+                    let local_date = utils::time::logical_date(chrono::Local::now(), settings.day_start_time)
+                        .format("%Y-%m-%d")
+                        .to_string();
                     if let Ok(answered) = utils::db::check_daily_question_answered(&pool, &local_date).await {
                         return !answered;
                     }

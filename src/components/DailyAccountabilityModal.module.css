@@ -13,6 +13,7 @@
 }
 
 .container {
+  position: relative;
   background-color: #161616;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
@@ -22,6 +23,27 @@
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   animation: modalAppear 0.4s var(--spring-easing, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+.settingsBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.settingsBtn:hover {
+  color: var(--color-brand-orange, #FF5C00);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 @keyframes modalAppear {

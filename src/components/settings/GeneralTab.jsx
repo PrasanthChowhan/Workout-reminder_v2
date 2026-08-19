@@ -2,6 +2,14 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "../../utils/tauri";
 import buttonStyles from "../../styles/buttons.module.css";
 
+const timeOptions = Array.from({ length: 24 }, (_, i) => {
+  const mins = i * 60;
+  const hour12 = i % 12 === 0 ? 12 : i % 12;
+  const ampm = i < 12 ? "AM" : "PM";
+  const label = `${hour12}:00 ${ampm}`;
+  return { value: mins, label };
+});
+
 export default function GeneralTab({ settingsForm, setSettingsForm, parentStyles }) {
   const [reminderState, setReminderState] = useState({ type: "Active" });
   const [snoozeMins, setSnoozeMins] = useState("30");
@@ -181,7 +189,7 @@ export default function GeneralTab({ settingsForm, setSettingsForm, parentStyles
         </p>
 
         {settingsForm.daily_prompt_enabled && (
-          <div className={parentStyles['settings-field']} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start" }}>
+          <div className={parentStyles['settings-field']} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start", marginBottom: "1.5rem" }}>
             <label className={parentStyles['settings-label']}>Question:</label>
             <input
               type="text"
@@ -193,6 +201,25 @@ export default function GeneralTab({ settingsForm, setSettingsForm, parentStyles
             />
           </div>
         )}
+
+        <div className={parentStyles['settings-field']} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start", marginTop: "1rem" }}>
+          <label className={parentStyles['settings-label']}>Day Start Time</label>
+          <select
+            value={settingsForm.day_start_time ?? 240}
+            onChange={(e) => setSettingsForm({ ...settingsForm, day_start_time: parseInt(e.target.value, 10) })}
+            className={parentStyles['settings-input']}
+            style={{ width: "160px" }}
+          >
+            {timeOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <p className={parentStyles['settings-item-desc']} style={{ marginTop: "0.25rem" }}>
+            Your accountability day starts at this time.
+          </p>
+        </div>
       </div>
     </div>
   );
