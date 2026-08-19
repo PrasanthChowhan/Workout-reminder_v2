@@ -482,7 +482,7 @@ pub async fn increment_sessions_and_advance_level(pool: &SqlitePool) -> Result<U
     let last_completed_at = Some(chrono::Utc::now().to_rfc3339());
     let mut level_started_at: Option<String> = row.get("level_started_at");
     
-    if completed_sessions_count >= 5 {
+    if completed_sessions_count >= 1 {
         if let (Some(ref track_id), Some(curr_lvl)) = (&active_track_id, current_level_number) {
             // Load track metadata to check excluded exercises
             let track_row = sqlx::query("SELECT metadata FROM physical_tracks WHERE id = ?")
