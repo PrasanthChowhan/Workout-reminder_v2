@@ -35,7 +35,6 @@ src/
     ├── time.js                      # Time formatting
     ├── toast.js                     # Toast event dispatcher
     ├── track.js                     # Track validation
-    ├── aiPrompt.js                  # AI prompt builder
     └── mockData.json                # Dev-mode mock data
 ```
 
@@ -60,7 +59,8 @@ src-tauri/src/
 │   └── window.rs                    # Window helpers + trigger_refocus_break()
 └── utils/
     ├── fs.rs                        # File I/O, config persistence
-    └── db.rs                        # SQLite initialization, schema migrations, and queries
+    ├── db.rs                        # SQLite initialization, schema migrations, and queries
+    └── time.rs                      # Logical date and datetime utilities
 ```
 
 ## Decision Guide: Where Does New Code Go?
