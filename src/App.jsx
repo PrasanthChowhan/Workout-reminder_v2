@@ -137,6 +137,8 @@ export default function App() {
 
   const triggerBreak = async () => {
     setShowAnswer(false);
+    setShowSettings(false);
+    setShowSkipReasonModal(false);
     setBreakId(crypto.randomUUID());
     try {
       const { config, session_data } = await invoke("get_initial_break_data", { breakType: "active" });

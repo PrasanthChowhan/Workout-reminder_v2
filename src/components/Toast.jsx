@@ -1,9 +1,16 @@
 import React from 'react';
 import styles from './Toast.module.css';
-import { CheckIcon, AlertCircleIcon, InfoIcon } from './ui/Icons';
+import { CheckIcon, AlertCircleIcon, InfoIcon, CopyIcon } from './ui/Icons';
+import { toast } from '../utils/toast';
 
 export const ToastContainer = ({ toasts, onCloseToast }) => {
   if (!toasts || toasts.length === 0) return null;
+
+  const handleCopy = (e, text) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
+  };
 
   return (
     <div className={styles['toast-container']}>
@@ -23,6 +30,15 @@ export const ToastContainer = ({ toasts, onCloseToast }) => {
             )}
             <span className={styles['toast-message']}>{t.message}</span>
           </div>
+          {t.type === "error" && (
+            <button 
+              className={styles['toast-copy-btn']}
+              onClick={(e) => handleCopy(e, t.message)}
+              title="Copy to clipboard"
+            >
+              <CopyIcon width={16} height={16} />
+            </button>
+          )}
           <button className={styles['toast-close-btn']}>&times;</button>
         </div>
       ))}

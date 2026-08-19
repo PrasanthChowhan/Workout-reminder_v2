@@ -107,3 +107,24 @@
     opacity: 1;
   }
 }
+
+.toast-copy-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  width: 24px;
+  height: 24px;
+  transition: all 0.2s ease;
+  margin-right: -0.5rem;
+}
+
+.toast-copy-btn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
