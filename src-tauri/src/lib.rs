@@ -4,7 +4,7 @@ mod db;
 mod system;
 mod utils;
 
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -23,6 +23,26 @@ pub fn run() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == "main" {
                     api.prevent_close();
+
+                    let app_handle = window.app_handle().clone();
+                    if let Some(state) = app_handle.try_state::<core::state::AppState>() {
+                        let is_break_active = {
+                            let current_state = state.current_break_state.lock().ok();
+                            current_state.as_ref().map(|s| s.is_some()).unwrap_or(false)
+                        };
+
+                        if is_break_active {
+                            tauri::async_runtime::spawn(async move {
+                                if let Some(state) = app_handle.try_state::<core::state::AppState>() {
+                                    let _ = state.complete_break_logic("skipped: os_close", None, None).await;
+                                    let _ = system::window::close_break_overlay(&app_handle);
+                                    let _ = app_handle.emit("break-completed", ());
+                                }
+                            });
+                            return;
+                        }
+                    }
+
                     let _ = window.hide();
                 }
             }

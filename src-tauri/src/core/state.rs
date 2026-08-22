@@ -47,6 +47,14 @@ impl AppState {
         reference_id: Option<&str>,
         exercise_id: Option<&str>,
     ) -> Result<Option<UserProgress>, String> {
+        // Check if break is actually active (Idempotency)
+        {
+            let current_state = self.current_break_state.lock().map_err(|e| e.to_string())?;
+            if current_state.is_none() {
+                return Ok(None);
+            }
+        }
+
         let mut updated_progress = None;
         if action == "done" {
             let progress = crate::utils::db::increment_sessions_and_advance_level(&self.db_pool).await?;
@@ -64,6 +72,22 @@ impl AppState {
                     ).await?;
                 }
             }
+        } else if action.starts_with("skipped:") {
+            let ref_id_fallback;
+            let ref_id = match reference_id {
+                Some(id) => id,
+                None => {
+                    ref_id_fallback = format!("os-close-{}", rand::random::<u64>());
+                    &ref_id_fallback
+                }
+            };
+            crate::utils::db::log_event(
+                &self.db_pool,
+                "session_skipped",
+                Some(ref_id),
+                None,
+                Some(action),
+            ).await?;
         }
 
         // Reset break state

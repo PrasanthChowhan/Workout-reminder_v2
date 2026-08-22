@@ -101,6 +101,11 @@ export default function App() {
     const unlistenOpenSettings = registerListener("open-settings", () => {
       setShowSettings(true);
     });
+    const unlistenBreakCompleted = registerListener("break-completed", () => {
+      setShowAnswer(false);
+      setShowSkipReasonModal(false);
+      triggerBreak();
+    });
 
     const handleFocus = () => {
       checkDailyQuestion();
@@ -111,6 +116,7 @@ export default function App() {
     return () => {
       unlistenStartBreak();
       unlistenOpenSettings();
+      unlistenBreakCompleted();
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleFocus);
     };
