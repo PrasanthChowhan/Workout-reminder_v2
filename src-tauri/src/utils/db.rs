@@ -761,66 +761,86 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
     sqlx::query("DELETE FROM custom_exercises").execute(&mut *tx).await.map_err(|e| e.to_string())?;
     sqlx::query("DELETE FROM physical_tracks").execute(&mut *tx).await.map_err(|e| e.to_string())?;
 
-    for track in &config.tracks {
-        let metadata_str = track.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
-        sqlx::query("INSERT INTO physical_tracks (id, name, description, metadata) VALUES (?, ?, ?, ?)")
-            .bind(&track.id)
-            .bind(&track.name)
-            .bind(&track.description)
-            .bind(metadata_str)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        for level in &track.levels {
-            let equipment_str = serde_json::to_string(&level.equipment).unwrap_or_else(|_| "[]".to_string());
-            sqlx::query("INSERT INTO levels (track_id, level_number, title, description, target_duration_secs, video_url, image_url, is_unilateral, equipment, rest_secs, reps, sets) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                .bind(&track.id)
-                .bind(level.level_number as i64)
-                .bind(&level.title)
-                .bind(&level.description)
-                .bind(level.target_duration_secs as i64)
-                .bind(&level.video_url)
-                .bind(&level.image_url)
-                .bind(if level.is_unilateral { 1 } else { 0 })
-                .bind(equipment_str)
-                .bind(level.rest_secs as i64)
-                .bind(&level.reps)
-                .bind(level.sets.map(|s| s as i64))
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| e.to_string())?;
+    if !config.tracks.is_empty() {
+        // Flatten tracks
+        for chunk in config.tracks.chunks(200) {
+            let mut qb = sqlx::QueryBuilder::new("INSERT INTO physical_tracks (id, name, description, metadata) ");
+            qb.push_values(chunk, |mut b, track| {
+                let metadata_str = track.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
+                b.push_bind(&track.id)
+                 .push_bind(&track.name)
+                 .push_bind(&track.description)
+                 .push_bind(metadata_str);
+            });
+            qb.build().execute(&mut *tx).await.map_err(|e| e.to_string())?;
         }
 
-        if let Some(ref exercises) = track.exercises {
-            for ex in exercises {
+        // Flatten levels
+        let mut all_levels = Vec::new();
+        for track in &config.tracks {
+            for level in &track.levels {
+                all_levels.push((&track.id, level));
+            }
+        }
+
+        for chunk in all_levels.chunks(80) {
+            let mut qb = sqlx::QueryBuilder::new("INSERT INTO levels (track_id, level_number, title, description, target_duration_secs, video_url, image_url, is_unilateral, equipment, rest_secs, reps, sets) ");
+            qb.push_values(chunk, |mut b, (track_id, level)| {
+                let equipment_str = serde_json::to_string(&level.equipment).unwrap_or_else(|_| "[]".to_string());
+                b.push_bind(*track_id)
+                 .push_bind(level.level_number as i64)
+                 .push_bind(&level.title)
+                 .push_bind(&level.description)
+                 .push_bind(level.target_duration_secs as i64)
+                 .push_bind(&level.video_url)
+                 .push_bind(&level.image_url)
+                 .push_bind(if level.is_unilateral { 1 } else { 0 })
+                 .push_bind(equipment_str)
+                 .push_bind(level.rest_secs as i64)
+                 .push_bind(&level.reps)
+                 .push_bind(level.sets.map(|s| s as i64));
+            });
+            qb.build().execute(&mut *tx).await.map_err(|e| e.to_string())?;
+        }
+
+        // Flatten exercises
+        let mut all_exercises = Vec::new();
+        for track in &config.tracks {
+            if let Some(ref exercises) = track.exercises {
+                for ex in exercises {
+                    all_exercises.push((&track.id, ex));
+                }
+            }
+        }
+
+        for chunk in all_exercises.chunks(50) {
+            let mut qb = sqlx::QueryBuilder::new("INSERT INTO custom_exercises (track_id, id, name, description, execution_notes, category, target_muscles, muscle_groups, difficulty, duration_secs, sets, reps, reps_min, reps_max, video_url, image_url, is_unilateral, equipment, rest_secs) ");
+            qb.push_values(chunk, |mut b, (track_id, ex)| {
                 let target_muscles_str = serde_json::to_string(&ex.target_muscles).unwrap_or_else(|_| "[]".to_string());
                 let muscle_groups_str = serde_json::to_string(&ex.muscle_groups).unwrap_or_else(|_| "[]".to_string());
                 let equipment_str = serde_json::to_string(&ex.equipment).unwrap_or_else(|_| "[]".to_string());
-                sqlx::query("INSERT INTO custom_exercises (track_id, id, name, description, execution_notes, category, target_muscles, muscle_groups, difficulty, duration_secs, sets, reps, reps_min, reps_max, video_url, image_url, is_unilateral, equipment, rest_secs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                    .bind(&track.id)
-                    .bind(&ex.id)
-                    .bind(&ex.name)
-                    .bind(&ex.description)
-                    .bind(&ex.execution_notes)
-                    .bind(&ex.category)
-                    .bind(target_muscles_str)
-                    .bind(muscle_groups_str)
-                    .bind(&ex.difficulty)
-                    .bind(ex.duration_secs as i64)
-                    .bind(ex.sets as i64)
-                    .bind(&ex.reps)
-                    .bind(ex.reps_min.map(|r| r as i64))
-                    .bind(ex.reps_max.map(|r| r as i64))
-                    .bind(&ex.video_url)
-                    .bind(&ex.image_url)
-                    .bind(if ex.is_unilateral { 1 } else { 0 })
-                    .bind(equipment_str)
-                    .bind(ex.rest_secs as i64)
-                    .execute(&mut *tx)
-                    .await
-                    .map_err(|e| e.to_string())?;
-            }
+
+                b.push_bind(*track_id)
+                 .push_bind(&ex.id)
+                 .push_bind(&ex.name)
+                 .push_bind(&ex.description)
+                 .push_bind(&ex.execution_notes)
+                 .push_bind(&ex.category)
+                 .push_bind(target_muscles_str)
+                 .push_bind(muscle_groups_str)
+                 .push_bind(&ex.difficulty)
+                 .push_bind(ex.duration_secs as i64)
+                 .push_bind(ex.sets as i64)
+                 .push_bind(&ex.reps)
+                 .push_bind(ex.reps_min.map(|r| r as i64))
+                 .push_bind(ex.reps_max.map(|r| r as i64))
+                 .push_bind(&ex.video_url)
+                 .push_bind(&ex.image_url)
+                 .push_bind(if ex.is_unilateral { 1 } else { 0 })
+                 .push_bind(equipment_str)
+                 .push_bind(ex.rest_secs as i64);
+            });
+            qb.build().execute(&mut *tx).await.map_err(|e| e.to_string())?;
         }
     }
 
