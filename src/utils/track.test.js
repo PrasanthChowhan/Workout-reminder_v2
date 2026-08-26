@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-<<<<<<< HEAD
-import { validateTrack, generateLevelsFromExercises } from './track';
-=======
-import { validateTrack, resolveLevelProgressOnToggle } from './track';
->>>>>>> main
+import { validateTrack, generateLevelsFromExercises, resolveLevelProgressOnToggle } from './track';
 
 describe('validateTrack', () => {
   const baseValidTrack = {
@@ -271,6 +267,9 @@ describe('generateLevelsFromExercises', () => {
   it('handles empty muscle_groups or target_muscles', () => {
       const advLevels = generateLevelsFromExercises(sampleExercises, "Advanced");
       expect(advLevels[0].description).toContain("Target: \n");
+  });
+});
+
 describe('resolveLevelProgressOnToggle', () => {
   const displayLevels = [
     { level_number: 1, title: 'Pushup' },
