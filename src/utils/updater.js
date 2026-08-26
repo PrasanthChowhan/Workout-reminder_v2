@@ -37,7 +37,6 @@ export async function relaunchApp() {
   if (isTauri) {
     await invoke("relaunch_app");
   } else {
-    console.log("[Browser Mock] Relaunching application...");
     window.location.reload();
   }
 }
@@ -87,14 +86,12 @@ export async function checkForUpdates(manual = false) {
         body: "* Faster reminder scheduling\n* Daily accountability check-in\n* Bug fixes",
         updateObj: {
           downloadAndInstall: async (onProgress) => {
-            console.log("Mock downloading update...");
             onProgress({ event: "Started", data: { contentLength: 20000000 } });
             for (let i = 1; i <= 10; i++) {
               await new Promise(resolve => setTimeout(resolve, 200));
               onProgress({ event: "Progress", data: { chunkLength: 2000000 } });
             }
             onProgress({ event: "Finished" });
-            console.log("Mock update installed successfully");
           }
         }
       };

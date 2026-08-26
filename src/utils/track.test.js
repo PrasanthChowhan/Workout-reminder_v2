@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateTrack } from './track';
+import { validateTrack, resolveLevelProgressOnToggle } from './track';
 
 describe('validateTrack', () => {
   const baseValidTrack = {
@@ -148,5 +148,113 @@ describe('validateTrack', () => {
         expect(validateTrack(track)).toContain(expected);
       }
     });
+  });
+});
+
+describe('resolveLevelProgressOnToggle', () => {
+  const displayLevels = [
+    { level_number: 1, title: 'Pushup' },
+    { level_number: 2, title: 'Pullup' },
+    { level_number: 3, title: 'Squat' },
+  ];
+
+  it('returns null if isActive is false', () => {
+    expect(
+      resolveLevelProgressOnToggle(false, displayLevels, 1, 'Pushup', [], [])
+    ).toBeNull();
+  });
+
+  it('returns null if activeLevel is not found', () => {
+    // currentLevelNumber is 4, which doesn't exist in displayLevels
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, 4, 'Pushup', [], [])
+    ).toBeNull();
+  });
+
+  it('iterates forward to find next unexcluded level when active level is toggled off', () => {
+    // Current is 1 (Pushup). Toggling Pushup off.
+    // updatedExcluded includes 'Pushup', so Level 2 (Pullup) should be next.
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, 1, 'Pushup', [], ['Pushup'])
+    ).toEqual({
+      current_level_number: 2,
+      completed_sessions_count: 0
+    });
+  });
+
+  it('skips excluded levels while iterating forward', () => {
+    // Current is 1 (Pushup). Toggling Pushup off.
+    // 'Pullup' (Level 2) is already excluded. So Level 3 (Squat) should be next.
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, 1, 'Pushup', [], ['Pushup', 'Pullup'])
+    ).toEqual({
+      current_level_number: 3,
+      completed_sessions_count: 0
+    });
+  });
+
+  it('iterates backward if no valid forward levels exist', () => {
+    // Current is 3 (Squat). Toggling Squat off.
+    // Nothing forward. So it should find Level 2 (Pullup).
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, 3, 'Squat', [], ['Squat'])
+    ).toEqual({
+      current_level_number: 2,
+      completed_sessions_count: 0
+    });
+  });
+
+  it('skips excluded levels while iterating backward', () => {
+    // Current is 3 (Squat). Toggling Squat off.
+    // Level 2 ('Pullup') is already excluded. So it finds Level 1 ('Pushup').
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, 3, 'Squat', [], ['Squat', 'Pullup'])
+    ).toEqual({
+      current_level_number: 1,
+      completed_sessions_count: 0
+    });
+  });
+
+  it('returns current_level_number: null if no valid levels exist forward or backward', () => {
+    // Toggling off the only level not excluded.
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, 1, 'Pushup', [], ['Pushup', 'Pullup', 'Squat'])
+    ).toEqual({
+      current_level_number: null,
+      completed_sessions_count: 0
+    });
+  });
+
+  it('restores level progress when currentLevelNumber is null and excluded exercise is re-included', () => {
+    // Re-including 'Pullup'
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, null, 'Pullup', ['Pullup'], [])
+    ).toEqual({
+      current_level_number: 2,
+      completed_sessions_count: 0
+    });
+  });
+
+  it('returns null when currentLevelNumber is null but exercise is not in currentExcluded', () => {
+    // currentLevelNumber is null, but we are toggling something not previously excluded?
+    // According to code, if not in currentExcluded, it returns null.
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, null, 'Pullup', [], [])
+    ).toBeNull();
+  });
+
+  it('returns null when currentLevelNumber is null and exercise is in currentExcluded but level not found', () => {
+    // 'Lunge' not in displayLevels
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, null, 'Lunge', ['Lunge'], [])
+    ).toBeNull();
+  });
+
+  it('returns null when toggling an exercise that is not the active level', () => {
+    // Current is 1 (Pushup). We toggle 'Pullup'.
+    // activeLevel.title === exerciseTitle is false. Returns null.
+    expect(
+      resolveLevelProgressOnToggle(true, displayLevels, 1, 'Pullup', [], ['Pullup'])
+    ).toBeNull();
   });
 });

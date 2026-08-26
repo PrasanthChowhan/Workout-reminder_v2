@@ -10,8 +10,12 @@
     {
       "identifier": "opener:allow-open-url",
       "allow": [
-        { "url": "https://www.youtube.com/*" },
-        { "url": "https://youtube.com/*" },
+        { "url": "https://www.youtube.com/watch?*" },
+        { "url": "https://youtube.com/watch?*" },
+        { "url": "https://www.youtube.com/embed/*" },
+        { "url": "https://youtube.com/embed/*" },
+        { "url": "https://www.youtube.com/v/*" },
+        { "url": "https://youtube.com/v/*" },
         { "url": "https://youtu.be/*" }
       ]
     }

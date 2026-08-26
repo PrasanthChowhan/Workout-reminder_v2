@@ -71,5 +71,46 @@ mod tests {
             logical_date(year_boundary, day_start_mins),
             NaiveDate::from_ymd_opt(2025, 12, 31).unwrap()
         );
+
+        // Leap year boundary: 2024-03-01 02:00:00 with 4 AM start - should be 2024-02-29
+        let leap_year_boundary = Local.with_ymd_and_hms(2024, 3, 1, 2, 0, 0).unwrap();
+        assert_eq!(
+            logical_date(leap_year_boundary, day_start_mins),
+            NaiveDate::from_ymd_opt(2024, 2, 29).unwrap()
+        );
+
+        // Invalid day_start_minutes (>= 1440) - should fallback to 4:00 AM
+        let invalid_day_start_mins = 1500; // 25 hours
+
+        // 2026-08-19 03:00:00 - should be previous day (2026-08-18) because fallback is 4:00 AM
+        let before_fallback = Local.with_ymd_and_hms(2026, 8, 19, 3, 0, 0).unwrap();
+        assert_eq!(
+            logical_date(before_fallback, invalid_day_start_mins),
+            NaiveDate::from_ymd_opt(2026, 8, 18).unwrap()
+        );
+
+        // 2026-08-19 05:00:00 - should be current day (2026-08-19) because fallback is 4:00 AM
+        let after_fallback = Local.with_ymd_and_hms(2026, 8, 19, 5, 0, 0).unwrap();
+        assert_eq!(
+            logical_date(after_fallback, invalid_day_start_mins),
+            NaiveDate::from_ymd_opt(2026, 8, 19).unwrap()
+        );
+
+        // Late start boundary: 23:59 (1439 minutes)
+        let late_start_mins = 1439;
+
+        // 2026-08-19 23:58:00 - should be previous day (2026-08-18)
+        let before_late = Local.with_ymd_and_hms(2026, 8, 19, 23, 58, 0).unwrap();
+        assert_eq!(
+            logical_date(before_late, late_start_mins),
+            NaiveDate::from_ymd_opt(2026, 8, 18).unwrap()
+        );
+
+        // 2026-08-19 23:59:00 - should be current day (2026-08-19)
+        let after_late = Local.with_ymd_and_hms(2026, 8, 19, 23, 59, 0).unwrap();
+        assert_eq!(
+            logical_date(after_late, late_start_mins),
+            NaiveDate::from_ymd_opt(2026, 8, 19).unwrap()
+        );
     }
 }

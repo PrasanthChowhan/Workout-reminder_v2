@@ -96,7 +96,8 @@ export function openUrl(url) {
 
   if (isTauri) {
     return invoke("open_external_url", { url }).catch((err) => {
-      console.error(`Failed to open URL '${url}' via Tauri:`, err);
+      console.error("Failed to open URL via Tauri:", err);
+      window.open(url, "_blank");
     });
   } else {
     if (import.meta.env.DEV) {
@@ -106,5 +107,4 @@ export function openUrl(url) {
     return Promise.resolve();
   }
 }
-
 
