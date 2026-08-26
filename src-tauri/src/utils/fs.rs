@@ -71,8 +71,8 @@ pub fn find_prompts_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|e| format!("Failed to resolve resource path: {}", e))
 }
 
-#[allow(unused_variables)]
 pub fn set_run_at_start(app: &AppHandle, enabled: bool) -> Result<(), String> {
+    let _ = app;
     #[cfg(target_os = "windows")]
     {
         use std::env;
