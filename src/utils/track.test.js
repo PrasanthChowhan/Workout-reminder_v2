@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
+<<<<<<< HEAD
+import { validateTrack, generateLevelsFromExercises } from './track';
+=======
 import { validateTrack, resolveLevelProgressOnToggle } from './track';
+>>>>>>> main
 
 describe('validateTrack', () => {
   const baseValidTrack = {
@@ -151,6 +155,122 @@ describe('validateTrack', () => {
   });
 });
 
+describe('generateLevelsFromExercises', () => {
+  const sampleExercises = [
+    {
+      name: "Exercise A",
+      description: "Desc A",
+      category: "Strength",
+      muscle_groups: ["Chest"],
+      difficulty: "Beginner",
+      duration_secs: 60,
+      sets: 3,
+      reps: "10-12 Reps",
+      is_unilateral: false,
+      rest_secs: 60,
+      equipment: ["Dumbbells"]
+    },
+    {
+      name: "Exercise B",
+      description: "Desc B",
+      category: "Skill",
+      muscle_groups: ["Legs"],
+      difficulty: "Intermediate",
+      duration_secs: 30,
+      sets: 4,
+      reps_min: 8,
+      reps_max: 10,
+      is_unilateral: true,
+      equipment: []
+    },
+    {
+      name: "Exercise C",
+      description: "Desc C",
+      category: "Mobility",
+      target_muscles: ["Back"],
+      difficulty: "beginner",
+      duration_secs: 45,
+      sets: 2,
+      reps_min: 15,
+      rest_secs: 30
+    },
+    {
+      name: "Exercise D",
+      description: "Desc D",
+      category: "Stability",
+      difficulty: "Advanced",
+      duration_secs: 60,
+      sets: 1,
+      // No reps defined, should fall back to duration
+    }
+  ];
+
+  it('returns empty array if exercises is undefined or null', () => {
+    expect(generateLevelsFromExercises(undefined, "Beginner")).toEqual([]);
+    expect(generateLevelsFromExercises(null, "Beginner")).toEqual([]);
+  });
+
+  it('filters exercises by onboardingTier case-insensitively', () => {
+    const levels = generateLevelsFromExercises(sampleExercises, "Beginner");
+    expect(levels.length).toBe(2);
+    expect(levels[0].title).toBe("Exercise A");
+    expect(levels[1].title).toBe("Exercise C");
+
+    const intLevels = generateLevelsFromExercises(sampleExercises, "INTERMEDIATE");
+    expect(intLevels.length).toBe(1);
+    expect(intLevels[0].title).toBe("Exercise B");
+  });
+
+  it('formats reps string correctly based on available data', () => {
+    const levels = generateLevelsFromExercises(sampleExercises, "Beginner");
+    // Ex A has `reps` explicitly
+    expect(levels[0].reps).toBe("10-12 Reps");
+
+    // Ex C has `reps_min` but no `reps_max`
+    expect(levels[1].reps).toBe("15 Reps");
+
+    const intLevels = generateLevelsFromExercises(sampleExercises, "Intermediate");
+    // Ex B has `reps_min` and `reps_max`
+    expect(intLevels[0].reps).toBe("8-10 Reps");
+
+    const advLevels = generateLevelsFromExercises(sampleExercises, "Advanced");
+    // Ex D has no reps, falls back to duration
+    expect(advLevels[0].reps).toBe("60s Hold");
+  });
+
+  it('constructs level objects with correctly mapped fields and formatting', () => {
+    const levels = generateLevelsFromExercises(sampleExercises, "Intermediate");
+    const level = levels[0];
+
+    expect(level.level_number).toBe(1);
+    expect(level.title).toBe("Exercise B");
+    expect(level.target_duration_secs).toBe(30);
+    expect(level.is_unilateral).toBe(true);
+    expect(level.equipment).toEqual([]);
+    expect(level.rest_secs).toBe(0); // missing in Ex B, defaults to 0
+    expect(level.sets).toBe(4);
+
+    expect(level.description).toContain("Desc B");
+    expect(level.description).toContain("Category: Skill");
+    expect(level.description).toContain("Target: Legs");
+    expect(level.description).toContain("Side: Unilateral (Perform per side)");
+    expect(level.description).toContain("Equipment: None");
+    expect(level.description).toContain("Rest: None");
+    expect(level.description).toContain("Instructions: 8-10 Reps (4 Sets)");
+  });
+
+  it('handles formatting of bilateral exercises and equipment correctly', () => {
+    const levels = generateLevelsFromExercises(sampleExercises, "Beginner");
+    const level = levels[0];
+
+    expect(level.description).toContain("Side: Bilateral");
+    expect(level.description).toContain("Equipment: Dumbbells");
+    expect(level.description).toContain("Rest: 60s");
+  });
+
+  it('handles empty muscle_groups or target_muscles', () => {
+      const advLevels = generateLevelsFromExercises(sampleExercises, "Advanced");
+      expect(advLevels[0].description).toContain("Target: \n");
 describe('resolveLevelProgressOnToggle', () => {
   const displayLevels = [
     { level_number: 1, title: 'Pushup' },
