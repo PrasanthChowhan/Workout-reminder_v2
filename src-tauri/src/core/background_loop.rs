@@ -90,14 +90,20 @@ pub fn start_timer_engine(app_handle: AppHandle) {
             };
 
             if let Some(break_type) = triggered_type {
+                let mut should_start_break = false;
                 {
                     let mut current_state = state.current_break_state.lock().unwrap_or_else(|e| e.into_inner());
-                    *current_state = Some(break_type.clone());
-                    let mut paused = state.timer_paused.lock().unwrap_or_else(|e| e.into_inner());
-                    *paused = true;
+                    if current_state.is_none() {
+                        *current_state = Some(break_type.clone());
+                        let mut paused = state.timer_paused.lock().unwrap_or_else(|e| e.into_inner());
+                        *paused = true;
+                        should_start_break = true;
+                    }
                 }
 
-                let _ = start_break_overlay(&app_handle, &break_type);
+                if should_start_break {
+                    let _ = start_break_overlay(&app_handle, &break_type);
+                }
             } else {
                 // Tick event for frontend UI (when visible)
                 let _ = emit_timer_tick(&app_handle, remaining_micro, remaining_active);

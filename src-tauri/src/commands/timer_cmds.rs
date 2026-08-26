@@ -315,7 +315,8 @@ pub fn trigger_refocus(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    state.trigger_refocus_state()?;
-    let _ = start_break_overlay(&app, "refocus");
+    if state.trigger_refocus_state().is_ok() {
+        let _ = start_break_overlay(&app, "refocus");
+    }
     Ok(())
 }

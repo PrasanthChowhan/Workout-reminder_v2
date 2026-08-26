@@ -189,10 +189,14 @@ pub fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>
                     let app = app.clone();
                     tauri::async_runtime::spawn(async move {
                         let state = app.state::<crate::core::state::AppState>();
-                        if let Err(e) = state.trigger_refocus_state() {
-                            eprintln!("Failed to trigger refocus state via tray: {}", e);
+                        match state.trigger_refocus_state() {
+                            Ok(_) => {
+                                let _ = crate::system::window::start_break_overlay(&app, "refocus");
+                            }
+                            Err(e) => {
+                                eprintln!("Skipping refocus overlay: {}", e);
+                            }
                         }
-                        let _ = crate::system::window::start_break_overlay(&app, "refocus");
                     });
                 }
                 "settings" => {

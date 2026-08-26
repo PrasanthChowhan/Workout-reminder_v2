@@ -12,11 +12,14 @@ pub fn init_global_shortcut_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
                 && shortcut.key == Code::KeyR
             {
                 let state = app.state::<crate::core::state::AppState>();
-                if let Err(e) = state.trigger_refocus_state() {
-                    eprintln!("Failed to trigger refocus state via shortcut: {}", e);
+                match state.trigger_refocus_state() {
+                    Ok(_) => {
+                        let _ = crate::system::window::start_break_overlay(app, "refocus");
+                    }
+                    Err(e) => {
+                        eprintln!("Skipping refocus overlay: {}", e);
+                    }
                 }
-
-                let _ = crate::system::window::start_break_overlay(app, "refocus");
             }
         })
         .build()

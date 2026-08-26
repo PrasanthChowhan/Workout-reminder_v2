@@ -32,6 +32,9 @@ impl AppState {
 
     pub fn trigger_refocus_state(&self) -> Result<(), String> {
         let mut current_state = self.current_break_state.lock().map_err(|e| e.to_string())?;
+        if current_state.is_some() {
+            return Err("A break is already active".to_string());
+        }
         *current_state = Some("refocus".to_string());
         let mut paused = self.timer_paused.lock().map_err(|e| e.to_string())?;
         *paused = true;
