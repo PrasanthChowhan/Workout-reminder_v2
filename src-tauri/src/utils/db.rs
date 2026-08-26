@@ -77,28 +77,33 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
         }
 
         // 4. Stretches
-        for stretch in config.stretches {
-            let equipment_str = serde_json::to_string(&stretch.equipment).unwrap_or_else(|_| "[]".to_string());
-            let metadata_str = stretch.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
-            sqlx::query(
-                "INSERT OR REPLACE INTO stretches (name, description, duration_secs, difficulty_level, sets, reps, video_url, image_url, is_unilateral, equipment, rest_secs, metadata)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            )
-            .bind(&stretch.name)
-            .bind(&stretch.description)
-            .bind(stretch.duration_secs as i64)
-            .bind(&stretch.difficulty_level)
-            .bind(stretch.sets as i64)
-            .bind(&stretch.reps)
-            .bind(&stretch.video_url)
-            .bind(&stretch.image_url)
-            .bind(if stretch.is_unilateral { 1 } else { 0 })
-            .bind(equipment_str)
-            .bind(stretch.rest_secs as i64)
-            .bind(metadata_str)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        if !config.stretches.is_empty() {
+            let chunk_size = 999 / 12;
+            for chunk in config.stretches.chunks(chunk_size) {
+                let mut query_builder: sqlx::QueryBuilder<sqlx::Sqlite> = sqlx::QueryBuilder::new(
+                    "INSERT OR REPLACE INTO stretches (name, description, duration_secs, difficulty_level, sets, reps, video_url, image_url, is_unilateral, equipment, rest_secs, metadata) "
+                );
+
+                query_builder.push_values(chunk, |mut b, stretch| {
+                    let equipment_str = serde_json::to_string(&stretch.equipment).unwrap_or_else(|_| "[]".to_string());
+                    let metadata_str = stretch.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
+                    b.push_bind(stretch.name.clone())
+                     .push_bind(stretch.description.clone())
+                     .push_bind(stretch.duration_secs as i64)
+                     .push_bind(stretch.difficulty_level.clone())
+                     .push_bind(stretch.sets as i64)
+                     .push_bind(stretch.reps.clone())
+                     .push_bind(stretch.video_url.clone())
+                     .push_bind(stretch.image_url.clone())
+                     .push_bind(if stretch.is_unilateral { 1 } else { 0 })
+                     .push_bind(equipment_str)
+                     .push_bind(stretch.rest_secs as i64)
+                     .push_bind(metadata_str);
+                });
+
+                let query = query_builder.build();
+                query.execute(&mut *tx).await.map_err(|e| e.to_string())?;
+            }
         }
 
         // 5. Tracks, Levels, Custom Exercises
@@ -735,25 +740,33 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
 
     // 4. Stretches
     sqlx::query("DELETE FROM stretches").execute(&mut *tx).await.map_err(|e| e.to_string())?;
-    for stretch in &config.stretches {
-        let equipment_str = serde_json::to_string(&stretch.equipment).unwrap_or_else(|_| "[]".to_string());
-        let metadata_str = stretch.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
-        sqlx::query("INSERT INTO stretches (name, description, duration_secs, difficulty_level, sets, reps, video_url, image_url, is_unilateral, equipment, rest_secs, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-            .bind(&stretch.name)
-            .bind(&stretch.description)
-            .bind(stretch.duration_secs as i64)
-            .bind(&stretch.difficulty_level)
-            .bind(stretch.sets as i64)
-            .bind(&stretch.reps)
-            .bind(&stretch.video_url)
-            .bind(&stretch.image_url)
-            .bind(if stretch.is_unilateral { 1 } else { 0 })
-            .bind(equipment_str)
-            .bind(stretch.rest_secs as i64)
-            .bind(metadata_str)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
+    if !config.stretches.is_empty() {
+        let chunk_size = 999 / 12;
+        for chunk in config.stretches.chunks(chunk_size) {
+            let mut query_builder: sqlx::QueryBuilder<sqlx::Sqlite> = sqlx::QueryBuilder::new(
+                "INSERT INTO stretches (name, description, duration_secs, difficulty_level, sets, reps, video_url, image_url, is_unilateral, equipment, rest_secs, metadata) "
+            );
+
+            query_builder.push_values(chunk, |mut b, stretch| {
+                let equipment_str = serde_json::to_string(&stretch.equipment).unwrap_or_else(|_| "[]".to_string());
+                let metadata_str = stretch.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default());
+                b.push_bind(stretch.name.clone())
+                 .push_bind(stretch.description.clone())
+                 .push_bind(stretch.duration_secs as i64)
+                 .push_bind(stretch.difficulty_level.clone())
+                 .push_bind(stretch.sets as i64)
+                 .push_bind(stretch.reps.clone())
+                 .push_bind(stretch.video_url.clone())
+                 .push_bind(stretch.image_url.clone())
+                 .push_bind(if stretch.is_unilateral { 1 } else { 0 })
+                 .push_bind(equipment_str)
+                 .push_bind(stretch.rest_secs as i64)
+                 .push_bind(metadata_str);
+            });
+
+            let query = query_builder.build();
+            query.execute(&mut *tx).await.map_err(|e| e.to_string())?;
+        }
     }
 
     // 5. Tracks, levels, exercises
