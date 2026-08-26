@@ -27,6 +27,22 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Generate Changelog
+        id: changelog
+        shell: bash
+        run: |
+          git fetch --tags
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "notes<<EOF_RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "### Changes in ${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          if [ -z "$PREV_TAG" ]; then
+            git log --oneline --pretty=format:"- %s" >> $GITHUB_OUTPUT
+          else
+            git log ${PREV_TAG}..HEAD --oneline --pretty=format:"- %s" >> $GITHUB_OUTPUT
+          fi
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF_RELEASE_NOTES" >> $GITHUB_OUTPUT
+
       - name: Build and Publish Tauri App
         uses: tauri-apps/tauri-action@v1
         env:
@@ -38,7 +54,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Kodon ${{ github.ref_name }}'
-          releaseBody: 'The latest release of Kodon: The Cognitive Companion.'
+          releaseBody: ${{ steps.changelog.outputs.notes }}
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
           # Create a draft only for stable releases. Publish beta/pre-releases immediately.
