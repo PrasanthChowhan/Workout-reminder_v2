@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { openUrl } from "../utils/tauri";
 import { getYoutubeId } from "../utils/youtube";
 import { CloseIcon, PlayIcon, InfoIcon } from "./ui/Icons";
 import EmbeddedPlayer from "./EmbeddedPlayer";
