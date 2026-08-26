@@ -7,6 +7,7 @@ export default defineConfig({
 
   test: {
     environment: "jsdom",
+    setupFiles: ['./vitest.setup.js'],
   },
 
   // Vite options tailored for Tauri development
