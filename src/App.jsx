@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { formatTime } from "./utils/time";
 import { invoke, registerListener } from "./utils/tauri";
 import { useHoldToConfirm } from "./hooks/useHoldToConfirm";
+import { useBreakTimer } from "./hooks/useBreakTimer";
+import { useDailyCheckin } from "./hooks/useDailyCheckin";
 import { checkForUpdates } from "./utils/updater";
 
 // UI Components
@@ -22,7 +24,8 @@ import buttonStyles from "./styles/buttons.module.css";
  * and high-level layout presentation.
  */
 export default function App() {
-  const [breakCountdown, setBreakCountdown] = useState(300);
+  const { breakCountdown, setBreakCountdown } = useBreakTimer(300);
+  const { dailyCheckin, setDailyCheckin, checkDailyQuestion } = useDailyCheckin();
   const [sessionStretch, setSessionStretch] = useState(null);
   const [sessionCard, setSessionCard] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -32,11 +35,6 @@ export default function App() {
   // Modal visibility states
   const [showSkipReasonModal, setShowSkipReasonModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [dailyCheckin, setDailyCheckin] = useState({
-    enabled: false,
-    answeredToday: false,
-    question: ""
-  });
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   // Toast notifications state
@@ -54,15 +52,6 @@ export default function App() {
     window.addEventListener("app-toast", handleToastEvent);
     return () => window.removeEventListener("app-toast", handleToastEvent);
   }, []);
-
-  const checkDailyQuestion = async () => {
-    try {
-      const status = await invoke("check_daily_question_status");
-      setDailyCheckin(status);
-    } catch (e) {
-      console.error("Failed to check daily question status", e);
-    }
-  };
 
   // Load configuration and default first break data on mount
   useEffect(() => {
@@ -121,25 +110,6 @@ export default function App() {
       document.removeEventListener("visibilitychange", handleFocus);
     };
   }, []);
-
-  // Countdown timer interval
-  useEffect(() => {
-    let interval;
-    if (breakCountdown > 0) {
-      interval = setInterval(() => {
-        setBreakCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [breakCountdown]);
 
   const triggerBreak = async () => {
     setShowAnswer(false);
