@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { formatTime } from "./utils/time";
 import { invoke, registerListener } from "./utils/tauri";
 import { useHoldToConfirm } from "./hooks/useHoldToConfirm";
+import { useAppToasts } from "./hooks/useAppToasts";
+import { useDailyCheckin } from "./hooks/useDailyCheckin";
+import { useCountdown } from "./hooks/useCountdown";
 import { checkForUpdates } from "./utils/updater";
 
 // UI Components
@@ -22,7 +25,7 @@ import buttonStyles from "./styles/buttons.module.css";
  * and high-level layout presentation.
  */
 export default function App() {
-  const [breakCountdown, setBreakCountdown] = useState(300);
+  const [breakCountdown, setBreakCountdown] = useCountdown(300);
   const [sessionStretch, setSessionStretch] = useState(null);
   const [sessionCard, setSessionCard] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -32,37 +35,11 @@ export default function App() {
   // Modal visibility states
   const [showSkipReasonModal, setShowSkipReasonModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [dailyCheckin, setDailyCheckin] = useState({
-    enabled: false,
-    answeredToday: false,
-    question: ""
-  });
+  const { dailyCheckin, setDailyCheckin, checkDailyQuestion } = useDailyCheckin();
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   // Toast notifications state
-  const [toasts, setToasts] = useState([]);
-
-  useEffect(() => {
-    const handleToastEvent = (e) => {
-      const { message, type } = e.detail;
-      const id = Math.random().toString(36).substring(2, 9);
-      setToasts((prev) => [...prev, { id, message, type }]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 4000);
-    };
-    window.addEventListener("app-toast", handleToastEvent);
-    return () => window.removeEventListener("app-toast", handleToastEvent);
-  }, []);
-
-  const checkDailyQuestion = async () => {
-    try {
-      const status = await invoke("check_daily_question_status");
-      setDailyCheckin(status);
-    } catch (e) {
-      console.error("Failed to check daily question status", e);
-    }
-  };
+  const { toasts, removeToast } = useAppToasts();
 
   // Load configuration and default first break data on mount
   useEffect(() => {
@@ -107,39 +84,12 @@ export default function App() {
       triggerBreak();
     });
 
-    const handleFocus = () => {
-      checkDailyQuestion();
-    };
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleFocus);
-
     return () => {
       unlistenStartBreak();
       unlistenOpenSettings();
       unlistenBreakCompleted();
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, []);
-
-  // Countdown timer interval
-  useEffect(() => {
-    let interval;
-    if (breakCountdown > 0) {
-      interval = setInterval(() => {
-        setBreakCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [breakCountdown]);
 
   const triggerBreak = async () => {
     setShowAnswer(false);
@@ -311,7 +261,7 @@ export default function App() {
       {/* Toast Notification Container */}
       <ToastContainer 
         toasts={toasts} 
-        onCloseToast={(id) => setToasts((prev) => prev.filter((x) => x.id !== id))} 
+        onCloseToast={removeToast}
       />
     </div>
   );
