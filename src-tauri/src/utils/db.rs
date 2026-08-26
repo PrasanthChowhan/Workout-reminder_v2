@@ -1,4 +1,4 @@
-use sqlx::{sqlite::{SqliteConnectOptions, SqlitePoolOptions}, SqlitePool, Row};
+use sqlx::{sqlite::{SqliteConnectOptions, SqlitePoolOptions}, SqlitePool, Row, QueryBuilder, Sqlite};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::fs;
@@ -846,36 +846,76 @@ pub async fn import_recall_json_to_db(pool: &SqlitePool, data: JsonImportSchema)
     let source_title = data.metadata.as_ref().and_then(|m| m.source_title.clone());
     let source_url = data.metadata.as_ref().and_then(|m| m.source_url.clone());
 
-    for concept in data.concepts {
-        let tags_json = serde_json::to_string(&concept.tags).unwrap_or_else(|_| "[]".to_string());
-        
-        sqlx::query(
-            "INSERT INTO recall_concepts (concept_id, concept_title, tags, source_title, source_url)
-             VALUES (?, ?, ?, ?, ?)
-             ON CONFLICT(concept_id) DO UPDATE SET
-                concept_title = excluded.concept_title,
-                tags = excluded.tags,
-                source_title = excluded.source_title,
-                source_url = excluded.source_url"
-        )
-        .bind(&concept.concept_id)
-        .bind(&concept.concept_title)
-        .bind(&tags_json)
-        .bind(&source_title)
-        .bind(&source_url)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+    let mut variants_flat = Vec::new();
 
-        for variant in concept.variants {
-            let now_str = Utc::now().to_rfc3339();
-            sqlx::query(
+    let concepts_chunk_size = 900 / 5;
+    if !data.concepts.is_empty() {
+        for chunk in data.concepts.chunks(concepts_chunk_size) {
+            let mut qb: QueryBuilder<Sqlite> = QueryBuilder::new(
+                "INSERT INTO recall_concepts (concept_id, concept_title, tags, source_title, source_url) "
+            );
+
+            qb.push_values(chunk.iter(), |mut b, concept| {
+                let tags_json = serde_json::to_string(&concept.tags).unwrap_or_else(|_| "[]".to_string());
+                b.push_bind(&concept.concept_id)
+                 .push_bind(&concept.concept_title)
+                 .push_bind(tags_json)
+                 .push_bind(&source_title)
+                 .push_bind(&source_url);
+
+                for variant in &concept.variants {
+                    variants_flat.push((variant, concept.concept_id.clone()));
+                }
+            });
+
+            qb.push(
+                " ON CONFLICT(concept_id) DO UPDATE SET
+                    concept_title = excluded.concept_title,
+                    tags = excluded.tags,
+                    source_title = excluded.source_title,
+                    source_url = excluded.source_url"
+            );
+
+            qb.build()
+              .execute(&mut *tx)
+              .await
+              .map_err(|e| e.to_string())?;
+        }
+    }
+
+    let variants_chunk_size = 900 / 20; // safe max parameters (11 for insert, but let's be safe)
+    let now_str = Utc::now().to_rfc3339();
+    if !variants_flat.is_empty() {
+        for chunk in variants_flat.chunks(variants_chunk_size) {
+            let mut qb: QueryBuilder<Sqlite> = QueryBuilder::new(
                 "INSERT INTO recall_variants (
                     variant_id, concept_id, difficulty_level, scenario_prose, scenario_code_snippet,
                     hint, target_answer_prose, target_answer_code, common_trap, explanation,
                     due_date, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, 0, 0, 0, 0, 0, NULL)
-                 ON CONFLICT(variant_id) DO UPDATE SET
+                 ) "
+            );
+
+            qb.push_values(chunk.iter(), |mut b, (variant, concept_id)| {
+                // To insert custom parts, we need to push_bind for the parameterized fields and append literal SQL for defaults.
+                // However, `push_values` separates row values with `,`, and expects all items inside `(...)` to be handled here.
+                // Since `b` is a Separated object, we can push binds and manually push string segments.
+                b.push_bind(&variant.variant_id)
+                 .push_bind(concept_id)
+                 .push_bind(&variant.difficulty)
+                 .push_bind(&variant.scenario_prose)
+                 .push_bind(&variant.scenario_code_snippet)
+                 .push_bind(&variant.hint)
+                 .push_bind(&variant.target_answer_prose)
+                 .push_bind(&variant.target_answer_code)
+                 .push_bind(&variant.common_trap)
+                 .push_bind(&variant.explanation)
+                 .push_bind(&now_str);
+
+                b.push_unseparated(", 0.0, 0.0, 0, 0, 0, 0, 0, NULL");
+            });
+
+            qb.push(
+                " ON CONFLICT(variant_id) DO UPDATE SET
                     difficulty_level = excluded.difficulty_level,
                     scenario_prose = excluded.scenario_prose,
                     scenario_code_snippet = excluded.scenario_code_snippet,
@@ -884,21 +924,12 @@ pub async fn import_recall_json_to_db(pool: &SqlitePool, data: JsonImportSchema)
                     target_answer_code = excluded.target_answer_code,
                     common_trap = excluded.common_trap,
                     explanation = excluded.explanation"
-            )
-            .bind(&variant.variant_id)
-            .bind(&concept.concept_id)
-            .bind(&variant.difficulty)
-            .bind(&variant.scenario_prose)
-            .bind(&variant.scenario_code_snippet)
-            .bind(&variant.hint)
-            .bind(&variant.target_answer_prose)
-            .bind(&variant.target_answer_code)
-            .bind(&variant.common_trap)
-            .bind(&variant.explanation)
-            .bind(&now_str)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
+            );
+
+            qb.build()
+              .execute(&mut *tx)
+              .await
+              .map_err(|e| e.to_string())?;
         }
     }
 
