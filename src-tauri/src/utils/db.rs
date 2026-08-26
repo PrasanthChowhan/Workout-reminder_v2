@@ -68,12 +68,22 @@ pub async fn migrate_json_to_db(pool: &SqlitePool, config_path: &PathBuf) -> Res
 
 
         // 3. Reflection Prompts
-        for prompt in config.reflection_prompts {
-            sqlx::query("INSERT OR IGNORE INTO reflection_prompts (prompt) VALUES (?)")
-                .bind(&prompt)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| e.to_string())?;
+        let prompts: Vec<String> = config.reflection_prompts;
+        for chunk in prompts.chunks(900) {
+            if chunk.is_empty() { continue; }
+            let mut query = String::from("INSERT OR IGNORE INTO reflection_prompts (prompt) VALUES ");
+            for (i, _) in chunk.iter().enumerate() {
+                if i > 0 {
+                    query.push_str(", (?)");
+                } else {
+                    query.push_str("(?)");
+                }
+            }
+            let mut q = sqlx::query(&query);
+            for prompt in chunk {
+                q = q.bind(prompt);
+            }
+            q.execute(&mut *tx).await.map_err(|e| e.to_string())?;
         }
 
         // 4. Stretches
@@ -725,12 +735,22 @@ pub async fn save_app_config(pool: &SqlitePool, config: &AppConfig) -> Result<()
 
     // 3. Reflection Prompts
     sqlx::query("DELETE FROM reflection_prompts").execute(&mut *tx).await.map_err(|e| e.to_string())?;
-    for prompt in &config.reflection_prompts {
-        sqlx::query("INSERT INTO reflection_prompts (prompt) VALUES (?)")
-            .bind(prompt)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
+    let prompts: Vec<String> = config.reflection_prompts.clone();
+    for chunk in prompts.chunks(900) {
+        if chunk.is_empty() { continue; }
+        let mut query = String::from("INSERT INTO reflection_prompts (prompt) VALUES ");
+        for (i, _) in chunk.iter().enumerate() {
+            if i > 0 {
+                query.push_str(", (?)");
+            } else {
+                query.push_str("(?)");
+            }
+        }
+        let mut q = sqlx::query(&query);
+        for prompt in chunk {
+            q = q.bind(prompt);
+        }
+        q.execute(&mut *tx).await.map_err(|e| e.to_string())?;
     }
 
     // 4. Stretches
