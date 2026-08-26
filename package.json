@@ -24,7 +24,7 @@
     "jsdom": "^29.1.1",
     "tauri-plugin-react-issue-reporter": "file:packages/tauri-plugin-dev-issues",
     "vite": "^8.2.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@tauri-apps/plugin-global-shortcut": "^2.3.2",
