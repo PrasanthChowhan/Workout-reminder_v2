@@ -33,6 +33,7 @@ pub struct RecallConcept {
     pub tags: Vec<String>,
     pub source_title: Option<String>,
     pub source_url: Option<String>,
+    pub is_starred: bool,
     pub variants: Vec<RecallVariant>,
 }
 

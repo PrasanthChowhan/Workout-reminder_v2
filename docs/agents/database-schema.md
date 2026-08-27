@@ -20,19 +20,41 @@ Stores high-frequency timer intervals and application startup preferences.
 | `active_break_duration_secs` | INTEGER | NOT NULL | Duration of physical breaks. |
 | `run_at_start` | INTEGER | NOT NULL | 1 (true) if app launches at OS start, 0 (false) otherwise. |
 
----
+### 1.2 `recall_concepts` & `recall_variants` Tables
+Stores active recall flashcards, grouped by topic/concept, and their FSRS (Free Spaced Repetition Scheduler) metadata. Replaced `active_recall_cards` in Schema V3.
 
-### 1.2 `active_recall_cards` Table
-Stores flashcard contents and review history metadata.
-
+**`recall_concepts` Table**
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | TEXT | PRIMARY KEY | Unique card identifier (slug). |
-| `question` | TEXT | NOT NULL | The query displayed to the user. |
-| `answer` | TEXT | NOT NULL | The solution toggleable in UI. |
-| `category` | TEXT | NOT NULL | Learning topic (e.g. "Rust", "System Design"). |
-| `source` | TEXT | NULL | URL citation or reference. |
-| `metadata` | TEXT | NULL | JSON string encoding spacing / review history telemetry. |
+| `concept_id` | TEXT | PRIMARY KEY | Unique concept identifier (slug). |
+| `concept_title` | TEXT | NOT NULL | Title of the topic being learned. |
+| `tags` | TEXT | NOT NULL | JSON string array of tags. |
+| `source_title` | TEXT | NULL | Name of the source material or deck. |
+| `source_url` | TEXT | NULL | URL citation for the source. |
+| `is_starred` | INTEGER | NOT NULL DEFAULT 0 | 1 if this topic is prioritized (Schema V9). |
+
+**`recall_variants` Table**
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `variant_id` | TEXT | PRIMARY KEY | Unique variant card identifier. |
+| `concept_id` | TEXT | NOT NULL | Foreign key to `recall_concepts`. |
+| `difficulty_level` | TEXT | NOT NULL | Difficulty tier (Beginner, Intermediate, Advanced). |
+| `scenario_prose` | TEXT | NOT NULL | The query displayed to the user. |
+| `scenario_code_snippet` | TEXT | NULL | Optional code snippet for the query. |
+| `hint` | TEXT | NOT NULL | Hint displayed on demand. |
+| `target_answer_prose` | TEXT | NOT NULL | The solution toggleable in UI. |
+| `target_answer_code` | TEXT | NULL | Optional code snippet for the solution. |
+| `common_trap` | TEXT | NOT NULL | Common misconception to avoid. |
+| `explanation` | TEXT | NOT NULL | Detailed explanation of the answer. |
+| `due_date` | TEXT | NOT NULL | RFC3339 timestamp of next scheduled review. |
+| `stability` | REAL | NOT NULL | FSRS stability score. |
+| `difficulty` | REAL | NOT NULL | FSRS difficulty score. |
+| `elapsed_days` | INTEGER | NOT NULL | FSRS elapsed days since last review. |
+| `scheduled_days` | INTEGER | NOT NULL | FSRS scheduled days until next review. |
+| `reps` | INTEGER | NOT NULL | Total number of reviews. |
+| `lapses` | INTEGER | NOT NULL | Total number of forgotten reviews. |
+| `state` | INTEGER | NOT NULL | FSRS state (0=New, 1=Learning, 2=Review, 3=Relearning). |
+| `last_review` | TEXT | NULL | RFC3339 timestamp of last review. |
 
 ---
 

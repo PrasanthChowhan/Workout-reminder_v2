@@ -29,7 +29,7 @@ stateDiagram-v2
 
 ### 3. Cognitive Reset & Study Tools
 - **Reflection Prompts**: High-level alignment questions designed to break hyperfocus rabbit holes.
-- **Active Recall Cards**: Flashcards displaying custom learning prompts backed by user-editable markdown/JSON files.
+- **Active Recall Cards**: Flashcards displaying custom learning prompts managed in SQLite, scheduled via the Free Spaced Repetition Scheduler (FSRS), with optional topic-level prioritization (starring).
 - **Physical Resets**: Guided stretching and posture adjustment cues.
 
 ---

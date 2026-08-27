@@ -191,3 +191,8 @@ pub const SCHEMA_V8: &str = r#"
 ALTER TABLE settings ADD COLUMN day_start_time INTEGER NOT NULL DEFAULT 240;
 PRAGMA user_version = 8;
 "#;
+
+pub const SCHEMA_V9: &str = r#"
+ALTER TABLE recall_concepts ADD COLUMN is_starred INTEGER NOT NULL DEFAULT 0;
+PRAGMA user_version = 9;
+"#;

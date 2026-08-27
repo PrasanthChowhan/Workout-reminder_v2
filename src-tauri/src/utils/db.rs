@@ -991,7 +991,7 @@ pub async fn import_recall_json_to_db(pool: &SqlitePool, data: JsonImportSchema)
 }
 
 pub async fn get_recall_concepts(pool: &SqlitePool) -> Result<Vec<RecallConcept>, String> {
-    let concepts_rows = sqlx::query("SELECT concept_id, concept_title, tags, source_title, source_url FROM recall_concepts")
+    let concepts_rows = sqlx::query("SELECT concept_id, concept_title, tags, source_title, source_url, is_starred FROM recall_concepts")
         .fetch_all(pool)
         .await
         .map_err(|e| e.to_string())?;
@@ -1073,6 +1073,7 @@ pub async fn get_recall_concepts(pool: &SqlitePool) -> Result<Vec<RecallConcept>
         let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
         let source_title: Option<String> = c_row.get("source_title");
         let source_url: Option<String> = c_row.get("source_url");
+        let is_starred: bool = c_row.get::<i32, _>("is_starred") != 0;
 
         let variants = variants_by_concept.remove(&concept_id).unwrap_or_default();
 
@@ -1082,6 +1083,7 @@ pub async fn get_recall_concepts(pool: &SqlitePool) -> Result<Vec<RecallConcept>
             tags,
             source_title,
             source_url,
+            is_starred,
             variants,
         });
     }
@@ -1134,14 +1136,15 @@ pub async fn export_recall_db_to_json(pool: &SqlitePool) -> Result<JsonImportSch
 pub async fn get_due_recall_card(pool: &SqlitePool) -> Result<Option<RecallSessionCard>, String> {
     let now_str = Utc::now().to_rfc3339();
     
-    let due_row = sqlx::query(
+    // First, try to fetch a due card from a starred topic (Priority Pool)
+    let starred_due_row = sqlx::query(
         "SELECT v.variant_id, v.concept_id, c.concept_title, c.tags, v.difficulty_level, 
                 v.scenario_prose, v.scenario_code_snippet, v.hint, v.target_answer_prose, 
                 v.target_answer_code, v.common_trap, v.explanation, c.source_title, c.source_url, 
                 v.due_date, v.state
          FROM recall_variants v
          JOIN recall_concepts c ON v.concept_id = c.concept_id
-         WHERE v.due_date <= ?
+         WHERE c.is_starred = 1 AND v.due_date <= ?
          ORDER BY RANDOM() LIMIT 1"
     )
     .bind(&now_str)
@@ -1149,9 +1152,31 @@ pub async fn get_due_recall_card(pool: &SqlitePool) -> Result<Option<RecallSessi
     .await
     .map_err(|e| e.to_string())?;
 
+    let due_row = match starred_due_row {
+        Some(r) => Some(r),
+        None => {
+            // Fallback: fetch a due card from any topic (Global Pool)
+            sqlx::query(
+                "SELECT v.variant_id, v.concept_id, c.concept_title, c.tags, v.difficulty_level, 
+                        v.scenario_prose, v.scenario_code_snippet, v.hint, v.target_answer_prose, 
+                        v.target_answer_code, v.common_trap, v.explanation, c.source_title, c.source_url, 
+                        v.due_date, v.state
+                 FROM recall_variants v
+                 JOIN recall_concepts c ON v.concept_id = c.concept_id
+                 WHERE v.due_date <= ?
+                 ORDER BY RANDOM() LIMIT 1"
+            )
+            .bind(&now_str)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?
+        }
+    };
+
     let row = match due_row {
         Some(r) => Some(r),
         None => {
+            // If still no due cards globally, fetch any random card
             sqlx::query(
                 "SELECT v.variant_id, v.concept_id, c.concept_title, c.tags, v.difficulty_level, 
                         v.scenario_prose, v.scenario_code_snippet, v.hint, v.target_answer_prose, 
@@ -1625,4 +1650,82 @@ mod bench_tests {
         let duration2 = start2.elapsed();
         println!("BASELINE - Second import (updates): {:?}", duration2);
     }
+}
+
+pub async fn toggle_concept_star(pool: &SqlitePool, concept_id: &str, is_starred: bool) -> Result<(), String> {
+    let starred_val = if is_starred { 1 } else { 0 };
+    sqlx::query("UPDATE recall_concepts SET is_starred = ? WHERE concept_id = ?")
+        .bind(starred_val)
+        .bind(concept_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub async fn toggle_source_star(pool: &SqlitePool, source_title: Option<&str>, is_starred: bool) -> Result<(), String> {
+    let starred_val = if is_starred { 1 } else { 0 };
+    match source_title {
+        Some(title) => {
+            sqlx::query("UPDATE recall_concepts SET is_starred = ? WHERE source_title = ?")
+                .bind(starred_val)
+                .bind(title)
+                .execute(pool)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        None => {
+            sqlx::query("UPDATE recall_concepts SET is_starred = ? WHERE source_title IS NULL")
+                .bind(starred_val)
+                .execute(pool)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn get_all_recall_variants(pool: &SqlitePool) -> Result<Vec<RecallSessionCard>, String> {
+    let rows = sqlx::query(
+        "SELECT v.variant_id, v.concept_id, c.concept_title, c.tags, v.difficulty_level, 
+                v.scenario_prose, v.scenario_code_snippet, v.hint, v.target_answer_prose, 
+                v.target_answer_code, v.common_trap, v.explanation, c.source_title, c.source_url, 
+                v.due_date, v.state
+         FROM recall_variants v
+         JOIN recall_concepts c ON v.concept_id = c.concept_id"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut cards = Vec::with_capacity(rows.len());
+    for r in rows {
+        let tags_str: String = r.get("tags");
+        let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
+        let due_date_str: String = r.get("due_date");
+        let srs_due_date = DateTime::parse_from_rfc3339(&due_date_str)
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|_| Utc::now());
+
+        cards.push(RecallSessionCard {
+            concept_id: r.get("concept_id"),
+            concept_title: r.get("concept_title"),
+            variant_id: r.get("variant_id"),
+            tags,
+            difficulty_level: r.get("difficulty_level"),
+            scenario_prose: r.get("scenario_prose"),
+            scenario_code_snippet: r.get("scenario_code_snippet"),
+            hint: r.get("hint"),
+            target_answer_prose: r.get("target_answer_prose"),
+            target_answer_code: r.get("target_answer_code"),
+            common_trap: r.get("common_trap"),
+            explanation: r.get("explanation"),
+            source_title: r.get("source_title"),
+            source_url: r.get("source_url"),
+            srs_due_date,
+            srs_state: r.get::<i32, _>("state") as u32,
+        });
+    }
+
+    Ok(cards)
 }

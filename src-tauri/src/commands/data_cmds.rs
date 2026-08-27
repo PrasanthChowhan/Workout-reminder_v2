@@ -128,3 +128,42 @@ pub async fn submit_daily_question_response(
     
     Ok(())
 }
+
+#[tauri::command]
+pub async fn toggle_concept_star(
+    app: tauri::AppHandle,
+    concept_id: String,
+    is_starred: bool,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    db::toggle_concept_star(&state.db_pool, &concept_id, is_starred).await?;
+    
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = crate::core::sync::mark_local_state_dirty(&dir);
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_source_star(
+    app: tauri::AppHandle,
+    source_title: Option<String>,
+    is_starred: bool,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    db::toggle_source_star(&state.db_pool, source_title.as_deref(), is_starred).await?;
+    
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = crate::core::sync::mark_local_state_dirty(&dir);
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_all_recall_variants(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<crate::core::models::RecallSessionCard>, String> {
+    db::get_all_recall_variants(&state.db_pool).await
+}

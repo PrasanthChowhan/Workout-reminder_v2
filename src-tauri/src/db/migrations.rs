@@ -42,6 +42,10 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), String> {
         sqlx::query(SCHEMA_V8).execute(&mut *tx).await.map_err(|e| e.to_string())?;
     }
 
+    if version < 9 {
+        sqlx::query(SCHEMA_V9).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
 }

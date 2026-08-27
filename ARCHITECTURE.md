@@ -20,6 +20,9 @@ src/
 │   └── settings/
 │       ├── SettingsModal.jsx        # Settings orchestrator + tab router
 │       ├── CardsTab.jsx             # Flashcard management tab
+│       ├── cards/                   # Flashcard specific sub-views
+│       │   ├── AiRecallModal.jsx    # AI card generation modal
+│       │   └── CardBrowser.jsx      # Anki-style table view
 │       ├── PromptsTab.jsx           # Reflection prompts tab
 │       ├── StretchesTab.jsx         # Stretch management tab
 │       ├── TracksTab.jsx            # Track orchestrator (<200 lines)

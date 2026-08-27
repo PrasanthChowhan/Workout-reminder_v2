@@ -1,7 +1,8 @@
 import React, { useState, useRef } from "react";
 import { Modal } from "../ui/Modal";
-import { ArrowLeftIcon } from "../ui/Icons";
+import { ArrowLeftIcon, StarIcon } from "../ui/Icons";
 import AiRecallModal from "./cards/AiRecallModal";
+import CardBrowser from "./cards/CardBrowser";
 import styles from "./CardsTab.module.css";
 import useRecallConcepts from "../../hooks/useRecallConcepts";
 
@@ -9,6 +10,7 @@ export default function CardsTab() {
   const [activeConcept, setActiveConcept] = useState(null);
   const [selectedSource, setSelectedSource] = useState(null);
   const [showAiRecallModal, setShowAiRecallModal] = useState(false);
+  const [isBrowserView, setIsBrowserView] = useState(false);
   
   const fileInputRef = useRef(null);
 
@@ -16,7 +18,9 @@ export default function CardsTab() {
     concepts,
     handleImportJson,
     handleExportJson,
-    handleApplyRecallCards
+    handleApplyRecallCards,
+    toggleConceptStar,
+    toggleSourceStar
   } = useRecallConcepts();
 
   const onFileChange = (e) => {
@@ -53,6 +57,13 @@ export default function CardsTab() {
         <div className={styles['header-actions']}>
           <button 
             type="button" 
+            className={`${styles['action-btn']} ${isBrowserView ? styles['active'] : ''}`}
+            onClick={() => setIsBrowserView(!isBrowserView)}
+          >
+            {isBrowserView ? "Topic View" : "Browser View"}
+          </button>
+          <button 
+            type="button" 
             className={styles['action-btn']}
             onClick={() => setShowAiRecallModal(true)}
           >
@@ -86,10 +97,15 @@ export default function CardsTab() {
         <div className={styles['empty-state']}>
           <p>No recall cards found. Use the AI Prompt to generate some cards, then import them!</p>
         </div>
+      ) : isBrowserView ? (
+        <CardBrowser />
       ) : selectedSource === null ? (
         <div className={styles['source-cards-grid']}>
           {Object.entries(groupedConcepts).map(([sourceName, group]) => {
             const totalVariants = group.items.reduce((sum, item) => sum + (item.variants?.length || 0), 0);
+            const allStarred = group.items.every((c) => c.is_starred);
+            const someStarred = group.items.some((c) => c.is_starred);
+
             return (
               <div 
                 key={sourceName} 
@@ -97,7 +113,21 @@ export default function CardsTab() {
                 onDoubleClick={() => setSelectedSource(sourceName)}
                 title="Double click to inspect topics"
               >
-                <h4 className={styles['source-card-title']}>{sourceName}</h4>
+                <div className={styles['concept-header-row']}>
+                  <h4 className={styles['source-card-title']}>{sourceName}</h4>
+                  <button 
+                    type="button"
+                    className={`${styles['star-btn']} ${someStarred ? styles['starred'] : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // If all are starred, unstar all. Otherwise, star all.
+                      toggleSourceStar(sourceName, !allStarred);
+                    }}
+                    title={allStarred ? "Unstar All Topics" : "Star All Topics"}
+                  >
+                    <StarIcon width={18} height={18} filled={allStarred} />
+                  </button>
+                </div>
                 {group.sourceUrl && (
                   <span className={styles['source-card-url']}>
                     {group.sourceUrl}
@@ -149,7 +179,20 @@ export default function CardsTab() {
                 className={styles['concept-card']}
                 onClick={() => setActiveConcept(concept)}
               >
-                <h4 className={styles['concept-title']}>{concept.concept_title}</h4>
+                <div className={styles['concept-header-row']}>
+                  <h4 className={styles['concept-title']}>{concept.concept_title}</h4>
+                  <button 
+                    type="button"
+                    className={`${styles['star-btn']} ${concept.is_starred ? styles['starred'] : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleConceptStar(concept.concept_id, !concept.is_starred);
+                    }}
+                    title={concept.is_starred ? "Unstar Topic" : "Star Topic (Prioritize)"}
+                  >
+                    <StarIcon width={18} height={18} filled={concept.is_starred} />
+                  </button>
+                </div>
                 <div className={styles['concept-tags']}>
                   {concept.tags.map((tag, idx) => (
                     <span key={idx} className={styles['tag-badge']}>{tag}</span>

@@ -70,11 +70,42 @@ export default function useRecallConcepts() {
     }
   };
 
+  const toggleConceptStar = async (conceptId, isStarred) => {
+    try {
+      await invoke("toggle_concept_star", { conceptId, isStarred });
+      await loadConcepts();
+      if (isStarred) {
+        toast.success("Topic prioritized! Due cards from this topic will now be shown first.");
+      }
+    } catch (err) {
+      console.error("Failed to toggle star", err);
+      toast.error("Failed to update star state: " + err);
+    }
+  };
+
+  const toggleSourceStar = async (sourceTitle, isStarred) => {
+    try {
+      await invoke("toggle_source_star", { 
+        sourceTitle: sourceTitle === "General / Uncategorized" ? null : sourceTitle, 
+        isStarred 
+      });
+      await loadConcepts();
+      if (isStarred) {
+        toast.success("Source prioritized! Due cards from these topics will now be shown first.");
+      }
+    } catch (err) {
+      console.error("Failed to toggle source star", err);
+      toast.error("Failed to update source star state: " + err);
+    }
+  };
+
   return {
     concepts,
     loadConcepts,
     handleImportJson,
     handleExportJson,
-    handleApplyRecallCards
+    handleApplyRecallCards,
+    toggleConceptStar,
+    toggleSourceStar
   };
 }

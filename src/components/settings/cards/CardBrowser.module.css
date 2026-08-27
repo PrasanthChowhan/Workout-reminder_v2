@@ -1,0 +1,124 @@
+.browser-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+.browser-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.stats {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.table-wrapper {
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  max-height: 400px;
+}
+
+.browser-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.browser-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  padding: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+}
+
+.browser-table th:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.browser-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+}
+
+.browser-table tr:hover td {
+  background: var(--bg-tertiary);
+}
+
+.topic-cell {
+  font-weight: 500;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prompt-cell {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.new { background: var(--color-blue-bg); color: var(--color-blue-text); }
+.learning { background: var(--color-orange-bg); color: var(--color-orange-text); }
+.review { background: var(--color-green-bg); color: var(--color-green-text); }
+.relearning { background: var(--color-red-bg); color: var(--color-red-text); }
+
+.beginner { background: var(--color-green-bg); color: var(--color-green-text); }
+.intermediate { background: var(--color-orange-bg); color: var(--color-orange-text); }
+.advanced { background: var(--color-red-bg); color: var(--color-red-text); }
+
+.loading, .empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+}
