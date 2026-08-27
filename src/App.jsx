@@ -214,6 +214,8 @@ export default function App() {
           onMouseLeave={cancelHolding}
           onTouchStart={startHolding}
           onTouchEnd={cancelHolding}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startHolding(); }}
+          onKeyUp={(e) => { if (e.key === 'Enter' || e.key === ' ') cancelHolding(); }}
           title="Press and hold for 2 seconds to skip"
         >
           <div className="hold-progress-bar" style={{ transform: `scaleX(${holdProgress / 100})` }}></div>

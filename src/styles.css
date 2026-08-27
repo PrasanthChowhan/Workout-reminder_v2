@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
   /* Brand/Reference Palette */
@@ -7,10 +7,18 @@
   --color-brand-orange: #ff7a45;
   --color-off-white: #e8e6e3;
   --color-text-muted: #a0a0a0;
+  
+  /* Alpha tokens */
+  --color-bg-alpha-10: rgba(0, 0, 0, 0.1);
+  --color-bg-alpha-50: rgba(0, 0, 0, 0.5);
+  --color-white-alpha-05: rgba(255, 255, 255, 0.05);
+  --color-white-alpha-10: rgba(255, 255, 255, 0.1);
+  --color-white-alpha-15: rgba(255, 255, 255, 0.15);
+  --color-orange-alpha-25: rgba(255, 122, 69, 0.25);
 
   /* Typography */
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Outfit', sans-serif;
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-display: 'Geist', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   /* Rounding sizes */
@@ -68,10 +76,10 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-alpha-10);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-white-alpha-10);
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -123,7 +131,7 @@ body {
 }
 
 .active-break-timer-display {
-  font-size: 8.5rem; /* text-9xl */
+  font-size: clamp(4rem, 12vw, 8.5rem);
   font-weight: 700;
   font-family: var(--font-display);
   letter-spacing: -0.02em;
@@ -174,8 +182,8 @@ body {
 /* Base Card Styling */
 .active-break-card {
   background-color: var(--color-card-bg);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--color-white-alpha-05);
+  box-shadow: 0 25px 50px -12px var(--color-bg-alpha-50);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -197,10 +205,10 @@ body {
 
 .footer-secondary-btn {
   padding: 1rem 2rem; /* px-8 py-4 */
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-white-alpha-15);
+  background-color: var(--color-white-alpha-05);
   border-radius: var(--radius-full);
-  font-size: 10px;
+  font-size: 0.75rem;
   font-family: var(--font-sans);
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -211,8 +219,8 @@ body {
 }
 
 .footer-secondary-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background-color: var(--color-white-alpha-10);
+  color: var(--color-off-white);
   scale: 1.04;
 }
 
@@ -235,9 +243,6 @@ body {
   .active-break-header {
     margin-bottom: 1.5rem;
   }
-  .active-break-timer-display {
-    font-size: 5rem;
-  }
   .active-break-content {
     grid-template-columns: 1fr;
     gap: 1.5rem;
@@ -257,7 +262,7 @@ body {
 
 .footer-secondary-btn.hold-btn.holding {
   border-color: var(--color-brand-orange);
-  color: #fff;
+  color: var(--color-off-white);
   scale: 0.98;
 }
 
@@ -267,7 +272,7 @@ body {
   left: 0;
   height: 100%;
   width: 100%;
-  background-color: rgba(255, 122, 69, 0.25); /* Ignition Orange background overlay */
+  background-color: var(--color-orange-alpha-25); /* Ignition Orange background overlay */
   transform: scaleX(0);
   transform-origin: left;
   pointer-events: none;

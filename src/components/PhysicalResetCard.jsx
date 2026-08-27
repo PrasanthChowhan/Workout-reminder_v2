@@ -162,6 +162,7 @@ const PhysicalResetCard = React.memo(function PhysicalResetCard({ sessionStretch
                   className={styles['stretch-image']} 
                   src={sessionStretch.image_url}
                   onError={() => setImageError(true)}
+                  loading="lazy"
                 />
               );
             }
@@ -174,6 +175,7 @@ const PhysicalResetCard = React.memo(function PhysicalResetCard({ sessionStretch
                   className={styles['stretch-image']} 
                   src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
                   onError={() => setThumbnailError(true)}
+                  loading="lazy"
                 />
               );
             }
